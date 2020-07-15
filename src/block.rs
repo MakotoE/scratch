@@ -11,7 +11,9 @@ pub trait Block: std::fmt::Debug {
 pub struct Runtime {}
 
 #[derive(Debug)]
-pub struct Function {}
+pub struct Function {
+    pub args: HashMap<String, Function>,
+}
 
 #[derive(Debug)]
 pub struct MoveSteps<'runtime> {
@@ -32,7 +34,7 @@ impl<'runtime> MoveSteps<'runtime> {
 
 impl<'runtime> Block for MoveSteps<'runtime> {
     fn set_arg(&mut self, key: String, function: Function) {
-        unimplemented!()
+        self.args.insert(key, function);
     }
 }
 
