@@ -1,5 +1,6 @@
-use serde::{Serialize, Deserialize};
-use wasm_bindgen::__rt::std::collections::HashMap;
+use super::*;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // https://en.scratch-wiki.info/wiki/Scratch_File_Format
 #[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
@@ -24,7 +25,7 @@ pub struct Target {
 #[serde(rename_all = "camelCase")]
 pub struct Block {
     pub opcode: String,
-    pub next: Option<String>,
+    pub parent: Option<String>,
     pub inputs: HashMap<String, serde_json::Value>,
     pub top_level: bool,
 }
@@ -38,9 +39,34 @@ pub struct Meta {
 }
 
 impl SaveFile {
-    pub fn parse() {
-        use bytes::buf::BufExt;
-        let buf: bytes::Bytes = bytes::Bytes::new();
-        zip::read::read_zipfile_from_stream(&mut buf.reader()).unwrap();
+    pub fn parse<R>(file: R) -> Result<SaveFile>
+    where
+        R: std::io::Read + std::io::Seek,
+    {
+        let mut archive = zip::ZipArchive::new(file)?;
+        let project = archive.by_name("project.json")?;
+        Ok(serde_json::from_reader(project)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        let dir = "/home/makoto/Downloads/Scratch Project.sb3";
+        let file = std::fs::File::open(dir).unwrap();
+        let savefile = SaveFile::parse(&file).unwrap();
+        let target = &savefile.targets[1];
+        assert_eq!(target.name, "Sprite1");
+
+        let mut thread = block::Thread::new(&block::Runtime {});
+        let mut block_infos: Vec<(&str, &savefile::Block)> = Vec::new();
+        for (k, v) in target.blocks.iter() {
+            block_infos.push((k, v));
+        }
+        thread.add_blocks(&block_infos);
+        println!("{:?}", thread);
     }
 }
