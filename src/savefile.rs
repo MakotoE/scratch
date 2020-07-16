@@ -25,7 +25,7 @@ pub struct Target {
 #[serde(rename_all = "camelCase")]
 pub struct Block {
     pub opcode: String,
-    pub parent: Option<String>,
+    pub next: Option<String>,
     pub inputs: HashMap<String, serde_json::Value>,
     pub top_level: bool,
 }
@@ -61,12 +61,7 @@ mod tests {
         let target = &savefile.targets[1];
         assert_eq!(target.name, "Sprite1");
 
-        let mut thread = block::Thread::new(&block::Runtime {});
-        let mut block_infos: Vec<(&str, &savefile::Block)> = Vec::new();
-        for (k, v) in target.blocks.iter() {
-            block_infos.push((k, v));
-        }
-        thread.add_blocks(&block_infos);
+        let thread = block::Thread::new(&block::Runtime {}, &target.blocks);
         println!("{:?}", thread);
     }
 }
