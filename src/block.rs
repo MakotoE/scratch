@@ -1,26 +1,20 @@
 use super::*;
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 
 pub trait Block<'runtime>: std::fmt::Debug {
-    fn set_arg(&mut self, key: String, function: Function);
-    fn set_next(&mut self, key: String, block: Box<dyn Block<'runtime> + 'runtime>);
+    fn set_input(&mut self, key: String, block: Box<dyn Block<'runtime> + 'runtime>);
 }
 
 #[derive(Debug)]
 pub struct Runtime {}
 
 #[derive(Debug)]
-pub struct Function {
-    pub args: HashMap<String, Function>,
-}
-
-#[derive(Debug)]
 pub struct MoveSteps<'runtime> {
     pub id: String,
     pub runtime: &'runtime Runtime,
-    pub args: HashMap<String, Function>,
-    pub next: HashMap<String, Box<dyn Block<'runtime> + 'runtime>>,
+    pub inputs: HashMap<String, Box<dyn Block<'runtime> + 'runtime>>,
 }
 
 impl<'runtime> MoveSteps<'runtime> {
@@ -28,20 +22,33 @@ impl<'runtime> MoveSteps<'runtime> {
         Self {
             id: id.to_string(),
             runtime,
-            args: HashMap::new(),
-            next: HashMap::new(),
+            inputs: HashMap::new(),
         }
     }
 }
 
 impl<'runtime> Block<'runtime> for MoveSteps<'runtime> {
-    fn set_arg(&mut self, key: String, function: Function) {
-        self.args.insert(key, function);
+    fn set_input(&mut self, key: String, block: Box<dyn Block<'runtime> + 'runtime>) {
+        self.inputs.insert(key, block);
     }
+}
 
-    fn set_next(&mut self, key: String, block: Box<dyn Block<'runtime> + 'runtime>) {
-        self.next.insert(key, block);
+#[derive(Debug)]
+pub struct Number {
+    pub value: f64,
+}
+
+impl TryFrom<&str> for Number {
+    type Error = Error;
+
+    fn try_from(s: &str) -> Result<Self> {
+        let value = serde_json::from_str(s)?;
+        Ok(Number { value })
     }
+}
+
+impl<'runtime> Block<'runtime> for Number {
+    fn set_input(&mut self, key: String, block: Box<dyn Block<'runtime> + 'runtime>) {}
 }
 
 #[derive(Debug)]
@@ -51,12 +58,12 @@ pub struct Thread<'runtime> {
 }
 
 impl<'runtime> Thread<'runtime> {
-    pub fn new(runtime: &'runtime Runtime, block_infos: &HashMap<String, savefile::Block>) -> Self {
+    pub fn new(runtime: &'runtime Runtime, block_infos: &HashMap<String, savefile::Block>) -> Result<Self> {
         let hat = match find_hat(block_infos) {
-            Some(hat_id) => Some(new_block(hat_id, runtime, block_infos)),
+            Some(hat_id) => Some(new_block(hat_id, runtime, block_infos)?),
             None => None,
         };
-        Self { runtime, hat }
+        Ok(Self { runtime, hat })
     }
 }
 
@@ -70,23 +77,67 @@ fn find_hat(block_infos: &HashMap<String, savefile::Block>) -> Option<&str> {
     None
 }
 
-fn new_block<'runtime>(id: &str, runtime: &'runtime Runtime, block_infos: &HashMap<String, savefile::Block>) -> Box<dyn Block<'runtime> + 'runtime> {
-    let block_info = block_infos.get(id).unwrap();
-    let mut block = get_block(id, runtime, &block_info);
-    if let Some(next_id) = &block_info.next {
-        block.set_next("next".to_string(), new_block(next_id, runtime, block_infos));
+fn new_block<'runtime>(
+    id: &str,
+    runtime: &'runtime Runtime,
+    infos: &HashMap<String, savefile::Block>,
+) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
+    let info = infos.get(id).unwrap();
+    let mut block = get_block(id, runtime, &info)?;
+    if let Some(next_id) = &info.next {
+        block.set_input("next".to_string(), new_block(next_id, runtime, infos)?);
     }
-    block
+    for (k, input) in &info.inputs {
+        let input_err_cb = || {
+            Error::from(format!("block \"{}\": invalid {}", id, k.as_str()))
+        };
+        let input_arr = input.as_array().chain_err(input_err_cb)?;
+        let input_type = input_arr.get(0)
+            .and_then(|v| v.as_i64())
+            .chain_err(input_err_cb)?;
+        let input_block = match input_type {
+            1 => { // value
+                let value_info = input_arr
+                    .get(1)
+                    .and_then(|v| v.as_array())
+                    .chain_err(input_err_cb)?;
+                let value_type = value_info.get(0)
+                    .and_then(|v| v.as_i64())
+                    .chain_err(input_err_cb)?;
+                let value = value_info.get(1)
+                    .and_then(|v| v.as_str())
+                    .chain_err(input_err_cb)?;
+                get_value(value_type, value)?
+            },
+            2 => { // block
+                let id = input_arr
+                    .get(1)
+                    .and_then(|v| v.as_str())
+                    .chain_err(input_err_cb)?;
+                new_block(id, runtime, infos)?
+            },
+            _ => unreachable!(),
+        };
+        block.set_input(k.clone(), input_block);
+    }
+    Ok(block)
+}
+
+fn get_value<'runtime>(value_type: i64, value: &str) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
+    Ok(match value_type {
+        4 => Box::new(Number::try_from(value)?),
+        _ => Box::new(Number::try_from(value)?),
+    })
 }
 
 fn get_block<'runtime>(
     id: &str,
     runtime: &'runtime Runtime,
-    block_info: &savefile::Block,
-) -> Box<dyn Block<'runtime> + 'runtime> {
-    let block = match block_info.opcode.as_str() {
+    info: &savefile::Block,
+) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
+    let block = match info.opcode.as_str() {
+        "motion_movesteps" => MoveSteps::new(id, runtime),
         _ => MoveSteps::new(id, runtime),
-        // _ => unreachable!(),
     };
-    Box::new(block)
+    Ok(Box::new(block))
 }

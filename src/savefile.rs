@@ -62,6 +62,6 @@ mod tests {
         assert_eq!(target.name, "Sprite1");
 
         let thread = block::Thread::new(&block::Runtime {}, &target.blocks);
-        println!("{:?}", thread);
+        println!("{:#?}", thread);
     }
 }
