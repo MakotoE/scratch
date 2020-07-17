@@ -12,13 +12,13 @@ pub struct Runtime {}
 
 #[derive(Debug)]
 pub struct MoveSteps<'runtime> {
-    pub id: String,
-    pub runtime: &'runtime Runtime,
-    pub inputs: HashMap<String, Box<dyn Block<'runtime> + 'runtime>>,
+    id: String,
+    runtime: &'runtime Runtime,
+    inputs: HashMap<String, Box<dyn Block<'runtime> + 'runtime>>,
 }
 
 impl<'runtime> MoveSteps<'runtime> {
-    fn new(id: &str, runtime: &'runtime Runtime) -> Self {
+    pub fn new(id: &str, runtime: &'runtime Runtime) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -35,7 +35,7 @@ impl<'runtime> Block<'runtime> for MoveSteps<'runtime> {
 
 #[derive(Debug)]
 pub struct Number {
-    pub value: f64,
+    value: f64,
 }
 
 impl TryFrom<&str> for Number {
@@ -52,13 +52,35 @@ impl<'runtime> Block<'runtime> for Number {
 }
 
 #[derive(Debug)]
+pub struct Variable<'runtime> {
+    id: String,
+    runtime: &'runtime Runtime,
+}
+
+impl<'runtime> Variable<'runtime> {
+    pub fn new(id: &str, runtime: &'runtime Runtime) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+        }
+    }
+}
+
+impl<'runtime> Block<'runtime> for Variable<'runtime> {
+    fn set_input(&mut self, key: String, block: Box<dyn Block<'runtime> + 'runtime>) {}
+}
+
+#[derive(Debug)]
 pub struct Thread<'runtime> {
     runtime: &'runtime Runtime,
     hat: Option<Box<dyn Block<'runtime> + 'runtime>>,
 }
 
 impl<'runtime> Thread<'runtime> {
-    pub fn new(runtime: &'runtime Runtime, block_infos: &HashMap<String, savefile::Block>) -> Result<Self> {
+    pub fn new(
+        runtime: &'runtime Runtime,
+        block_infos: &HashMap<String, savefile::Block>,
+    ) -> Result<Self> {
         let hat = match find_hat(block_infos) {
             Some(hat_id) => Some(new_block(hat_id, runtime, block_infos)?),
             None => None,
@@ -88,42 +110,62 @@ fn new_block<'runtime>(
         block.set_input("next".to_string(), new_block(next_id, runtime, infos)?);
     }
     for (k, input) in &info.inputs {
-        let input_err_cb = || {
-            Error::from(format!("block \"{}\": invalid {}", id, k.as_str()))
-        };
+        let input_err_cb = || Error::from(format!("block \"{}\": invalid {}", id, k.as_str()));
         let input_arr = input.as_array().chain_err(input_err_cb)?;
-        let input_type = input_arr.get(0)
+        let input_type = input_arr
+            .get(0)
             .and_then(|v| v.as_i64())
             .chain_err(input_err_cb)?;
         let input_block = match input_type {
-            1 => { // value
+            1 => {
+                // value
                 let value_info = input_arr
                     .get(1)
                     .and_then(|v| v.as_array())
                     .chain_err(input_err_cb)?;
-                let value_type = value_info.get(0)
+                let value_type = value_info
+                    .get(0)
                     .and_then(|v| v.as_i64())
                     .chain_err(input_err_cb)?;
-                let value = value_info.get(1)
-                    .and_then(|v| v.as_str())
-                    .chain_err(input_err_cb)?;
-                get_value(value_type, value)?
-            },
-            2 => { // block
-                let id = input_arr
+                let value = value_info
                     .get(1)
                     .and_then(|v| v.as_str())
                     .chain_err(input_err_cb)?;
-                new_block(id, runtime, infos)?
+                new_value(value_type, value)?
             },
-            _ => unreachable!(),
+            2 | 3 => {
+                let input_info = input_arr
+                    .get(1)
+                    .chain_err(input_err_cb)?;
+                if input_info.is_string() {
+                    // block
+                    let id = input_info
+                        .as_str()
+                        .chain_err(input_err_cb)?;
+                    new_block(id, runtime, infos)?
+                } else if input_info.is_array() {
+                    // variable
+                    let id = input_info
+                        .as_array()
+                        .and_then(|v| v.get(2))
+                        .and_then(|v| v.as_str())
+                        .chain_err(input_err_cb)?;
+                    Box::new(Variable::new(id, runtime))
+                } else {
+                    return Err(input_err_cb());
+                }
+            },
+            _ => return Err(format!("block \"{}\": invalid input_type {}", id, input_type).into()),
         };
         block.set_input(k.clone(), input_block);
     }
     Ok(block)
 }
 
-fn get_value<'runtime>(value_type: i64, value: &str) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
+fn new_value<'runtime>(
+    value_type: i64,
+    value: &str,
+) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
     Ok(match value_type {
         4 => Box::new(Number::try_from(value)?),
         _ => Box::new(Number::try_from(value)?),

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // https://en.scratch-wiki.info/wiki/Scratch_File_Format
-#[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveFile {
     pub targets: Vec<Target>,
@@ -12,16 +12,16 @@ pub struct SaveFile {
     pub meta: Meta,
 }
 
-#[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Target {
     pub is_stage: bool,
     pub name: String,
-    pub variables: HashMap<String, (String, i64)>,
+    pub variables: HashMap<String, (String, f64)>,
     pub blocks: HashMap<String, Block>,
 }
 
-#[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Block {
     pub opcode: String,
@@ -30,7 +30,7 @@ pub struct Block {
     pub top_level: bool,
 }
 
-#[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Meta {
     pub semver: String,
@@ -62,6 +62,6 @@ mod tests {
         assert_eq!(target.name, "Sprite1");
 
         let thread = block::Thread::new(&block::Runtime {}, &target.blocks);
-        println!("{:#?}", thread);
+        println!("{:#?}", thread.unwrap());
     }
 }
