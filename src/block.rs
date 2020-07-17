@@ -35,14 +35,13 @@ impl<'runtime> Block<'runtime> for MoveSteps<'runtime> {
 
 #[derive(Debug)]
 pub struct Number {
-    value: f64,
+    value: serde_json::Value,
 }
 
-impl TryFrom<&str> for Number {
+impl TryFrom<serde_json::Value> for Number {
     type Error = Error;
 
-    fn try_from(s: &str) -> Result<Self> {
-        let value = serde_json::from_str(s)?;
+    fn try_from(value: serde_json::Value) -> Result<Self> {
         Ok(Number { value })
     }
 }
@@ -141,9 +140,8 @@ fn new_block<'runtime>(
                     .chain_err(input_err_cb)?;
                 let value = value_info
                     .get(1)
-                    .and_then(|v| v.as_str())
                     .chain_err(input_err_cb)?;
-                new_value(value_type, value)?
+                new_value(value_type, value.clone())?
             },
             2 | 3 => {
                 let input_info = input_arr
@@ -176,7 +174,7 @@ fn new_block<'runtime>(
 
 fn new_value<'runtime>(
     value_type: i64,
-    value: &str,
+    value: serde_json::Value,
 ) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
     Ok(match value_type {
         4 => Box::new(Number::try_from(value)?),

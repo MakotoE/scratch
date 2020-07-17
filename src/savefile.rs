@@ -62,6 +62,6 @@ mod tests {
         assert_eq!(target.name, "Sprite1");
 
         let sprite = block::Sprite::new(&block::Runtime {}, &target.blocks);
-        println!("{:#?}", sprite.unwrap());
+        println!("{}", format!("{:#?}", sprite.unwrap()).replace("    ", "  "));
     }
 }
