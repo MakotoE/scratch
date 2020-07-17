@@ -73,30 +73,42 @@ impl<'runtime> Block<'runtime> for Variable<'runtime> {
 #[derive(Debug)]
 pub struct Thread<'runtime> {
     runtime: &'runtime Runtime,
-    hat: Option<Box<dyn Block<'runtime> + 'runtime>>,
+    hat: Box<dyn Block<'runtime> + 'runtime>,
 }
 
 impl<'runtime> Thread<'runtime> {
     pub fn new(
         runtime: &'runtime Runtime,
-        block_infos: &HashMap<String, savefile::Block>,
-    ) -> Result<Self> {
-        let hat = match find_hat(block_infos) {
-            Some(hat_id) => Some(new_block(hat_id, runtime, block_infos)?),
-            None => None,
-        };
-        Ok(Self { runtime, hat })
+        hat: Box<dyn Block<'runtime> + 'runtime>,
+    ) -> Self {
+        Self { runtime, hat }
     }
 }
 
-fn find_hat(block_infos: &HashMap<String, savefile::Block>) -> Option<&str> {
+#[derive(Debug)]
+pub struct Sprite<'runtime> {
+    threads: Vec<Thread<'runtime>>,
+}
+
+impl<'runtime> Sprite<'runtime> {
+    pub fn new(runtime: &'runtime Runtime, block_infos: &HashMap<String, savefile::Block>) -> Result<Self> {
+        let mut threads: Vec<Thread> = Vec::new();
+        for hat_id in find_hats(block_infos) {
+            threads.push(Thread::new(runtime, new_block(hat_id, runtime, block_infos)?));
+        }
+        Ok(Self { threads })
+    }
+}
+
+fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
+    let mut hats: Vec<&str> = Vec::new();
     for (id, block_info) in block_infos {
         if block_info.top_level {
-            return Some(id);
+            hats.push(id);
         }
     }
 
-    None
+    hats
 }
 
 fn new_block<'runtime>(
