@@ -27,6 +27,7 @@ pub struct Block {
     pub opcode: String,
     pub next: Option<String>,
     pub inputs: HashMap<String, serde_json::Value>,
+    pub fields: HashMap<String, Vec<String>>,
     pub top_level: bool,
 }
 
@@ -61,7 +62,7 @@ mod tests {
         let target = &savefile.targets[1];
         assert_eq!(target.name, "Sprite1");
 
-        let sprite = block::Sprite::new(&block::Runtime {}, &target.blocks);
+        let sprite = sprite::Sprite::new(&block::Runtime {}, &target.blocks);
         println!("{}", format!("{:#?}", sprite.unwrap()).replace("    ", "  "));
     }
 }

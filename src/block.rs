@@ -69,48 +69,7 @@ impl<'runtime> Block<'runtime> for Variable<'runtime> {
     fn set_input(&mut self, key: String, block: Box<dyn Block<'runtime> + 'runtime>) {}
 }
 
-#[derive(Debug)]
-pub struct Thread<'runtime> {
-    runtime: &'runtime Runtime,
-    hat: Box<dyn Block<'runtime> + 'runtime>,
-}
-
-impl<'runtime> Thread<'runtime> {
-    pub fn new(
-        runtime: &'runtime Runtime,
-        hat: Box<dyn Block<'runtime> + 'runtime>,
-    ) -> Self {
-        Self { runtime, hat }
-    }
-}
-
-#[derive(Debug)]
-pub struct Sprite<'runtime> {
-    threads: Vec<Thread<'runtime>>,
-}
-
-impl<'runtime> Sprite<'runtime> {
-    pub fn new(runtime: &'runtime Runtime, block_infos: &HashMap<String, savefile::Block>) -> Result<Self> {
-        let mut threads: Vec<Thread> = Vec::new();
-        for hat_id in find_hats(block_infos) {
-            threads.push(Thread::new(runtime, new_block(hat_id, runtime, block_infos)?));
-        }
-        Ok(Self { threads })
-    }
-}
-
-fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
-    let mut hats: Vec<&str> = Vec::new();
-    for (id, block_info) in block_infos {
-        if block_info.top_level {
-            hats.push(id);
-        }
-    }
-
-    hats
-}
-
-fn new_block<'runtime>(
+pub fn new_block<'runtime>(
     id: &str,
     runtime: &'runtime Runtime,
     infos: &HashMap<String, savefile::Block>,
@@ -172,7 +131,7 @@ fn new_block<'runtime>(
     Ok(block)
 }
 
-fn new_value<'runtime>(
+pub fn new_value<'runtime>(
     value_type: i64,
     value: serde_json::Value,
 ) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
@@ -182,7 +141,7 @@ fn new_value<'runtime>(
     })
 }
 
-fn get_block<'runtime>(
+pub fn get_block<'runtime>(
     id: &str,
     runtime: &'runtime Runtime,
     info: &savefile::Block,
