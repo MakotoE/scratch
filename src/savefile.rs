@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let dir = "/home/makoto/Downloads/Mandelbrot.sb3";
+        let dir = "/home/makoto/Downloads/Scratch Project.sb3";
         let file = std::fs::File::open(dir).unwrap();
         let savefile = SaveFile::parse(&file).unwrap();
         let target = &savefile.targets[1];
