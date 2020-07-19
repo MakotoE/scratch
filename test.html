@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        scratch-vm-rs</title>
+</head>
+<body>
+<script>
+    document.body.onload = () => {
+        const canvas = document.getElementById('scratch-stage');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '20px sans-serif';
+        ctx.fillText('Hello world', 10, 50);
+    };
+</script>
+<canvas id="scratch-stage"
+        width="400"
+        height="300"
+        style="border: 1px solid black"></canvas>
+</body>
+</html>

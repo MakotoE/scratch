@@ -100,7 +100,9 @@ impl TryFrom<serde_json::Value> for Number {
     type Error = Error;
 
     fn try_from(v: serde_json::Value) -> Result<Self> {
-        Ok(Self { value: v.as_f64().chain_err(|| wrong_type_err(&v))? })
+        Ok(Self {
+            value: v.as_f64().chain_err(|| wrong_type_err(&v))?,
+        })
     }
 }
 
@@ -117,7 +119,9 @@ impl TryFrom<serde_json::Value> for BlockString {
     type Error = Error;
 
     fn try_from(v: serde_json::Value) -> Result<Self> {
-        Ok(Self { value: v.as_str().chain_err(|| wrong_type_err(&v))?.to_string() })
+        Ok(Self {
+            value: v.as_str().chain_err(|| wrong_type_err(&v))?.to_string(),
+        })
     }
 }
 
@@ -149,21 +153,15 @@ pub fn new_block<'runtime>(
                     .get(0)
                     .and_then(|v| v.as_i64())
                     .chain_err(input_err_cb)?;
-                let value = value_info
-                    .get(1)
-                    .chain_err(input_err_cb)?;
+                let value = value_info.get(1).chain_err(input_err_cb)?;
                 new_value(value_type, value.clone())
                     .map_err(|e| format!("block \"{}\": {}", id, e.to_string()))?
-            },
+            }
             2 | 3 => {
-                let input_info = input_arr
-                    .get(1)
-                    .chain_err(input_err_cb)?;
+                let input_info = input_arr.get(1).chain_err(input_err_cb)?;
                 if input_info.is_string() {
                     // block
-                    let id = input_info
-                        .as_str()
-                        .chain_err(input_err_cb)?;
+                    let id = input_info.as_str().chain_err(input_err_cb)?;
                     new_block(id, runtime, infos)?
                 } else if input_info.is_array() {
                     // variable
@@ -176,7 +174,7 @@ pub fn new_block<'runtime>(
                 } else {
                     return Err(input_err_cb());
                 }
-            },
+            }
             _ => return Err(format!("block \"{}\": invalid input_type {}", id, input_type).into()),
         };
         block.set_input(k, input_block);
