@@ -6,6 +6,9 @@ use log::info;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
+use std::rc::Rc;
+use yew::services::reader::{FileData, ReaderService, ReaderTask};
+use yew::callback::Callback;
 
 error_chain::error_chain! {
     types {
@@ -40,9 +43,13 @@ pub fn start() -> Result<()> {
 struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
+    tasks: Vec<ReaderTask>, // TODO garbage collection for each task
 }
 
-enum Msg {}
+enum Msg {
+    Noop,
+    ImportFile(web_sys::File),
+}
 
 impl Component for Page {
     type Message = Msg;
@@ -52,11 +59,20 @@ impl Component for Page {
         Self {
             link,
             canvas_ref: NodeRef::default(),
+            tasks: Vec::new(),
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> bool {
-        false
+        match msg {
+            Msg::Noop => return false,
+            Msg::ImportFile(file) => {
+                let cb = Callback::<FileData>::Callback(Rc::new(|data| {info!("{}", data.content.len())}));
+                let mut reader = ReaderService::new();
+                self.tasks.push(reader.read_file(file, cb).unwrap());
+            },
+        }
+        true
     }
 
     fn change(&mut self, _props: Self::Properties) -> bool {
@@ -64,6 +80,15 @@ impl Component for Page {
     }
 
     fn view(&self) -> Html {
+        let import_cb: fn(yew::events::ChangeData) -> Msg = |event| {
+            if let ChangeData::Files(files) = event {
+                if let Some(file) = files.get(0) {
+                    return Msg::ImportFile(file);
+                }
+            }
+            Msg::Noop
+        };
+
         html! {
             <div>
                 <canvas
@@ -71,7 +96,8 @@ impl Component for Page {
                     width="400"
                     height="300"
                     style="border: 1px solid black"
-                />
+                /><br />
+                <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} />
             </div>
         }
     }
