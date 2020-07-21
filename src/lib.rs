@@ -2,13 +2,12 @@ pub mod block;
 pub mod savefile;
 pub mod sprite;
 
+use crate::savefile::SaveFile;
 use log::info;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
-use std::rc::Rc;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
-use yew::callback::Callback;
 
 error_chain::error_chain! {
     types {
@@ -43,12 +42,14 @@ pub fn start() -> Result<()> {
 struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
-    tasks: Vec<ReaderTask>, // TODO garbage collection for each task
+    task: Option<ReaderTask>,
+    runtime: Option<block::Runtime>,
 }
 
 enum Msg {
     Noop,
     ImportFile(web_sys::File),
+    Run(FileData),
 }
 
 impl Component for Page {
@@ -59,7 +60,8 @@ impl Component for Page {
         Self {
             link,
             canvas_ref: NodeRef::default(),
-            tasks: Vec::new(),
+            task: None,
+            runtime: None,
         }
     }
 
@@ -67,10 +69,27 @@ impl Component for Page {
         match msg {
             Msg::Noop => return false,
             Msg::ImportFile(file) => {
-                let cb = Callback::<FileData>::Callback(Rc::new(|data| {info!("{}", data.content.len())}));
                 let mut reader = ReaderService::new();
-                self.tasks.push(reader.read_file(file, cb).unwrap());
-            },
+                let cb = self.link.callback(Msg::Run);
+                self.task = Some(reader.read_file(file, cb).unwrap());
+            }
+            Msg::Run(file) => {
+                let reader = std::io::Cursor::new(file.content);
+                let savefile = SaveFile::parse(reader).unwrap();
+                let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
+                let ctx: web_sys::CanvasRenderingContext2d = canvas
+                    .get_context("2d")
+                    .unwrap()
+                    .unwrap()
+                    .dyn_into()
+                    .unwrap();
+                self.runtime = Some(block::Runtime { canvas: ctx });
+                let sprite = sprite::Sprite::new(
+                    self.runtime.as_ref().unwrap(),
+                    &savefile.targets[1].blocks,
+                );
+                info!("{:?}", sprite);
+            }
         }
         true
     }

@@ -3,22 +3,24 @@ use super::*;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-pub trait Block<'runtime>: std::fmt::Debug {
-    fn set_input(&mut self, key: &str, block: Box<dyn Block<'runtime> + 'runtime>);
+pub trait Block<'r>: std::fmt::Debug {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block<'r> + 'r>);
 }
 
 #[derive(Debug)]
-pub struct Runtime {}
+pub struct Runtime {
+    pub canvas: web_sys::CanvasRenderingContext2d,
+}
 
 #[derive(Debug)]
-pub struct WhenFlagClicked<'runtime> {
+pub struct WhenFlagClicked<'r> {
     id: String,
-    runtime: &'runtime Runtime,
-    next: Option<Box<dyn Block<'runtime> + 'runtime>>,
+    runtime: &'r Runtime,
+    next: Option<Box<dyn Block<'r> + 'r>>,
 }
 
-impl<'runtime> WhenFlagClicked<'runtime> {
-    fn new(id: &str, runtime: &'runtime Runtime) -> Self {
+impl<'r> WhenFlagClicked<'r> {
+    fn new(id: &str, runtime: &'r Runtime) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -27,8 +29,8 @@ impl<'runtime> WhenFlagClicked<'runtime> {
     }
 }
 
-impl<'runtime> Block<'runtime> for WhenFlagClicked<'runtime> {
-    fn set_input(&mut self, key: &str, block: Box<dyn Block<'runtime> + 'runtime>) {
+impl<'r> Block<'r> for WhenFlagClicked<'r> {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block<'r> + 'r>) {
         if key == "next" {
             self.next = Some(block);
         }
@@ -36,15 +38,15 @@ impl<'runtime> Block<'runtime> for WhenFlagClicked<'runtime> {
 }
 
 #[derive(Debug)]
-pub struct Say<'runtime> {
+pub struct Say<'r> {
     id: String,
-    runtime: &'runtime Runtime,
-    message: Option<Box<dyn Block<'runtime> + 'runtime>>,
-    next: Option<Box<dyn Block<'runtime> + 'runtime>>,
+    runtime: &'r Runtime,
+    message: Option<Box<dyn Block<'r> + 'r>>,
+    next: Option<Box<dyn Block<'r> + 'r>>,
 }
 
-impl<'runtime> Say<'runtime> {
-    fn new(id: &str, runtime: &'runtime Runtime) -> Self {
+impl<'r> Say<'r> {
+    fn new(id: &str, runtime: &'r Runtime) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -54,8 +56,8 @@ impl<'runtime> Say<'runtime> {
     }
 }
 
-impl<'runtime> Block<'runtime> for Say<'runtime> {
-    fn set_input(&mut self, key: &str, block: Box<dyn Block<'runtime> + 'runtime>) {
+impl<'r> Block<'r> for Say<'r> {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block<'r> + 'r>) {
         match key {
             "next" => self.next = Some(block),
             "MESSAGE" => self.message = Some(block),
@@ -65,13 +67,13 @@ impl<'runtime> Block<'runtime> for Say<'runtime> {
 }
 
 #[derive(Debug)]
-pub struct Variable<'runtime> {
+pub struct Variable<'r> {
     id: String,
-    runtime: &'runtime Runtime,
+    runtime: &'r Runtime,
 }
 
-impl<'runtime> Variable<'runtime> {
-    pub fn new(id: &str, runtime: &'runtime Runtime) -> Self {
+impl<'r> Variable<'r> {
+    pub fn new(id: &str, runtime: &'r Runtime) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -79,8 +81,8 @@ impl<'runtime> Variable<'runtime> {
     }
 }
 
-impl<'runtime> Block<'runtime> for Variable<'runtime> {
-    fn set_input(&mut self, _: &str, _: Box<dyn Block<'runtime> + 'runtime>) {}
+impl<'r> Block<'r> for Variable<'r> {
+    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
 }
 
 fn wrong_type_err(value: &serde_json::Value) -> Error {
@@ -92,8 +94,8 @@ pub struct Number {
     value: f64,
 }
 
-impl<'runtime> Block<'runtime> for Number {
-    fn set_input(&mut self, _: &str, _: Box<dyn Block<'runtime> + 'runtime>) {}
+impl<'r> Block<'r> for Number {
+    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
 }
 
 impl TryFrom<serde_json::Value> for Number {
@@ -111,8 +113,8 @@ pub struct BlockString {
     value: String,
 }
 
-impl<'runtime> Block<'runtime> for BlockString {
-    fn set_input(&mut self, _: &str, _: Box<dyn Block<'runtime> + 'runtime>) {}
+impl<'r> Block<'r> for BlockString {
+    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
 }
 
 impl TryFrom<serde_json::Value> for BlockString {
@@ -125,11 +127,11 @@ impl TryFrom<serde_json::Value> for BlockString {
     }
 }
 
-pub fn new_block<'runtime>(
+pub fn new_block<'r>(
     id: &str,
-    runtime: &'runtime Runtime,
+    runtime: &'r Runtime,
     infos: &HashMap<String, savefile::Block>,
-) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
+) -> Result<Box<dyn Block<'r> + 'r>> {
     let info = infos.get(id).unwrap();
     let mut block = get_block(id, runtime, &info)?;
     if let Some(next_id) = &info.next {
@@ -182,10 +184,7 @@ pub fn new_block<'runtime>(
     Ok(block)
 }
 
-pub fn new_value<'runtime>(
-    value_type: i64,
-    value: serde_json::Value,
-) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
+pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Block<'r> + 'r>> {
     Ok(match value_type {
         4 => Box::new(Number::try_from(value)?),
         10 => Box::new(BlockString::try_from(value)?),
@@ -193,11 +192,11 @@ pub fn new_value<'runtime>(
     })
 }
 
-pub fn get_block<'runtime>(
+pub fn get_block<'r>(
     id: &str,
-    runtime: &'runtime Runtime,
+    runtime: &'r Runtime,
     info: &savefile::Block,
-) -> Result<Box<dyn Block<'runtime> + 'runtime>> {
+) -> Result<Box<dyn Block<'r> + 'r>> {
     Ok(match info.opcode.as_str() {
         "event_whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
         "looks_say" => Box::new(Say::new(id, runtime)),

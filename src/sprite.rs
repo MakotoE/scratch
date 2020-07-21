@@ -3,13 +3,13 @@ use block::{new_block, Block, Runtime};
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub struct Sprite<'runtime> {
-    threads: Vec<Thread<'runtime>>,
+pub struct Sprite<'r> {
+    threads: Vec<Thread<'r>>,
 }
 
-impl<'runtime> Sprite<'runtime> {
+impl<'r> Sprite<'r> {
     pub fn new(
-        runtime: &'runtime Runtime,
+        runtime: &'r Runtime,
         block_infos: &HashMap<String, savefile::Block>,
     ) -> Result<Self> {
         let mut threads: Vec<Thread> = Vec::new();
@@ -35,13 +35,13 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 }
 
 #[derive(Debug)]
-pub struct Thread<'runtime> {
-    runtime: &'runtime Runtime,
-    hat: Box<dyn Block<'runtime> + 'runtime>,
+pub struct Thread<'r> {
+    runtime: &'r Runtime,
+    hat: Box<dyn Block<'r> + 'r>,
 }
 
-impl<'runtime> Thread<'runtime> {
-    pub fn new(runtime: &'runtime Runtime, hat: Box<dyn Block<'runtime> + 'runtime>) -> Self {
+impl<'r> Thread<'r> {
+    pub fn new(runtime: &'r Runtime, hat: Box<dyn Block<'r> + 'r>) -> Self {
         Self { runtime, hat }
     }
 }
