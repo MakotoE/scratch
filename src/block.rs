@@ -6,8 +6,17 @@ use std::sync::Mutex;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub trait Block<'r>: std::fmt::Debug {
+pub trait BlockOrValue<'r>: std::fmt::Debug {
+    fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>);
+}
+
+pub trait Block<'r>: BlockOrValue<'r> {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>);
+    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>>;
+}
+
+pub trait Value<'r>: BlockOrValue<'r> {
+
 }
 
 #[derive(Debug)]
@@ -32,11 +41,19 @@ impl<'r> WhenFlagClicked<'r> {
     }
 }
 
+impl<'r> BlockOrValue<'r> for WhenFlagClicked<'r> {
+    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
+}
+
 impl<'r> Block<'r> for WhenFlagClicked<'r> {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
         if key == "next" {
             self.next = Some(block);
         }
+    }
+
+    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+        self.next.clone()
     }
 }
 
@@ -44,7 +61,7 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
 pub struct Say<'r> {
     id: String,
     runtime: &'r Mutex<Runtime>,
-    message: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
+    message: Option<Box<dyn Value<'r> + 'r>>,
     next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
@@ -59,13 +76,25 @@ impl<'r> Say<'r> {
     }
 }
 
+impl<'r> BlockOrValue<'r> for Say<'r> {
+    fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>) {
+        match key {
+            "MESSAGE" => self.message = Some(block),
+            _ => return,
+        };
+    }
+}
+
 impl<'r> Block<'r> for Say<'r> {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
         match key {
             "next" => self.next = Some(block),
-            "MESSAGE" => self.message = Some(block),
             _ => return,
         };
+    }
+
+    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+        self.next.clone()
     }
 }
 
@@ -84,8 +113,8 @@ impl<'r> Variable<'r> {
     }
 }
 
-impl<'r> Block<'r> for Variable<'r> {
-    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
+impl<'r> BlockOrValue<'r> for Variable<'r> {
+    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
 fn wrong_type_err(value: &serde_json::Value) -> Error {
@@ -97,8 +126,8 @@ pub struct Number {
     value: f64,
 }
 
-impl<'r> Block<'r> for Number {
-    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
+impl<'r> BlockOrValue<'r> for Number {
+    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
 impl TryFrom<serde_json::Value> for Number {
@@ -116,8 +145,8 @@ pub struct BlockString {
     value: String,
 }
 
-impl<'r> Block<'r> for BlockString {
-    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
+impl<'r> BlockOrValue<'r> for BlockString {
+    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
 impl TryFrom<serde_json::Value> for BlockString {
@@ -147,7 +176,7 @@ pub fn new_block<'r>(
             .get(0)
             .and_then(|v| v.as_i64())
             .chain_err(input_err_cb)?;
-        let input_block = match input_type {
+        match input_type {
             1 => {
                 // value
                 let value_info = input_arr
@@ -158,16 +187,18 @@ pub fn new_block<'r>(
                     .get(0)
                     .and_then(|v| v.as_i64())
                     .chain_err(input_err_cb)?;
-                let value = value_info.get(1).chain_err(input_err_cb)?;
-                new_value(value_type, value.clone())
+                let js_value = value_info.get(1).chain_err(input_err_cb)?;
+                let value = new_value(value_type, js_value.clone())
                     .map_err(|e| format!("block \"{}\": {}", id, e.to_string()))?
+                block.borrow_mut().set_arg(l, value);
             }
             2 | 3 => {
                 let input_info = input_arr.get(1).chain_err(input_err_cb)?;
                 if input_info.is_string() {
                     // block
                     let id = input_info.as_str().chain_err(input_err_cb)?;
-                    new_block(id, runtime, infos)?
+                    let block = new_block(id, runtime, infos)?
+                    block.borrow_mut().set_input(k, block);
                 } else if input_info.is_array() {
                     // variable
                     let id = input_info
@@ -175,22 +206,22 @@ pub fn new_block<'r>(
                         .and_then(|v| v.get(2))
                         .and_then(|v| v.as_str())
                         .chain_err(input_err_cb)?;
-                    Rc::new(RefCell::new(Variable::new(id, runtime)))
+                    let variable = Box::new(Variable::new(id, runtime));
+                    block.borrow_mut().set_arg(k, variable);
                 } else {
                     return Err(input_err_cb());
                 }
             }
             _ => return Err(format!("block \"{}\": invalid input_type {}", id, input_type).into()),
         };
-        block.borrow_mut().set_input(k, input_block);
     }
     Ok(block)
 }
 
-pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
+pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Block<'r> + 'r>> {
     Ok(match value_type {
-        4 => Rc::new(RefCell::new(Number::try_from(value)?)),
-        10 => Rc::new(RefCell::new(BlockString::try_from(value)?)),
+        4 => Box::new(Number::try_from(value)?),
+        10 => Box::new(BlockString::try_from(value)?),
         _ => return Err(format!("value_type {} does not exist", value_type).into()),
     })
 }
