@@ -2,6 +2,7 @@ use super::*;
 
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::sync::Mutex;
 
 pub trait Block<'r>: std::fmt::Debug {
     fn set_input(&mut self, key: &str, block: Box<dyn Block<'r> + 'r>);
@@ -15,12 +16,12 @@ pub struct Runtime {
 #[derive(Debug)]
 pub struct WhenFlagClicked<'r> {
     id: String,
-    runtime: &'r Runtime,
+    runtime: &'r Mutex<Runtime>,
     next: Option<Box<dyn Block<'r> + 'r>>,
 }
 
 impl<'r> WhenFlagClicked<'r> {
-    fn new(id: &str, runtime: &'r Runtime) -> Self {
+    fn new(id: &str, runtime: &'r Mutex<Runtime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -40,13 +41,13 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
 #[derive(Debug)]
 pub struct Say<'r> {
     id: String,
-    runtime: &'r Runtime,
+    runtime: &'r Mutex<Runtime>,
     message: Option<Box<dyn Block<'r> + 'r>>,
     next: Option<Box<dyn Block<'r> + 'r>>,
 }
 
 impl<'r> Say<'r> {
-    fn new(id: &str, runtime: &'r Runtime) -> Self {
+    fn new(id: &str, runtime: &'r Mutex<Runtime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -69,11 +70,11 @@ impl<'r> Block<'r> for Say<'r> {
 #[derive(Debug)]
 pub struct Variable<'r> {
     id: String,
-    runtime: &'r Runtime,
+    runtime: &'r Mutex<Runtime>,
 }
 
 impl<'r> Variable<'r> {
-    pub fn new(id: &str, runtime: &'r Runtime) -> Self {
+    pub fn new(id: &str, runtime: &'r Mutex<Runtime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -129,7 +130,7 @@ impl TryFrom<serde_json::Value> for BlockString {
 
 pub fn new_block<'r>(
     id: &str,
-    runtime: &'r Runtime,
+    runtime: &'r Mutex<Runtime>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block<'r> + 'r>> {
     let info = infos.get(id).unwrap();
@@ -194,7 +195,7 @@ pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dy
 
 pub fn get_block<'r>(
     id: &str,
-    runtime: &'r Runtime,
+    runtime: &'r Mutex<Runtime>,
     info: &savefile::Block,
 ) -> Result<Box<dyn Block<'r> + 'r>> {
     Ok(match info.opcode.as_str() {

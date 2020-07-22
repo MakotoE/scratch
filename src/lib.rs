@@ -8,6 +8,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
+use std::sync::Mutex;
 
 error_chain::error_chain! {
     types {
@@ -43,7 +44,7 @@ struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
-    runtime: Option<block::Runtime>,
+    runtime: Option<Mutex<block::Runtime>>,
 }
 
 enum Msg {
@@ -83,9 +84,9 @@ impl Component for Page {
                     .unwrap()
                     .dyn_into()
                     .unwrap();
-                self.runtime = Some(block::Runtime { canvas: ctx });
+                self.runtime = Some(Mutex::new(block::Runtime { canvas: ctx }));
                 let sprite = sprite::Sprite::new(
-                    self.runtime.as_ref().unwrap(),
+                    &self.runtime.as_ref().unwrap(),
                     &savefile.targets[1].blocks,
                 );
                 info!("{:?}", sprite);

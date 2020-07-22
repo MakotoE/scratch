@@ -1,6 +1,7 @@
 use super::*;
 use block::{new_block, Block, Runtime};
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 #[derive(Debug)]
 pub struct Sprite<'r> {
@@ -9,7 +10,7 @@ pub struct Sprite<'r> {
 
 impl<'r> Sprite<'r> {
     pub fn new(
-        runtime: &'r Runtime,
+        runtime: &'r Mutex<Runtime>,
         block_infos: &HashMap<String, savefile::Block>,
     ) -> Result<Self> {
         let mut threads: Vec<Thread> = Vec::new();
@@ -36,12 +37,12 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 
 #[derive(Debug)]
 pub struct Thread<'r> {
-    runtime: &'r Runtime,
+    runtime: &'r Mutex<Runtime>,
     hat: Box<dyn Block<'r> + 'r>,
 }
 
 impl<'r> Thread<'r> {
-    pub fn new(runtime: &'r Runtime, hat: Box<dyn Block<'r> + 'r>) -> Self {
+    pub fn new(runtime: &'r Mutex<Runtime>, hat: Box<dyn Block<'r> + 'r>) -> Self {
         Self { runtime, hat }
     }
 }
