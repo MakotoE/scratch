@@ -13,10 +13,11 @@ pub trait BlockOrValue<'r>: std::fmt::Debug {
 pub trait Block<'r>: BlockOrValue<'r> {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>);
     fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>>;
+    fn execute(&mut self) -> Result<()>;
 }
 
 pub trait Value<'r>: BlockOrValue<'r> {
-
+    fn value(&mut self) -> Result<serde_json::Value>;
 }
 
 #[derive(Debug)]
@@ -54,6 +55,10 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
 
     fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
+    }
+
+    fn execute(&mut self) -> Result<()> {
+        unimplemented!()
     }
 }
 
@@ -96,6 +101,10 @@ impl<'r> Block<'r> for Say<'r> {
     fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
     }
+
+    fn execute(&mut self) -> Result<()> {
+        unimplemented!()
+    }
 }
 
 #[derive(Debug)]
@@ -117,6 +126,12 @@ impl<'r> BlockOrValue<'r> for Variable<'r> {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
+impl <'r> Value<'r> for Variable<'r> {
+    fn value(&mut self) -> Result<serde_json::Value> {
+        unimplemented!()
+    }
+}
+
 fn wrong_type_err(value: &serde_json::Value) -> Error {
     format!("value has wrong type: {:?}", value).into()
 }
@@ -128,6 +143,12 @@ pub struct Number {
 
 impl<'r> BlockOrValue<'r> for Number {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
+}
+
+impl <'r> Value<'r> for Number {
+    fn value(&mut self) -> Result<serde_json::Value> {
+        Ok(self.value.into())
+    }
 }
 
 impl TryFrom<serde_json::Value> for Number {
@@ -149,6 +170,12 @@ impl<'r> BlockOrValue<'r> for BlockString {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
+impl <'r> Value<'r> for BlockString {
+    fn value(&mut self) -> Result<serde_json::Value> {
+        Ok(self.value.clone().into())
+    }
+}
+
 impl TryFrom<serde_json::Value> for BlockString {
     type Error = Error;
 
@@ -165,7 +192,7 @@ pub fn new_block<'r>(
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
     let info = infos.get(id).unwrap();
-    let mut block = get_block(id, runtime, &info)?;
+    let block = get_block(id, runtime, &info)?;
     if let Some(next_id) = &info.next {
         block.borrow_mut().set_input("next", new_block(next_id, runtime, infos)?);
     }
@@ -189,27 +216,25 @@ pub fn new_block<'r>(
                     .chain_err(input_err_cb)?;
                 let js_value = value_info.get(1).chain_err(input_err_cb)?;
                 let value = new_value(value_type, js_value.clone())
-                    .map_err(|e| format!("block \"{}\": {}", id, e.to_string()))?
-                block.borrow_mut().set_arg(l, value);
+                    .map_err(|e| format!("block \"{}\": {}", id, e.to_string()))?;
+                block.borrow_mut().set_arg(k, value);
             }
             2 | 3 => {
                 let input_info = input_arr.get(1).chain_err(input_err_cb)?;
-                if input_info.is_string() {
-                    // block
-                    let id = input_info.as_str().chain_err(input_err_cb)?;
-                    let block = new_block(id, runtime, infos)?
-                    block.borrow_mut().set_input(k, block);
-                } else if input_info.is_array() {
-                    // variable
-                    let id = input_info
-                        .as_array()
-                        .and_then(|v| v.get(2))
-                        .and_then(|v| v.as_str())
-                        .chain_err(input_err_cb)?;
-                    let variable = Box::new(Variable::new(id, runtime));
-                    block.borrow_mut().set_arg(k, variable);
-                } else {
-                    return Err(input_err_cb());
+                match input_info {
+                    serde_json::Value::String(id) => {
+                        let new_block = new_block(id, runtime, infos)?;
+                        block.borrow_mut().set_input(k, new_block);
+                    }
+                    serde_json::Value::Array(arr) => {
+                        let id = arr
+                            .get(2)
+                            .and_then(|v| v.as_str())
+                            .chain_err(input_err_cb)?;
+                        let variable = Box::new(Variable::new(id, runtime));
+                        block.borrow_mut().set_arg(k, variable);
+                    }
+                    _ => return Err(input_err_cb()),
                 }
             }
             _ => return Err(format!("block \"{}\": invalid input_type {}", id, input_type).into()),
@@ -218,7 +243,7 @@ pub fn new_block<'r>(
     Ok(block)
 }
 
-pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Block<'r> + 'r>> {
+pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Value<'r> + 'r>> {
     Ok(match value_type {
         4 => Box::new(Number::try_from(value)?),
         10 => Box::new(BlockString::try_from(value)?),
