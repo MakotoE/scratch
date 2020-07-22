@@ -3,9 +3,11 @@ use super::*;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Mutex;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub trait Block<'r>: std::fmt::Debug {
-    fn set_input(&mut self, key: &str, block: Box<dyn Block<'r> + 'r>);
+    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>);
 }
 
 #[derive(Debug)]
@@ -17,7 +19,7 @@ pub struct Runtime {
 pub struct WhenFlagClicked<'r> {
     id: String,
     runtime: &'r Mutex<Runtime>,
-    next: Option<Box<dyn Block<'r> + 'r>>,
+    next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
 impl<'r> WhenFlagClicked<'r> {
@@ -31,7 +33,7 @@ impl<'r> WhenFlagClicked<'r> {
 }
 
 impl<'r> Block<'r> for WhenFlagClicked<'r> {
-    fn set_input(&mut self, key: &str, block: Box<dyn Block<'r> + 'r>) {
+    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
         if key == "next" {
             self.next = Some(block);
         }
@@ -42,8 +44,8 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
 pub struct Say<'r> {
     id: String,
     runtime: &'r Mutex<Runtime>,
-    message: Option<Box<dyn Block<'r> + 'r>>,
-    next: Option<Box<dyn Block<'r> + 'r>>,
+    message: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
+    next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
 impl<'r> Say<'r> {
@@ -58,7 +60,7 @@ impl<'r> Say<'r> {
 }
 
 impl<'r> Block<'r> for Say<'r> {
-    fn set_input(&mut self, key: &str, block: Box<dyn Block<'r> + 'r>) {
+    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
         match key {
             "next" => self.next = Some(block),
             "MESSAGE" => self.message = Some(block),
@@ -83,7 +85,7 @@ impl<'r> Variable<'r> {
 }
 
 impl<'r> Block<'r> for Variable<'r> {
-    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
 }
 
 fn wrong_type_err(value: &serde_json::Value) -> Error {
@@ -96,7 +98,7 @@ pub struct Number {
 }
 
 impl<'r> Block<'r> for Number {
-    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
 }
 
 impl TryFrom<serde_json::Value> for Number {
@@ -115,7 +117,7 @@ pub struct BlockString {
 }
 
 impl<'r> Block<'r> for BlockString {
-    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
 }
 
 impl TryFrom<serde_json::Value> for BlockString {
@@ -132,11 +134,11 @@ pub fn new_block<'r>(
     id: &str,
     runtime: &'r Mutex<Runtime>,
     infos: &HashMap<String, savefile::Block>,
-) -> Result<Box<dyn Block<'r> + 'r>> {
+) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
     let info = infos.get(id).unwrap();
     let mut block = get_block(id, runtime, &info)?;
     if let Some(next_id) = &info.next {
-        block.set_input("next", new_block(next_id, runtime, infos)?);
+        block.borrow_mut().set_input("next", new_block(next_id, runtime, infos)?);
     }
     for (k, input) in &info.inputs {
         let input_err_cb = || Error::from(format!("block \"{}\": invalid {}", id, k.as_str()));
@@ -173,22 +175,22 @@ pub fn new_block<'r>(
                         .and_then(|v| v.get(2))
                         .and_then(|v| v.as_str())
                         .chain_err(input_err_cb)?;
-                    Box::new(Variable::new(id, runtime))
+                    Rc::new(RefCell::new(Variable::new(id, runtime)))
                 } else {
                     return Err(input_err_cb());
                 }
             }
             _ => return Err(format!("block \"{}\": invalid input_type {}", id, input_type).into()),
         };
-        block.set_input(k, input_block);
+        block.borrow_mut().set_input(k, input_block);
     }
     Ok(block)
 }
 
-pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Block<'r> + 'r>> {
+pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
     Ok(match value_type {
-        4 => Box::new(Number::try_from(value)?),
-        10 => Box::new(BlockString::try_from(value)?),
+        4 => Rc::new(RefCell::new(Number::try_from(value)?)),
+        10 => Rc::new(RefCell::new(BlockString::try_from(value)?)),
         _ => return Err(format!("value_type {} does not exist", value_type).into()),
     })
 }
@@ -197,10 +199,10 @@ pub fn get_block<'r>(
     id: &str,
     runtime: &'r Mutex<Runtime>,
     info: &savefile::Block,
-) -> Result<Box<dyn Block<'r> + 'r>> {
+) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
     Ok(match info.opcode.as_str() {
-        "event_whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
-        "looks_say" => Box::new(Say::new(id, runtime)),
+        "event_whenflagclicked" => Rc::new(RefCell::new(WhenFlagClicked::new(id, runtime))),
+        "looks_say" => Rc::new(RefCell::new(Say::new(id, runtime))),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }
