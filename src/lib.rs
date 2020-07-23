@@ -3,6 +3,7 @@ pub mod savefile;
 pub mod sprite;
 
 use crate::savefile::SaveFile;
+#[allow(unused_imports)]
 use log::info;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
@@ -124,14 +125,5 @@ impl Component for Page {
     }
 
     fn rendered(&mut self, _: bool) {
-        let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
-        let ctx: web_sys::CanvasRenderingContext2d = canvas
-            .get_context("2d")
-            .unwrap()
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-        js_sys::Reflect::set(&ctx, &"font".into(), &"20px sans-serif".into()).unwrap();
-        ctx.fill_text("Hello world", 10.0, 50.0).unwrap();
     }
 }

@@ -5,7 +5,8 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use std::sync::Mutex;
-use web_sys::console::info;
+#[allow(unused_imports)]
+use log::info;
 
 pub trait BlockOrValue<'r>: std::fmt::Debug {
     fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>);
@@ -18,7 +19,7 @@ pub trait Block<'r>: BlockOrValue<'r> {
 }
 
 pub trait Value<'r>: BlockOrValue<'r> {
-    fn value(&mut self) -> Result<serde_json::Value>;
+    fn value(&self) -> Result<serde_json::Value>;
 }
 
 #[derive(Debug)]
@@ -104,7 +105,12 @@ impl<'r> Block<'r> for Say<'r> {
     }
 
     fn execute(&mut self) -> Result<()> {
-        info!("say");
+        if let Some(value) = &self.message {
+            let ctx = &self.runtime.lock().unwrap().canvas;
+            js_sys::Reflect::set(&ctx, &"font".into(), &"20px sans-serif".into()).unwrap();
+            let message = value.value()?;
+            ctx.fill_text(message.as_str().ok_or_else(|| Error::from("invalid type"))?, 10.0, 50.0).unwrap();
+        }
         Ok(())
     }
 }
@@ -129,7 +135,7 @@ impl<'r> BlockOrValue<'r> for Variable<'r> {
 }
 
 impl<'r> Value<'r> for Variable<'r> {
-    fn value(&mut self) -> Result<serde_json::Value> {
+    fn value(&self) -> Result<serde_json::Value> {
         unimplemented!()
     }
 }
@@ -148,7 +154,7 @@ impl<'r> BlockOrValue<'r> for Number {
 }
 
 impl<'r> Value<'r> for Number {
-    fn value(&mut self) -> Result<serde_json::Value> {
+    fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.into())
     }
 }
@@ -158,7 +164,7 @@ impl TryFrom<serde_json::Value> for Number {
 
     fn try_from(v: serde_json::Value) -> Result<Self> {
         Ok(Self {
-            value: v.as_f64().chain_err(|| wrong_type_err(&v))?,
+            value: v.as_f64().ok_or_else(|| wrong_type_err(&v))?,
         })
     }
 }
@@ -173,7 +179,7 @@ impl<'r> BlockOrValue<'r> for BlockString {
 }
 
 impl<'r> Value<'r> for BlockString {
-    fn value(&mut self) -> Result<serde_json::Value> {
+    fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.clone().into())
     }
 }
@@ -183,7 +189,7 @@ impl TryFrom<serde_json::Value> for BlockString {
 
     fn try_from(v: serde_json::Value) -> Result<Self> {
         Ok(Self {
-            value: v.as_str().chain_err(|| wrong_type_err(&v))?.to_string(),
+            value: v.as_str().ok_or_else(|| wrong_type_err(&v))?.to_string(),
         })
     }
 }
@@ -202,29 +208,29 @@ pub fn new_block<'r>(
     }
     for (k, input) in &info.inputs {
         let input_err_cb = || Error::from(format!("block \"{}\": invalid {}", id, k.as_str()));
-        let input_arr = input.as_array().chain_err(input_err_cb)?;
+        let input_arr = input.as_array().ok_or_else(input_err_cb)?;
         let input_type = input_arr
             .get(0)
             .and_then(|v| v.as_i64())
-            .chain_err(input_err_cb)?;
+            .ok_or_else(input_err_cb)?;
         match input_type {
             1 => {
                 // value
                 let value_info = input_arr
                     .get(1)
                     .and_then(|v| v.as_array())
-                    .chain_err(input_err_cb)?;
+                    .ok_or_else(input_err_cb)?;
                 let value_type = value_info
                     .get(0)
                     .and_then(|v| v.as_i64())
-                    .chain_err(input_err_cb)?;
-                let js_value = value_info.get(1).chain_err(input_err_cb)?;
+                    .ok_or_else(input_err_cb)?;
+                let js_value = value_info.get(1).ok_or_else(input_err_cb)?;
                 let value = new_value(value_type, js_value.clone())
                     .map_err(|e| format!("block \"{}\": {}", id, e.to_string()))?;
                 block.borrow_mut().set_arg(k, value);
             }
             2 | 3 => {
-                let input_info = input_arr.get(1).chain_err(input_err_cb)?;
+                let input_info = input_arr.get(1).ok_or_else(input_err_cb)?;
                 match input_info {
                     serde_json::Value::String(id) => {
                         let new_block = new_block(id, runtime, infos)?;
@@ -234,7 +240,7 @@ pub fn new_block<'r>(
                         let id = arr
                             .get(2)
                             .and_then(|v| v.as_str())
-                            .chain_err(input_err_cb)?;
+                            .ok_or_else(input_err_cb)?;
                         let variable = Box::new(Variable::new(id, runtime));
                         block.borrow_mut().set_arg(k, variable);
                     }
