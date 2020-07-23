@@ -2,7 +2,7 @@ pub mod block;
 pub mod savefile;
 pub mod sprite;
 
-use crate::savefile::SaveFile;
+use savefile::SaveFile;
 #[allow(unused_imports)]
 use log::info;
 use std::sync::Mutex;
@@ -124,6 +124,5 @@ impl Component for Page {
         }
     }
 
-    fn rendered(&mut self, _: bool) {
-    }
+    fn rendered(&mut self, _: bool) {}
 }

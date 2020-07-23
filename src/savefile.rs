@@ -19,6 +19,10 @@ pub struct Target {
     pub name: String,
     pub variables: HashMap<String, (String, f64)>,
     pub blocks: HashMap<String, Block>,
+    pub costumes: Vec<Costume>,
+    pub x: f64,
+    pub y: f64,
+    pub size: f64,
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
@@ -29,6 +33,15 @@ pub struct Block {
     pub inputs: HashMap<String, serde_json::Value>,
     pub fields: HashMap<String, Vec<String>>,
     pub top_level: bool,
+}
+
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Costume {
+    pub name: String,
+    pub md5ext: String,
+    pub rotation_center_x: f64,
+    pub rotation_center_y: f64,
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]

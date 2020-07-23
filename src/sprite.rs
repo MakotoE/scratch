@@ -169,7 +169,7 @@ mod tests {
             }
             {
                 let block_0 = Rc::new(RefCell::new(LastBlock {}));
-                let block_1 = Rc::new(RefCell::new(DummyBlock{next: block_0}));
+                let block_1 = Rc::new(RefCell::new(DummyBlock { next: block_0 }));
                 let mut iter = ThreadIterator::new(block_1);
                 assert!(iter.next().is_some());
                 assert!(iter.next().is_some());

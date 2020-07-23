@@ -1,12 +1,12 @@
 use super::*;
 
+#[allow(unused_imports)]
+use log::info;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use std::sync::Mutex;
-#[allow(unused_imports)]
-use log::info;
 
 pub trait BlockOrValue<'r>: std::fmt::Debug {
     fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>);
@@ -108,8 +108,9 @@ impl<'r> Block<'r> for Say<'r> {
         if let Some(value) = &self.message {
             let ctx = &self.runtime.lock().unwrap().canvas;
             js_sys::Reflect::set(&ctx, &"font".into(), &"20px sans-serif".into()).unwrap();
-            let message = value.value()?;
-            ctx.fill_text(message.as_str().ok_or_else(|| Error::from("invalid type"))?, 10.0, 50.0).unwrap();
+            let v = value.value()?;
+            let message = v.as_str().ok_or_else(|| Error::from("invalid type"))?;
+            ctx.fill_text(message, 10.0, 50.0).unwrap();
         }
         Ok(())
     }
