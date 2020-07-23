@@ -28,6 +28,12 @@ impl std::convert::From<wasm_bindgen::JsValue> for Error {
     }
 }
 
+impl<T> std::convert::From<std::sync::PoisonError<T>> for Error {
+    fn from(e: std::sync::PoisonError<T>) -> Self {
+        e.to_string().into()
+    }
+}
+
 impl std::convert::Into<wasm_bindgen::JsValue> for Error {
     fn into(self) -> JsValue {
         self.to_string().into()
@@ -86,10 +92,11 @@ impl Component for Page {
                     .unwrap()
                     .dyn_into()
                     .unwrap();
-                self.runtime = Some(Mutex::new(block::Runtime { canvas: ctx }));
+                ctx.scale(2.0, 2.0);
+                self.runtime = Some(Mutex::new(block::Runtime::new(ctx)));
                 let sprite = sprite::Sprite::new(
                     &self.runtime.as_ref().unwrap(),
-                    &savefile.targets[1].blocks,
+                    &savefile.targets[1],
                 );
                 sprite.unwrap().execute();
             }
@@ -115,8 +122,8 @@ impl Component for Page {
             <div>
                 <canvas
                     ref={self.canvas_ref.clone()}
-                    width="400"
-                    height="300"
+                    width="600"
+                    height="450"
                     style="border: 1px solid black"
                 /><br />
                 <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} />

@@ -13,13 +13,19 @@ pub struct Sprite<'r> {
 impl<'r> Sprite<'r> {
     pub fn new(
         runtime: &'r Mutex<Runtime>,
-        block_infos: &HashMap<String, savefile::Block>,
+        target: &savefile::Target,
     ) -> Result<Self> {
+        {
+            let mut r = runtime.lock()?;
+            r.x = target.x;
+            r.y = target.y;
+        }
+
         let mut threads: Vec<Thread> = Vec::new();
-        for hat_id in find_hats(block_infos) {
+        for hat_id in find_hats(&target.blocks) {
             threads.push(Thread::new(
                 runtime,
-                new_block(hat_id, runtime, block_infos)?,
+                new_block(hat_id, runtime, &target.blocks)?,
             ));
         }
         Ok(Self { threads })

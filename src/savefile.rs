@@ -20,8 +20,11 @@ pub struct Target {
     pub variables: HashMap<String, (String, f64)>,
     pub blocks: HashMap<String, Block>,
     pub costumes: Vec<Costume>,
+    #[serde(default)]
     pub x: f64,
+    #[serde(default)]
     pub y: f64,
+    #[serde(default)]
     pub size: f64,
 }
 

@@ -25,6 +25,24 @@ pub trait Value<'r>: BlockOrValue<'r> {
 #[derive(Debug)]
 pub struct Runtime {
     pub canvas: web_sys::CanvasRenderingContext2d,
+    pub x: f64,
+    pub y: f64,
+}
+
+impl Runtime {
+    pub fn new(canvas: web_sys::CanvasRenderingContext2d) -> Self {
+        Self{
+            canvas,
+            x: 0.0,
+            y: 0.0,
+        }
+    }
+
+    pub fn say(&self, s: &str) -> Result<()> {
+        js_sys::Reflect::set(&self.canvas, &"font".into(), &"10px sans-serif".into())?;
+        self.canvas.fill_text(s, 150.0 + self.x, 150.0 + self.y)?;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -106,11 +124,9 @@ impl<'r> Block<'r> for Say<'r> {
 
     fn execute(&mut self) -> Result<()> {
         if let Some(value) = &self.message {
-            let ctx = &self.runtime.lock().unwrap().canvas;
-            js_sys::Reflect::set(&ctx, &"font".into(), &"20px sans-serif".into()).unwrap();
             let v = value.value()?;
             let message = v.as_str().ok_or_else(|| Error::from("invalid type"))?;
-            ctx.fill_text(message, 10.0, 50.0).unwrap();
+            self.runtime.lock()?.say(message);
         }
         Ok(())
     }
