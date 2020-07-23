@@ -1,6 +1,5 @@
 use super::*;
-use crate::block::{BlockOrValue, Value};
-use block::{new_block, Block, Runtime};
+use block::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -29,6 +28,13 @@ impl<'r> Sprite<'r> {
     pub fn threads(&self) -> &[Thread<'r>] {
         self.threads.as_slice()
     }
+
+    pub fn execute(&self) -> Result<()> {
+        for t in &self.threads {
+            t.execute()?;
+        }
+        Ok(())
+    }
 }
 
 fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
@@ -51,6 +57,14 @@ pub struct Thread<'r> {
 impl<'r> Thread<'r> {
     pub fn new(runtime: &'r Mutex<Runtime>, hat: Rc<RefCell<dyn Block<'r> + 'r>>) -> Self {
         Self { runtime, hat }
+    }
+
+    pub fn execute(&self) -> Result<()> {
+        for b in self.into_iter() {
+            b.borrow_mut().execute()?;
+        }
+
+        Ok(())
     }
 }
 

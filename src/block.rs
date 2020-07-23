@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use std::sync::Mutex;
+use web_sys::console::info;
 
 pub trait BlockOrValue<'r>: std::fmt::Debug {
     fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>);
@@ -58,7 +59,7 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
     }
 
     fn execute(&mut self) -> Result<()> {
-        unimplemented!()
+        Ok(())
     }
 }
 
@@ -103,7 +104,8 @@ impl<'r> Block<'r> for Say<'r> {
     }
 
     fn execute(&mut self) -> Result<()> {
-        unimplemented!()
+        info!("say");
+        Ok(())
     }
 }
 

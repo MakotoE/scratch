@@ -35,6 +35,7 @@ impl std::convert::Into<wasm_bindgen::JsValue> for Error {
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<()> {
+    console_error_panic_hook::set_once();
     wasm_logger::init(wasm_logger::Config::default());
     App::<Page>::new().mount_to_body();
     Ok(())
@@ -89,7 +90,7 @@ impl Component for Page {
                     &self.runtime.as_ref().unwrap(),
                     &savefile.targets[1].blocks,
                 );
-                info!("{:?}", sprite);
+                sprite.unwrap().execute();
             }
         }
         true
