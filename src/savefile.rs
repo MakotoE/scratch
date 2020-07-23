@@ -52,20 +52,21 @@ impl SaveFile {
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
-    fn test() {
-        let dir = "/home/makoto/Downloads/Scratch Project.sb3";
+    fn savefile() {
+        let dir = std::path::Path::new(file!())
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("test_saves")
+            .join("say.sb3");
         let file = std::fs::File::open(dir).unwrap();
         let savefile = SaveFile::parse(&file).unwrap();
         let target = &savefile.targets[1];
         assert_eq!(target.name, "Sprite1");
-
-        let sprite = sprite::Sprite::new(&block::Runtime {}, &target.blocks);
-        println!(
-            "{}",
-            format!("{:#?}", sprite.unwrap()).replace("    ", "  ")
-        );
     }
 }

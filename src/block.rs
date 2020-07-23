@@ -1,10 +1,10 @@
 use super::*;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::sync::Mutex;
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::sync::Mutex;
 
 pub trait BlockOrValue<'r>: std::fmt::Debug {
     fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>);
@@ -12,7 +12,7 @@ pub trait BlockOrValue<'r>: std::fmt::Debug {
 
 pub trait Block<'r>: BlockOrValue<'r> {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>);
-    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>>;
+    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>>;
     fn execute(&mut self) -> Result<()>;
 }
 
@@ -53,7 +53,7 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
         }
     }
 
-    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
     }
 
@@ -98,7 +98,7 @@ impl<'r> Block<'r> for Say<'r> {
         };
     }
 
-    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
     }
 
@@ -126,7 +126,7 @@ impl<'r> BlockOrValue<'r> for Variable<'r> {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
-impl <'r> Value<'r> for Variable<'r> {
+impl<'r> Value<'r> for Variable<'r> {
     fn value(&mut self) -> Result<serde_json::Value> {
         unimplemented!()
     }
@@ -145,7 +145,7 @@ impl<'r> BlockOrValue<'r> for Number {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
-impl <'r> Value<'r> for Number {
+impl<'r> Value<'r> for Number {
     fn value(&mut self) -> Result<serde_json::Value> {
         Ok(self.value.into())
     }
@@ -170,7 +170,7 @@ impl<'r> BlockOrValue<'r> for BlockString {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
 }
 
-impl <'r> Value<'r> for BlockString {
+impl<'r> Value<'r> for BlockString {
     fn value(&mut self) -> Result<serde_json::Value> {
         Ok(self.value.clone().into())
     }
@@ -194,7 +194,9 @@ pub fn new_block<'r>(
     let info = infos.get(id).unwrap();
     let block = get_block(id, runtime, &info)?;
     if let Some(next_id) = &info.next {
-        block.borrow_mut().set_input("next", new_block(next_id, runtime, infos)?);
+        block
+            .borrow_mut()
+            .set_input("next", new_block(next_id, runtime, infos)?);
     }
     for (k, input) in &info.inputs {
         let input_err_cb = || Error::from(format!("block \"{}\": invalid {}", id, k.as_str()));

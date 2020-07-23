@@ -1,9 +1,10 @@
 use super::*;
+use crate::block::{BlockOrValue, Value};
 use block::{new_block, Block, Runtime};
-use std::collections::HashMap;
-use std::sync::Mutex;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::Mutex;
 
 #[derive(Debug)]
 pub struct Sprite<'r> {
@@ -23,6 +24,10 @@ impl<'r> Sprite<'r> {
             ));
         }
         Ok(Self { threads })
+    }
+
+    pub fn threads(&self) -> &[Thread<'r>] {
+        self.threads.as_slice()
     }
 }
 
@@ -46,5 +51,116 @@ pub struct Thread<'r> {
 impl<'r> Thread<'r> {
     pub fn new(runtime: &'r Mutex<Runtime>, hat: Rc<RefCell<dyn Block<'r> + 'r>>) -> Self {
         Self { runtime, hat }
+    }
+}
+
+impl<'a, 'r> IntoIterator for &'a Thread<'r> {
+    type Item = Rc<RefCell<dyn Block<'r> + 'r>>;
+    type IntoIter = ThreadIterator<'r>;
+
+    fn into_iter(self) -> ThreadIterator<'r> {
+        ThreadIterator::new(self.hat.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct ThreadIterator<'r> {
+    curr: Rc<RefCell<dyn Block<'r> + 'r>>,
+}
+
+impl<'r> ThreadIterator<'r> {
+    fn new(hat: Rc<RefCell<dyn Block<'r> + 'r>>) -> Self {
+        Self {
+            curr: Rc::new(RefCell::new(DummyBlock { next: hat })),
+        }
+    }
+}
+
+impl<'r> Iterator for ThreadIterator<'r> {
+    type Item = Rc<RefCell<dyn Block<'r> + 'r>>;
+
+    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+        let next = self.curr.borrow().next();
+        match next {
+            Some(b) => {
+                self.curr = b.clone();
+                Some(b)
+            }
+            None => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DummyBlock<'r> {
+    next: Rc<RefCell<dyn Block<'r> + 'r>>,
+}
+
+impl<'r> BlockOrValue<'r> for DummyBlock<'r> {
+    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {
+        unreachable!()
+    }
+}
+
+impl<'r> Block<'r> for DummyBlock<'r> {
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {
+        unreachable!()
+    }
+
+    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+        Some(self.next.clone())
+    }
+
+    fn execute(&mut self) -> Result<()> {
+        unreachable!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    mod thread_iterator {
+        use super::*;
+
+        #[derive(Debug)]
+        struct LastBlock {}
+
+        impl<'r> BlockOrValue<'r> for LastBlock {
+            fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {
+                unimplemented!()
+            }
+        }
+
+        impl<'r> Block<'r> for LastBlock {
+            fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {
+                unimplemented!()
+            }
+
+            fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+                None
+            }
+
+            fn execute(&mut self) -> Result<()> {
+                unimplemented!()
+            }
+        }
+
+        #[test]
+        fn into_iter() {
+            {
+                let block_0 = Rc::new(RefCell::new(LastBlock {}));
+                let mut iter = ThreadIterator::new(block_0);
+                assert!(iter.next().is_some());
+                assert!(iter.next().is_none());
+            }
+            {
+                let block_0 = Rc::new(RefCell::new(LastBlock {}));
+                let block_1 = Rc::new(RefCell::new(DummyBlock{next: block_0}));
+                let mut iter = ThreadIterator::new(block_1);
+                assert!(iter.next().is_some());
+                assert!(iter.next().is_some());
+                assert!(iter.next().is_none());
+            }
+        }
     }
 }

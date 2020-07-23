@@ -4,11 +4,11 @@ pub mod sprite;
 
 use crate::savefile::SaveFile;
 use log::info;
+use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
-use std::sync::Mutex;
 
 error_chain::error_chain! {
     types {
@@ -130,7 +130,7 @@ impl Component for Page {
             .unwrap()
             .dyn_into()
             .unwrap();
-        js_sys::Reflect::set(&ctx, &"font".into(), &"20px sans-serif".into());
+        js_sys::Reflect::set(&ctx, &"font".into(), &"20px sans-serif".into()).unwrap();
         ctx.fill_text("Hello world", 10.0, 50.0).unwrap();
     }
 }
