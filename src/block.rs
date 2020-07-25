@@ -1,7 +1,5 @@
 use super::*;
 
-#[allow(unused_imports)]
-use log::info;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -23,37 +21,14 @@ pub trait Value<'r>: BlockOrValue<'r> {
 }
 
 #[derive(Debug)]
-pub struct Runtime {
-    pub canvas: web_sys::CanvasRenderingContext2d,
-    pub x: f64,
-    pub y: f64,
-}
-
-impl Runtime {
-    pub fn new(canvas: web_sys::CanvasRenderingContext2d) -> Self {
-        Self{
-            canvas,
-            x: 0.0,
-            y: 0.0,
-        }
-    }
-
-    pub fn say(&self, s: &str) -> Result<()> {
-        js_sys::Reflect::set(&self.canvas, &"font".into(), &"10px sans-serif".into())?;
-        self.canvas.fill_text(s, 150.0 + self.x, 150.0 + self.y)?;
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
 pub struct WhenFlagClicked<'r> {
     id: String,
-    runtime: &'r Mutex<Runtime>,
+    runtime: &'r Mutex<runtime::SpriteRuntime>,
     next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
 impl<'r> WhenFlagClicked<'r> {
-    fn new(id: &str, runtime: &'r Mutex<Runtime>) -> Self {
+    fn new(id: &str, runtime: &'r Mutex<runtime::SpriteRuntime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -85,13 +60,13 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
 #[derive(Debug)]
 pub struct Say<'r> {
     id: String,
-    runtime: &'r Mutex<Runtime>,
+    runtime: &'r Mutex<runtime::SpriteRuntime>,
     message: Option<Box<dyn Value<'r> + 'r>>,
     next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
 impl<'r> Say<'r> {
-    fn new(id: &str, runtime: &'r Mutex<Runtime>) -> Self {
+    fn new(id: &str, runtime: &'r Mutex<runtime::SpriteRuntime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -135,11 +110,11 @@ impl<'r> Block<'r> for Say<'r> {
 #[derive(Debug)]
 pub struct Variable<'r> {
     id: String,
-    runtime: &'r Mutex<Runtime>,
+    runtime: &'r Mutex<runtime::SpriteRuntime>,
 }
 
 impl<'r> Variable<'r> {
-    pub fn new(id: &str, runtime: &'r Mutex<Runtime>) -> Self {
+    pub fn new(id: &str, runtime: &'r Mutex<runtime::SpriteRuntime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -213,7 +188,7 @@ impl TryFrom<serde_json::Value> for BlockString {
 
 pub fn new_block<'r>(
     id: &str,
-    runtime: &'r Mutex<Runtime>,
+    runtime: &'r Mutex<runtime::SpriteRuntime>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
     let info = infos.get(id).unwrap();
@@ -280,7 +255,7 @@ pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dy
 
 pub fn get_block<'r>(
     id: &str,
-    runtime: &'r Mutex<Runtime>,
+    runtime: &'r Mutex<runtime::SpriteRuntime>,
     info: &savefile::Block,
 ) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
     Ok(match info.opcode.as_str() {

@@ -1,10 +1,9 @@
+pub mod runtime;
 pub mod block;
 pub mod savefile;
 pub mod sprite;
 
 use savefile::SaveFile;
-#[allow(unused_imports)]
-use log::info;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -52,7 +51,7 @@ struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
-    runtime: Option<Mutex<block::Runtime>>,
+    runtime: Option<Mutex<runtime::SpriteRuntime>>,
 }
 
 enum Msg {
@@ -93,7 +92,7 @@ impl Component for Page {
                     .dyn_into()
                     .unwrap();
                 ctx.scale(2.0, 2.0);
-                self.runtime = Some(Mutex::new(block::Runtime::new(ctx)));
+                self.runtime = Some(Mutex::new(runtime::SpriteRuntime::new(ctx)));
                 let sprite = sprite::Sprite::new(
                     &self.runtime.as_ref().unwrap(),
                     &savefile.targets[1],
