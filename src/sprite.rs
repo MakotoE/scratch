@@ -61,7 +61,10 @@ pub struct Thread<'r> {
 }
 
 impl<'r> Thread<'r> {
-    pub fn new(runtime: &'r Mutex<runtime::SpriteRuntime>, hat: Rc<RefCell<dyn Block<'r> + 'r>>) -> Self {
+    pub fn new(
+        runtime: &'r Mutex<runtime::SpriteRuntime>,
+        hat: Rc<RefCell<dyn Block<'r> + 'r>>,
+    ) -> Self {
         Self { runtime, hat }
     }
 
@@ -120,6 +123,8 @@ impl<'r> BlockOrValue<'r> for DummyBlock<'r> {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {
         unreachable!()
     }
+
+    fn set_field(&mut self, _: &str, _: &str) {}
 }
 
 impl<'r> Block<'r> for DummyBlock<'r> {
@@ -149,6 +154,8 @@ mod tests {
             fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {
                 unimplemented!()
             }
+
+            fn set_field(&mut self, _: &str, _: &str) {}
         }
 
         impl<'r> Block<'r> for LastBlock {

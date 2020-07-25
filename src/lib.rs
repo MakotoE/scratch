@@ -1,5 +1,5 @@
-pub mod runtime;
 pub mod block;
+pub mod runtime;
 pub mod savefile;
 pub mod sprite;
 
@@ -93,11 +93,9 @@ impl Component for Page {
                     .unwrap();
                 ctx.scale(2.0, 2.0);
                 self.runtime = Some(Mutex::new(runtime::SpriteRuntime::new(ctx)));
-                let sprite = sprite::Sprite::new(
-                    &self.runtime.as_ref().unwrap(),
-                    &savefile.targets[1],
-                );
-                sprite.unwrap().execute();
+                let sprite =
+                    sprite::Sprite::new(&self.runtime.as_ref().unwrap(), &savefile.targets[1]);
+                sprite.unwrap().execute().unwrap();
             }
         }
         true
