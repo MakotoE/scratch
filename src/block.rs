@@ -243,7 +243,6 @@ pub struct BlockString {
 
 impl<'r> BlockOrValue<'r> for BlockString {
     fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
-
     fn set_field(&mut self, _: &str, _: &str) {}
 }
 
@@ -260,6 +259,38 @@ impl TryFrom<serde_json::Value> for BlockString {
         Ok(Self {
             value: v.as_str().ok_or_else(|| wrong_type_err(&v))?.to_string(),
         })
+    }
+}
+
+#[derive(Debug)]
+pub struct Equals<'r> {
+    operand1: Option<Box<dyn Value<'r> + 'r>>,
+    operand2: Option<Box<dyn Value<'r> + 'r>>,
+}
+
+impl<'r> BlockOrValue<'r> for Equals<'r> {
+    fn set_arg(&mut self, key: &str, value: Box<dyn Value<'r> + 'r>) {
+        match key {
+            "OPERAND1" => self.operand1 = Some(value),
+            "OPERAND2" => self.operand2 = Some(value),
+            _ => {},
+        }
+    }
+
+    fn set_field(&mut self, _: &str, _: &str) {}
+}
+
+impl<'r> Value<'r> for Equals<'r> {
+    fn value(&self) -> Result<serde_json::Value> {
+        let a = match &self.operand1 {
+            Some(a) => a.value()?,
+            None => return Err("operand1 is None".into()),
+        };
+        let b = match &self.operand2 {
+            Some(b) => b.value()?,
+            None => return Err("operand2 is None".into()),
+        };
+        Ok((a == b).into())
     }
 }
 
