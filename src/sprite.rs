@@ -119,25 +119,12 @@ pub struct DummyBlock<'r> {
     next: Rc<RefCell<dyn Block<'r> + 'r>>,
 }
 
-impl<'r> BlockOrValue<'r> for DummyBlock<'r> {
-    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {
-        unreachable!()
-    }
-
-    fn set_field(&mut self, _: &str, _: &str) {}
-}
-
 impl<'r> Block<'r> for DummyBlock<'r> {
-    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {
-        unreachable!()
-    }
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
+    fn set_field(&mut self, _: &str, _: &str) {}
 
     fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         Some(self.next.clone())
-    }
-
-    fn execute(&mut self) -> Result<()> {
-        unreachable!()
     }
 }
 
@@ -150,25 +137,12 @@ mod tests {
         #[derive(Debug)]
         struct LastBlock {}
 
-        impl<'r> BlockOrValue<'r> for LastBlock {
-            fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {
-                unimplemented!()
-            }
-
-            fn set_field(&mut self, _: &str, _: &str) {}
-        }
-
         impl<'r> Block<'r> for LastBlock {
-            fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {
-                unimplemented!()
-            }
+            fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
+            fn set_field(&mut self, _: &str, _: &str) {}
 
             fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
                 None
-            }
-
-            fn execute(&mut self) -> Result<()> {
-                unimplemented!()
             }
         }
 

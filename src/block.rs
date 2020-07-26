@@ -7,19 +7,21 @@ use std::convert::TryFrom;
 use std::rc::Rc;
 use std::sync::Mutex;
 
-pub trait BlockOrValue<'r>: std::fmt::Debug {
-    fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>);
-    fn set_field(&mut self, key: &str, value_id: &str);
-}
-
-pub trait Block<'r>: BlockOrValue<'r> {
+pub trait Block<'r>: std::fmt::Debug {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>);
-    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>>;
-    fn execute(&mut self) -> Result<()>;
-}
+    fn set_field(&mut self, key: &str, value_id: &str);
 
-pub trait Value<'r>: BlockOrValue<'r> {
-    fn value(&self) -> Result<serde_json::Value>;
+    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+        None
+    }
+
+    fn value(&self) -> Result<serde_json::Value> {
+        Err("this block does not return a value".into())
+    }
+
+    fn execute(&mut self) -> Result<()> {
+        Err("this block cannot be executed".into())
+    }
 }
 
 #[derive(Debug)]
@@ -39,17 +41,14 @@ impl<'r> WhenFlagClicked<'r> {
     }
 }
 
-impl<'r> BlockOrValue<'r> for WhenFlagClicked<'r> {
-    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
-    fn set_field(&mut self, _: &str, _: &str) {}
-}
-
 impl<'r> Block<'r> for WhenFlagClicked<'r> {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
         if key == "next" {
             self.next = Some(block);
         }
     }
+
+    fn set_field(&mut self, _: &str, _: &str) {}
 
     fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
@@ -64,7 +63,7 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
 pub struct Say<'r> {
     id: String,
     runtime: &'r Mutex<SpriteRuntime>,
-    message: Option<Box<dyn Value<'r> + 'r>>,
+    message: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
     next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
@@ -79,22 +78,16 @@ impl<'r> Say<'r> {
     }
 }
 
-impl<'r> BlockOrValue<'r> for Say<'r> {
-    fn set_arg(&mut self, key: &str, block: Box<dyn Value<'r> + 'r>) {
-        if key == "MESSAGE" {
-            self.message = Some(block);
+impl<'r> Block<'r> for Say<'r> {
+    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
+        match key {
+            "next" => self.next = Some(block),
+            "MESSAGE" => self.message = Some(block),
+            _ => {},
         }
     }
 
     fn set_field(&mut self, _: &str, _: &str) {}
-}
-
-impl<'r> Block<'r> for Say<'r> {
-    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
-        if key == "next" {
-            self.next = Some(block);
-        }
-    }
 
     fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
@@ -103,7 +96,7 @@ impl<'r> Block<'r> for Say<'r> {
     fn execute(&mut self) -> Result<()> {
         match &self.message {
             Some(value) => {
-                let v = value.value()?;
+                let v = value.borrow().value()?;
                 let message = v.as_str().ok_or_else(|| Error::from("invalid type"))?;
                 self.runtime.lock()?.say(message);
                 Ok(())
@@ -118,7 +111,7 @@ pub struct SetVariable<'r> {
     id: String,
     runtime: &'r Mutex<SpriteRuntime>,
     variable_id: Option<String>,
-    value: Option<Box<dyn Value<'r> + 'r>>,
+    value: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
     next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
@@ -134,24 +127,18 @@ impl<'r> SetVariable<'r> {
     }
 }
 
-impl<'r> BlockOrValue<'r> for SetVariable<'r> {
-    fn set_arg(&mut self, key: &str, value: Box<dyn Value<'r> + 'r>) {
-        if key == "VALUE" {
-            self.value = Some(value);
+impl<'r> Block<'r> for SetVariable<'r> {
+    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
+        match key {
+            "next" => self.next = Some(block),
+            "VALUE" => self.value = Some(block),
+            _ => {},
         }
     }
 
     fn set_field(&mut self, key: &str, value_id: &str) {
         if key == "VARIABLE" {
             self.variable_id = Some(value_id.to_string());
-        }
-    }
-}
-
-impl<'r> Block<'r> for SetVariable<'r> {
-    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
-        if key == "next" {
-            self.next = Some(block);
         }
     }
 
@@ -165,7 +152,7 @@ impl<'r> Block<'r> for SetVariable<'r> {
             None => return Err("variable_id is None".into()),
         };
         let value = match &self.value {
-            Some(v) => v.value()?,
+            Some(v) => v.borrow().value()?,
             None => return Err("value is None".into()),
         };
         self.runtime
@@ -191,12 +178,10 @@ impl<'r> Variable<'r> {
     }
 }
 
-impl<'r> BlockOrValue<'r> for Variable<'r> {
-    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
+impl<'r> Block<'r> for Variable<'r> {
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
     fn set_field(&mut self, _: &str, _: &str) {}
-}
 
-impl<'r> Value<'r> for Variable<'r> {
     fn value(&self) -> Result<serde_json::Value> {
         match self.runtime.lock()?.variables.get(&self.id) {
             Some(v) => Ok(v.clone()),
@@ -214,13 +199,10 @@ pub struct Number {
     value: f64,
 }
 
-impl<'r> BlockOrValue<'r> for Number {
-    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
-
+impl<'r> Block<'r> for Number {
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
     fn set_field(&mut self, _: &str, _: &str) {}
-}
 
-impl<'r> Value<'r> for Number {
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.into())
     }
@@ -241,12 +223,10 @@ pub struct BlockString {
     value: String,
 }
 
-impl<'r> BlockOrValue<'r> for BlockString {
-    fn set_arg(&mut self, _: &str, _: Box<dyn Value<'r> + 'r>) {}
+impl<'r> Block<'r> for BlockString {
+    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
     fn set_field(&mut self, _: &str, _: &str) {}
-}
 
-impl<'r> Value<'r> for BlockString {
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.clone().into())
     }
@@ -264,30 +244,28 @@ impl TryFrom<serde_json::Value> for BlockString {
 
 #[derive(Debug)]
 pub struct Equals<'r> {
-    operand1: Option<Box<dyn Value<'r> + 'r>>,
-    operand2: Option<Box<dyn Value<'r> + 'r>>,
+    operand1: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
+    operand2: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
 }
 
-impl<'r> BlockOrValue<'r> for Equals<'r> {
-    fn set_arg(&mut self, key: &str, value: Box<dyn Value<'r> + 'r>) {
+impl<'r> Block<'r> for Equals<'r> {
+    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
         match key {
-            "OPERAND1" => self.operand1 = Some(value),
-            "OPERAND2" => self.operand2 = Some(value),
+            "OPERAND1" => self.operand1 = Some(block),
+            "OPERAND2" => self.operand2 = Some(block),
             _ => {},
         }
     }
 
     fn set_field(&mut self, _: &str, _: &str) {}
-}
 
-impl<'r> Value<'r> for Equals<'r> {
     fn value(&self) -> Result<serde_json::Value> {
         let a = match &self.operand1 {
-            Some(a) => a.value()?,
+            Some(a) => a.borrow().value()?,
             None => return Err("operand1 is None".into()),
         };
         let b = match &self.operand2 {
-            Some(b) => b.value()?,
+            Some(b) => b.borrow().value()?,
             None => return Err("operand2 is None".into()),
         };
         Ok((a == b).into())
@@ -327,7 +305,7 @@ pub fn new_block<'r>(
                 let js_value = value_info.get(1).ok_or_else(input_err_cb)?;
                 let value = new_value(value_type, js_value.clone())
                     .map_err(|e| format!("block \"{}\": {}", block_id, e.to_string()))?;
-                block.borrow_mut().set_arg(k, value);
+                block.borrow_mut().set_input(k, value);
             }
             2 | 3 => {
                 let input_info = input_arr.get(1).ok_or_else(input_err_cb)?;
@@ -341,8 +319,8 @@ pub fn new_block<'r>(
                             .get(2)
                             .and_then(|v| v.as_str())
                             .ok_or_else(input_err_cb)?;
-                        let variable = Box::new(Variable::new(id, runtime));
-                        block.borrow_mut().set_arg(k, variable);
+                        let variable = Rc::new(RefCell::new(Variable::new(id, runtime)));
+                        block.borrow_mut().set_input(k, variable);
                     }
                     _ => return Err(input_err_cb()),
                 }
@@ -361,10 +339,10 @@ pub fn new_block<'r>(
     Ok(block)
 }
 
-pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Value<'r> + 'r>> {
+pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
     Ok(match value_type {
-        4 => Box::new(Number::try_from(value)?),
-        10 => Box::new(BlockString::try_from(value)?),
+        4 => Rc::new(RefCell::new(Number::try_from(value)?)),
+        10 => Rc::new(RefCell::new(BlockString::try_from(value)?)),
         _ => return Err(format!("value_type {} does not exist", value_type).into()),
     })
 }
