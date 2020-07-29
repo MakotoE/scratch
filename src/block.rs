@@ -11,8 +11,8 @@ pub trait Block<'r>: std::fmt::Debug {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>);
     fn set_field(&mut self, key: &str, value_id: String);
 
-    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
-        None
+    fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+        Ok(None)
     }
 
     fn value(&self) -> Result<serde_json::Value> {
@@ -50,8 +50,8 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
 
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
-        self.next.clone()
+    fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+        Ok(self.next.clone())
     }
 
     fn execute(&mut self) -> Result<()> {
@@ -89,8 +89,8 @@ impl<'r> Block<'r> for Say<'r> {
 
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
-        self.next.clone()
+    fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+        Ok(self.next.clone())
     }
 
     fn execute(&mut self) -> Result<()> {
@@ -142,8 +142,8 @@ impl<'r> Block<'r> for SetVariable<'r> {
         }
     }
 
-    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
-        self.next.clone()
+    fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+        Ok(self.next.clone())
     }
 
     fn execute(&mut self) -> Result<()> {
@@ -196,22 +196,23 @@ impl<'r> Block<'r> for If<'r> {
 
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+    fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
         let condition = match &self.condition {
             Some(id) => id,
-            None => return self.next.clone(),
+            None => return Ok(self.next.clone()),
         };
 
-        let b = match condition.borrow().value().unwrap().as_bool() { // TODO
+        let value = condition.borrow().value()?;
+        let value_bool = match value.as_bool() {
             Some(b) => b,
-            None => todo!(),
+            None => return Err(format!("expected boolean type but got {}", value).into()),
         };
 
-        if b {
-            return self.substack.clone();
+        if value_bool {
+            return Ok(self.substack.clone());
         }
 
-        return self.next.clone();
+        return Ok(self.next.clone());
     }
 
     fn execute(&mut self) -> Result<()> {

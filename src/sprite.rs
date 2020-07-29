@@ -69,19 +69,15 @@ impl<'r> Thread<'r> {
     }
 
     pub fn execute(&self) -> Result<()> {
-        for b in self.into_iter() {
-            b.borrow_mut().execute()?;
+        let mut iter = self.iter();
+        while let Some(next) = iter.next()? {
+            next.borrow_mut().execute()?;
         }
 
         Ok(())
     }
-}
 
-impl<'a, 'r> IntoIterator for &'a Thread<'r> {
-    type Item = Rc<RefCell<dyn Block<'r> + 'r>>;
-    type IntoIter = ThreadIterator<'r>;
-
-    fn into_iter(self) -> ThreadIterator<'r> {
+    fn iter(&self) -> ThreadIterator<'r> {
         ThreadIterator::new(self.hat.clone())
     }
 }
@@ -97,20 +93,16 @@ impl<'r> ThreadIterator<'r> {
             curr: Rc::new(RefCell::new(DummyBlock { next: hat })),
         }
     }
-}
 
-impl<'r> Iterator for ThreadIterator<'r> {
-    type Item = Rc<RefCell<dyn Block<'r> + 'r>>;
-
-    fn next(&mut self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
-        let next = self.curr.borrow().next();
-        match next {
+    fn next(&mut self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+        let next = self.curr.borrow().next()?;
+        Ok(match next {
             Some(b) => {
                 self.curr = b.clone();
                 Some(b)
             }
             None => None,
-        }
+        })
     }
 }
 
@@ -123,8 +115,8 @@ impl<'r> Block<'r> for DummyBlock<'r> {
     fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
-        Some(self.next.clone())
+    fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+        Ok(Some(self.next.clone()))
     }
 }
 
@@ -141,8 +133,8 @@ mod tests {
             fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
             fn set_field(&mut self, _: &str, _: &str) {}
 
-            fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
-                None
+            fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+                Ok(None)
             }
         }
 
@@ -151,16 +143,16 @@ mod tests {
             {
                 let block_0 = Rc::new(RefCell::new(LastBlock {}));
                 let mut iter = ThreadIterator::new(block_0);
-                assert!(iter.next().is_some());
-                assert!(iter.next().is_none());
+                assert!(iter.next().unwrap().is_some());
+                assert!(iter.next().unwrap().is_none());
             }
             {
                 let block_0 = Rc::new(RefCell::new(LastBlock {}));
                 let block_1 = Rc::new(RefCell::new(DummyBlock { next: block_0 }));
                 let mut iter = ThreadIterator::new(block_1);
-                assert!(iter.next().is_some());
-                assert!(iter.next().is_some());
-                assert!(iter.next().is_none());
+                assert!(iter.next().unwrap().is_some());
+                assert!(iter.next().unwrap().is_some());
+                assert!(iter.next().unwrap().is_none());
             }
         }
     }
