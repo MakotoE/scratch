@@ -9,7 +9,7 @@ use std::sync::Mutex;
 
 pub trait Block<'r>: std::fmt::Debug {
     fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>);
-    fn set_field(&mut self, key: &str, value_id: &str);
+    fn set_field(&mut self, key: &str, value_id: String);
 
     fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         None
@@ -32,7 +32,7 @@ pub struct WhenFlagClicked<'r> {
 }
 
 impl<'r> WhenFlagClicked<'r> {
-    fn new(id: &str, runtime: &'r Mutex<SpriteRuntime>) -> Self {
+    fn new(id: String, runtime: &'r Mutex<SpriteRuntime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -48,7 +48,7 @@ impl<'r> Block<'r> for WhenFlagClicked<'r> {
         }
     }
 
-    fn set_field(&mut self, _: &str, _: &str) {}
+    fn set_field(&mut self, _: &str, _: String) {}
 
     fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
@@ -68,7 +68,7 @@ pub struct Say<'r> {
 }
 
 impl<'r> Say<'r> {
-    fn new(id: &str, runtime: &'r Mutex<SpriteRuntime>) -> Self {
+    fn new(id: String, runtime: &'r Mutex<SpriteRuntime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -87,7 +87,7 @@ impl<'r> Block<'r> for Say<'r> {
         }
     }
 
-    fn set_field(&mut self, _: &str, _: &str) {}
+    fn set_field(&mut self, _: &str, _: String) {}
 
     fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         self.next.clone()
@@ -116,9 +116,9 @@ pub struct SetVariable<'r> {
 }
 
 impl<'r> SetVariable<'r> {
-    pub fn new(id: &str, runtime: &'r Mutex<SpriteRuntime>) -> Self {
+    pub fn new(id: String, runtime: &'r Mutex<SpriteRuntime>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             variable_id: None,
             value: None,
@@ -136,7 +136,7 @@ impl<'r> Block<'r> for SetVariable<'r> {
         }
     }
 
-    fn set_field(&mut self, key: &str, value_id: &str) {
+    fn set_field(&mut self, key: &str, value_id: String) {
         if key == "VARIABLE" {
             self.variable_id = Some(value_id.to_string());
         }
@@ -170,7 +170,7 @@ pub struct Variable<'r> {
 }
 
 impl<'r> Variable<'r> {
-    pub fn new(id: &str, runtime: &'r Mutex<SpriteRuntime>) -> Self {
+    pub fn new(id: String, runtime: &'r Mutex<SpriteRuntime>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -180,7 +180,7 @@ impl<'r> Variable<'r> {
 
 impl<'r> Block<'r> for Variable<'r> {
     fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
-    fn set_field(&mut self, _: &str, _: &str) {}
+    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         match self.runtime.lock()?.variables.get(&self.id) {
@@ -201,7 +201,7 @@ pub struct Number {
 
 impl<'r> Block<'r> for Number {
     fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
-    fn set_field(&mut self, _: &str, _: &str) {}
+    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.into())
@@ -225,7 +225,7 @@ pub struct BlockString {
 
 impl<'r> Block<'r> for BlockString {
     fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
-    fn set_field(&mut self, _: &str, _: &str) {}
+    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.clone().into())
@@ -257,7 +257,7 @@ impl<'r> Block<'r> for Equals<'r> {
         }
     }
 
-    fn set_field(&mut self, _: &str, _: &str) {}
+    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         let a = match &self.operand1 {
@@ -273,16 +273,16 @@ impl<'r> Block<'r> for Equals<'r> {
 }
 
 pub fn new_block<'r>(
-    block_id: &str,
+    block_id: String,
     runtime: &'r Mutex<SpriteRuntime>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {
-    let info = infos.get(block_id).unwrap();
-    let block = get_block(block_id, runtime, &info)?;
+    let info = infos.get(block_id.as_str()).unwrap();
+    let block = get_block(block_id.clone(), runtime, &info)?;
     if let Some(next_id) = &info.next {
         block
             .borrow_mut()
-            .set_input("next", new_block(next_id, runtime, infos)?);
+            .set_input("next", new_block(next_id.clone(), runtime, infos)?);
     }
     for (k, input) in &info.inputs {
         let input_err_cb = || Error::from(format!("block \"{}\": invalid {}", block_id, k.as_str()));
@@ -311,7 +311,7 @@ pub fn new_block<'r>(
                 let input_info = input_arr.get(1).ok_or_else(input_err_cb)?;
                 match input_info {
                     serde_json::Value::String(id) => {
-                        let new_block = new_block(id, runtime, infos)?;
+                        let new_block = new_block(id.clone(), runtime, infos)?;
                         block.borrow_mut().set_input(k, new_block);
                     }
                     serde_json::Value::Array(arr) => {
@@ -319,7 +319,7 @@ pub fn new_block<'r>(
                             .get(2)
                             .and_then(|v| v.as_str())
                             .ok_or_else(input_err_cb)?;
-                        let variable = Rc::new(RefCell::new(Variable::new(id, runtime)));
+                        let variable = Rc::new(RefCell::new(Variable::new(id.to_string(), runtime)));
                         block.borrow_mut().set_input(k, variable);
                     }
                     _ => return Err(input_err_cb()),
@@ -331,7 +331,7 @@ pub fn new_block<'r>(
     for (k, field) in &info.fields {
         match field.get(1) {
             Some(value_id) => {
-                block.borrow_mut().set_field(k, value_id);
+                block.borrow_mut().set_field(k, value_id.clone());
             }
             None => return Err(format!("block \"{}\": invalid field {}", block_id, k).into()),
         }
@@ -348,7 +348,7 @@ pub fn new_value<'r>(value_type: i64, value: serde_json::Value) -> Result<Rc<Ref
 }
 
 pub fn get_block<'r>(
-    id: &str,
+    id: String,
     runtime: &'r Mutex<SpriteRuntime>,
     info: &savefile::Block,
 ) -> Result<Rc<RefCell<dyn Block<'r> + 'r>>> {

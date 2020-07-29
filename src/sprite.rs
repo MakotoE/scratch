@@ -25,7 +25,7 @@ impl<'r> Sprite<'r> {
         for hat_id in find_hats(&target.blocks) {
             threads.push(Thread::new(
                 runtime,
-                new_block(hat_id, runtime, &target.blocks)?,
+                new_block(hat_id.to_string(), runtime, &target.blocks)?,
             ));
         }
         Ok(Self { threads })
@@ -121,7 +121,7 @@ pub struct DummyBlock<'r> {
 
 impl<'r> Block<'r> for DummyBlock<'r> {
     fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
-    fn set_field(&mut self, _: &str, _: &str) {}
+    fn set_field(&mut self, _: &str, _: String) {}
 
     fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
         Some(self.next.clone())
