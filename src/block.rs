@@ -164,6 +164,62 @@ impl<'r> Block<'r> for SetVariable<'r> {
 }
 
 #[derive(Debug)]
+pub struct If<'r> {
+    id: String,
+    runtime: &'r Mutex<SpriteRuntime>,
+    condition: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
+    next: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
+    substack: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
+}
+
+impl<'r> If<'r> {
+    pub fn new(id: String, runtime: &'r Mutex<SpriteRuntime>) -> Self {
+        Self {
+            id,
+            runtime,
+            condition: None,
+            next: None,
+            substack: None,
+        }
+    }
+}
+
+impl<'r> Block<'r> for If<'r> {
+    fn set_input(&mut self, key: &str, block: Rc<RefCell<dyn Block<'r> + 'r>>) {
+        match key {
+            "next" => self.next = Some(block),
+            "CONDITION" => self.condition = Some(block),
+            "SUBSTACK" => self.substack = Some(block),
+            _ => {},
+        }
+    }
+
+    fn set_field(&mut self, _: &str, _: String) {}
+
+    fn next(&self) -> Option<Rc<RefCell<dyn Block<'r> + 'r>>> {
+        let condition = match &self.condition {
+            Some(id) => id,
+            None => return self.next.clone(),
+        };
+
+        let b = match condition.borrow().value().unwrap().as_bool() { // TODO
+            Some(b) => b,
+            None => todo!(),
+        };
+
+        if b {
+            return self.substack.clone();
+        }
+
+        return self.next.clone();
+    }
+
+    fn execute(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 pub struct Variable<'r> {
     id: String,
     runtime: &'r Mutex<SpriteRuntime>,
@@ -172,7 +228,7 @@ pub struct Variable<'r> {
 impl<'r> Variable<'r> {
     pub fn new(id: String, runtime: &'r Mutex<SpriteRuntime>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
         }
     }
@@ -244,8 +300,19 @@ impl TryFrom<serde_json::Value> for BlockString {
 
 #[derive(Debug)]
 pub struct Equals<'r> {
+    id: String,
     operand1: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
     operand2: Option<Rc<RefCell<dyn Block<'r> + 'r>>>,
+}
+
+impl Equals<'_> {
+    fn new(id: String) -> Self {
+        Self{
+            id,
+            operand1: None,
+            operand2: None,
+        }
+    }
 }
 
 impl<'r> Block<'r> for Equals<'r> {
@@ -356,6 +423,8 @@ pub fn get_block<'r>(
         "event_whenflagclicked" => Rc::new(RefCell::new(WhenFlagClicked::new(id, runtime))),
         "looks_say" => Rc::new(RefCell::new(Say::new(id, runtime))),
         "data_setvariableto" => Rc::new(RefCell::new(SetVariable::new(id, runtime))),
+        "operator_equals" => Rc::new(RefCell::new(Equals::new(id))),
+        "control_if" => Rc::new(RefCell::new(If::new(id, runtime))),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }
