@@ -83,7 +83,7 @@ impl<'r> Block<'r> for Say<'r> {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
             "MESSAGE" => self.message = Some(block),
-            _ => {},
+            _ => {}
         }
     }
 
@@ -132,7 +132,7 @@ impl<'r> Block<'r> for SetVariable<'r> {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
             "VALUE" => self.value = Some(block),
-            _ => {},
+            _ => {}
         }
     }
 
@@ -190,7 +190,7 @@ impl<'r> Block<'r> for If<'r> {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
             "CONDITION" => self.condition = Some(block),
             "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
-            _ => {},
+            _ => {}
         }
     }
 
@@ -228,10 +228,7 @@ pub struct Variable<'r> {
 
 impl<'r> Variable<'r> {
     pub fn new(id: String, runtime: &'r Mutex<SpriteRuntime>) -> Self {
-        Self {
-            id,
-            runtime,
-        }
+        Self { id, runtime }
     }
 }
 
@@ -308,7 +305,7 @@ pub struct Equals<'r> {
 
 impl Equals<'_> {
     fn new(id: String) -> Self {
-        Self{
+        Self {
             id,
             operand1: None,
             operand2: None,
@@ -321,7 +318,7 @@ impl<'r> Block<'r> for Equals<'r> {
         match key {
             "OPERAND1" => self.operand1 = Some(block),
             "OPERAND2" => self.operand2 = Some(block),
-            _ => {},
+            _ => {}
         }
     }
 
@@ -351,7 +348,8 @@ pub fn new_block<'r>(
         block.set_input("next", new_block(next_id.clone(), runtime, infos)?);
     }
     for (k, input) in &info.inputs {
-        let input_err_cb = || Error::from(format!("block \"{}\": invalid {}", block_id, k.as_str()));
+        let input_err_cb =
+            || Error::from(format!("block \"{}\": invalid {}", block_id, k.as_str()));
         let input_arr = input.as_array().ok_or_else(input_err_cb)?;
         let input_type = input_arr
             .get(0)
@@ -391,7 +389,11 @@ pub fn new_block<'r>(
                     _ => return Err(input_err_cb()),
                 }
             }
-            _ => return Err(format!("block \"{}\": invalid input_type {}", block_id, input_type).into()),
+            _ => {
+                return Err(
+                    format!("block \"{}\": invalid input_type {}", block_id, input_type).into(),
+                )
+            }
         };
     }
     for (k, field) in &info.fields {

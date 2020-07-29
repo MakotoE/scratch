@@ -61,11 +61,11 @@ pub struct Thread<'r> {
 }
 
 impl<'r> Thread<'r> {
-    pub fn new(
-        runtime: &'r Mutex<runtime::SpriteRuntime>,
-        hat: Box<dyn Block<'r> + 'r>,
-    ) -> Self {
-        Self { runtime, hat: Rc::new(RefCell::new(hat)) }
+    pub fn new(runtime: &'r Mutex<runtime::SpriteRuntime>, hat: Box<dyn Block<'r> + 'r>) -> Self {
+        Self {
+            runtime,
+            hat: Rc::new(RefCell::new(hat)),
+        }
     }
 
     pub fn execute(&self) -> Result<()> {
@@ -137,14 +137,17 @@ mod tests {
         #[test]
         fn into_iter() {
             {
-                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> = Rc::new(RefCell::new(Box::new(LastBlock {})));
+                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> =
+                    Rc::new(RefCell::new(Box::new(LastBlock {})));
                 let mut iter = ThreadIterator::new(block_0);
                 assert!(iter.next().unwrap().is_some());
                 assert!(iter.next().unwrap().is_none());
             }
             {
-                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> = Rc::new(RefCell::new( Box::new(LastBlock {})));
-                let block_1: Rc<RefCell<Box<dyn Block<'_> + '_>>> = Rc::new(RefCell::new(Box::new(DummyBlock { next: block_0 })));
+                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> =
+                    Rc::new(RefCell::new(Box::new(LastBlock {})));
+                let block_1: Rc<RefCell<Box<dyn Block<'_> + '_>>> =
+                    Rc::new(RefCell::new(Box::new(DummyBlock { next: block_0 })));
                 let mut iter = ThreadIterator::new(block_1);
                 assert!(iter.next().unwrap().is_some());
                 assert!(iter.next().unwrap().is_some());
