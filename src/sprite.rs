@@ -57,15 +57,15 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 #[derive(Debug)]
 pub struct Thread<'r> {
     runtime: &'r Mutex<runtime::SpriteRuntime>,
-    hat: Rc<RefCell<dyn Block<'r> + 'r>>,
+    hat: Rc<RefCell<Box<dyn Block<'r> + 'r>>>,
 }
 
 impl<'r> Thread<'r> {
     pub fn new(
         runtime: &'r Mutex<runtime::SpriteRuntime>,
-        hat: Rc<RefCell<dyn Block<'r> + 'r>>,
+        hat: Box<dyn Block<'r> + 'r>,
     ) -> Self {
-        Self { runtime, hat }
+        Self { runtime, hat: Rc::new(RefCell::new(hat)) }
     }
 
     pub fn execute(&self) -> Result<()> {
@@ -84,17 +84,17 @@ impl<'r> Thread<'r> {
 
 #[derive(Debug)]
 pub struct ThreadIterator<'r> {
-    curr: Rc<RefCell<dyn Block<'r> + 'r>>,
+    curr: Rc<RefCell<Box<dyn Block<'r> + 'r>>>,
 }
 
 impl<'r> ThreadIterator<'r> {
-    fn new(hat: Rc<RefCell<dyn Block<'r> + 'r>>) -> Self {
+    fn new(hat: Rc<RefCell<Box<dyn Block<'r> + 'r>>>) -> Self {
         Self {
-            curr: Rc::new(RefCell::new(DummyBlock { next: hat })),
+            curr: Rc::new(RefCell::new(Box::new(DummyBlock { next: hat }))),
         }
     }
 
-    fn next(&mut self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+    fn next(&mut self) -> Result<Option<Rc<RefCell<Box<dyn Block<'r> + 'r>>>>> {
         let next = self.curr.borrow().next()?;
         Ok(match next {
             Some(b) => {
@@ -108,14 +108,14 @@ impl<'r> ThreadIterator<'r> {
 
 #[derive(Debug)]
 pub struct DummyBlock<'r> {
-    next: Rc<RefCell<dyn Block<'r> + 'r>>,
+    next: Rc<RefCell<Box<dyn Block<'r> + 'r>>>,
 }
 
 impl<'r> Block<'r> for DummyBlock<'r> {
-    fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
+    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block<'r> + 'r>>>>> {
         Ok(Some(self.next.clone()))
     }
 }
@@ -130,25 +130,21 @@ mod tests {
         struct LastBlock {}
 
         impl<'r> Block<'r> for LastBlock {
-            fn set_input(&mut self, _: &str, _: Rc<RefCell<dyn Block<'r> + 'r>>) {}
-            fn set_field(&mut self, _: &str, _: &str) {}
-
-            fn next(&self) -> Result<Option<Rc<RefCell<dyn Block<'r> + 'r>>>> {
-                Ok(None)
-            }
+            fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
+            fn set_field(&mut self, _: &str, _: String) {}
         }
 
         #[test]
         fn into_iter() {
             {
-                let block_0 = Rc::new(RefCell::new(LastBlock {}));
+                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> = Rc::new(RefCell::new(Box::new(LastBlock {})));
                 let mut iter = ThreadIterator::new(block_0);
                 assert!(iter.next().unwrap().is_some());
                 assert!(iter.next().unwrap().is_none());
             }
             {
-                let block_0 = Rc::new(RefCell::new(LastBlock {}));
-                let block_1 = Rc::new(RefCell::new(DummyBlock { next: block_0 }));
+                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> = Rc::new(RefCell::new( Box::new(LastBlock {})));
+                let block_1: Rc<RefCell<Box<dyn Block<'_> + '_>>> = Rc::new(RefCell::new(Box::new(DummyBlock { next: block_0 })));
                 let mut iter = ThreadIterator::new(block_1);
                 assert!(iter.next().unwrap().is_some());
                 assert!(iter.next().unwrap().is_some());

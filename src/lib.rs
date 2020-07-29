@@ -91,7 +91,7 @@ impl Component for Page {
                     .unwrap()
                     .dyn_into()
                     .unwrap();
-                ctx.scale(2.0, 2.0);
+                ctx.scale(2.0, 2.0).unwrap();
                 self.runtime = Some(Mutex::new(runtime::SpriteRuntime::new(ctx)));
                 let sprite =
                     sprite::Sprite::new(&self.runtime.as_ref().unwrap(), &savefile.targets[1]);
