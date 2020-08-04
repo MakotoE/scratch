@@ -9,6 +9,9 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::collections::HashMap;
 
 error_chain::error_chain! {
     types {

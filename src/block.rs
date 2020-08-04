@@ -1,10 +1,7 @@
 use super::*;
 
 use runtime::SpriteRuntime;
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::rc::Rc;
 use std::sync::Mutex;
 
 pub trait Block<'r>: std::fmt::Debug {

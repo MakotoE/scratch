@@ -1,6 +1,5 @@
 use super::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 // https://en.scratch-wiki.info/wiki/Scratch_File_Format
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]

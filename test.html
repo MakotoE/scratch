@@ -10,8 +10,10 @@
     document.body.onload = () => {
         const canvas = document.getElementById('scratch-stage');
         const ctx = canvas.getContext('2d');
-        ctx.font = '20px sans-serif';
-        ctx.fillText('Hello world', 10, 50);
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.onerror = () => console.error("img error");
+        img.src = "./b7853f557e4426412e64bb3da6531a99.svg"
     };
 </script>
 <canvas id="scratch-stage"
