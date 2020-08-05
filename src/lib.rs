@@ -3,15 +3,15 @@ pub mod runtime;
 pub mod savefile;
 pub mod sprite;
 
-use savefile::SaveFile;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::collections::HashMap;
+use savefile::ScratchFile;
 
 error_chain::error_chain! {
     types {
@@ -21,6 +21,7 @@ error_chain::error_chain! {
     foreign_links {
         Zip(zip::result::ZipError);
         JSON(serde_json::error::Error);
+        IO(std::io::Error);
     }
 }
 
@@ -86,7 +87,7 @@ impl Component for Page {
             }
             Msg::Run(file) => {
                 let reader = std::io::Cursor::new(file.content);
-                let savefile = SaveFile::parse(reader).unwrap();
+                let scratch_file = ScratchFile::parse(reader).unwrap();
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx: web_sys::CanvasRenderingContext2d = canvas
                     .get_context("2d")
@@ -95,9 +96,11 @@ impl Component for Page {
                     .dyn_into()
                     .unwrap();
                 ctx.scale(2.0, 2.0).unwrap();
-                self.runtime = Some(Mutex::new(runtime::SpriteRuntime::new(ctx)));
+                let mut runtime = runtime::SpriteRuntime::new(ctx);
+                runtime.load_costume(&scratch_file.images[0]).unwrap();
+                self.runtime = Some(Mutex::new(runtime));
                 let sprite =
-                    sprite::Sprite::new(&self.runtime.as_ref().unwrap(), &savefile.targets[1]);
+                    sprite::Sprite::new(&self.runtime.as_ref().unwrap(), &scratch_file.project.targets[1]);
                 sprite.unwrap().execute().unwrap();
             }
         }

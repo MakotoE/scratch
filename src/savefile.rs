@@ -3,8 +3,14 @@ use serde::{Deserialize, Serialize};
 
 // https://en.scratch-wiki.info/wiki/Scratch_File_Format
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+pub struct ScratchFile {
+    pub project: Project,
+    pub images: Vec<String>,
+}
+
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SaveFile {
+pub struct Project {
     pub targets: Vec<Target>,
     pub monitors: Vec<String>,
     pub extensions: Vec<String>,
@@ -54,14 +60,34 @@ pub struct Meta {
     pub agent: String,
 }
 
-impl SaveFile {
-    pub fn parse<R>(file: R) -> Result<SaveFile>
+impl ScratchFile {
+    pub fn parse<R>(file: R) -> Result<ScratchFile>
     where
         R: std::io::Read + std::io::Seek,
     {
+        use std::io::Read;
+
         let mut archive = zip::ZipArchive::new(file)?;
-        let project = archive.by_name("project.json")?;
-        Ok(serde_json::from_reader(project)?)
+        let project: Project = serde_json::from_reader(archive.by_name("project.json")?)?;
+
+        let mut image_names: Vec<String> = Vec::new();
+        for name in archive.file_names() {
+            if name.ends_with(".svg") {
+                image_names.push(name.to_string());
+            }
+        }
+
+        let mut images: Vec<String> = Vec::new();
+        for name in &image_names {
+            let mut str = String::new();
+            archive.by_name(name)?.read_to_string(&mut str)?;
+            images.push(str);
+        }
+
+        Ok(Self{
+            project,
+            images,
+        })
     }
 }
 
@@ -80,8 +106,8 @@ mod tests {
             .join("test_saves")
             .join("say.sb3");
         let file = std::fs::File::open(dir).unwrap();
-        let savefile = SaveFile::parse(&file).unwrap();
-        let target = &savefile.targets[1];
+        let savefile = ScratchFile::parse(&file).unwrap();
+        let target = &savefile.project.targets[1];
         assert_eq!(target.name, "Sprite1");
     }
 }

@@ -30,4 +30,7 @@ features = [
     "CanvasRenderingContext2d",
     "File",
     "HtmlImageElement",
+    "Blob",
+    "BlobPropertyBag",
+    "Url",
 ]
