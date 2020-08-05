@@ -2,33 +2,26 @@ use super::*;
 use block::*;
 
 #[derive(Debug)]
-pub struct Sprite<'r> {
-    threads: Vec<Thread<'r>>,
-    runtime: &'r Mutex<runtime::SpriteRuntime>,
+pub struct Sprite {
+    threads: Vec<Thread>,
 }
 
-impl<'r> Sprite<'r> {
-    pub fn new(
-        runtime: &'r Mutex<runtime::SpriteRuntime>,
-        target: &savefile::Target,
-    ) -> Result<Self> {
-        {
-            let mut r = runtime.lock()?;
-            r.x = target.x;
-            r.y = target.y;
-        }
+impl Sprite {
+    pub fn new(mut runtime: runtime::SpriteRuntime, target: &savefile::Target) -> Result<Self> {
+        runtime.x = target.x;
+        runtime.y = target.y;
 
+        let runtime_ref = Rc::new(RefCell::new(runtime));
         let mut threads: Vec<Thread> = Vec::new();
         for hat_id in find_hats(&target.blocks) {
             threads.push(Thread::new(
-                &runtime,
-                new_block(hat_id.to_string(), &runtime, &target.blocks)?,
+                new_block(hat_id.to_string(), runtime_ref.clone(), &target.blocks)?,
             ));
         }
-        Ok(Self { threads, runtime })
+        Ok(Self { threads })
     }
 
-    pub fn threads(&self) -> &[Thread<'r>] {
+    pub fn threads(&self) -> &[Thread] {
         self.threads.as_slice()
     }
 
@@ -52,15 +45,13 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 }
 
 #[derive(Debug)]
-pub struct Thread<'r> {
-    runtime: &'r Mutex<runtime::SpriteRuntime>,
-    hat: Rc<RefCell<Box<dyn Block<'r> + 'r>>>,
+pub struct Thread {
+    hat: Rc<RefCell<Box<dyn Block>>>,
 }
 
-impl<'r> Thread<'r> {
-    pub fn new(runtime: &'r Mutex<runtime::SpriteRuntime>, hat: Box<dyn Block<'r> + 'r>) -> Self {
+impl Thread {
+    pub fn new(hat: Box<dyn Block>) -> Self {
         Self {
-            runtime,
             hat: Rc::new(RefCell::new(hat)),
         }
     }
@@ -74,24 +65,24 @@ impl<'r> Thread<'r> {
         Ok(())
     }
 
-    fn iter(&self) -> ThreadIterator<'r> {
+    fn iter(&self) -> ThreadIterator {
         ThreadIterator::new(self.hat.clone())
     }
 }
 
 #[derive(Debug)]
-pub struct ThreadIterator<'r> {
-    curr: Rc<RefCell<Box<dyn Block<'r> + 'r>>>,
+pub struct ThreadIterator {
+    curr: Rc<RefCell<Box<dyn Block>>>,
 }
 
-impl<'r> ThreadIterator<'r> {
-    fn new(hat: Rc<RefCell<Box<dyn Block<'r> + 'r>>>) -> Self {
+impl ThreadIterator {
+    fn new(hat: Rc<RefCell<Box<dyn Block>>>) -> Self {
         Self {
             curr: Rc::new(RefCell::new(Box::new(DummyBlock { next: hat }))),
         }
     }
 
-    fn next(&mut self) -> Result<Option<Rc<RefCell<Box<dyn Block<'r> + 'r>>>>> {
+    fn next(&mut self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
         let next = self.curr.borrow().next()?;
         Ok(match next {
             Some(b) => {
@@ -104,15 +95,15 @@ impl<'r> ThreadIterator<'r> {
 }
 
 #[derive(Debug)]
-pub struct DummyBlock<'r> {
-    next: Rc<RefCell<Box<dyn Block<'r> + 'r>>>,
+pub struct DummyBlock {
+    next: Rc<RefCell<Box<dyn Block>>>,
 }
 
-impl<'r> Block<'r> for DummyBlock<'r> {
-    fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
+impl Block for DummyBlock {
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block<'r> + 'r>>>>> {
+    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
         Ok(Some(self.next.clone()))
     }
 }
@@ -126,24 +117,24 @@ mod tests {
         #[derive(Debug)]
         struct LastBlock {}
 
-        impl<'r> Block<'r> for LastBlock {
-            fn set_input(&mut self, _: &str, _: Box<dyn Block<'r> + 'r>) {}
+        impl Block for LastBlock {
+            fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
             fn set_field(&mut self, _: &str, _: String) {}
         }
 
         #[test]
         fn into_iter() {
             {
-                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> =
+                let block_0: Rc<RefCell<Box<dyn Block>>> =
                     Rc::new(RefCell::new(Box::new(LastBlock {})));
                 let mut iter = ThreadIterator::new(block_0);
                 assert!(iter.next().unwrap().is_some());
                 assert!(iter.next().unwrap().is_none());
             }
             {
-                let block_0: Rc<RefCell<Box<dyn Block<'_> + '_>>> =
+                let block_0: Rc<RefCell<Box<dyn Block>>> =
                     Rc::new(RefCell::new(Box::new(LastBlock {})));
-                let block_1: Rc<RefCell<Box<dyn Block<'_> + '_>>> =
+                let block_1: Rc<RefCell<Box<dyn Block>>> =
                     Rc::new(RefCell::new(Box::new(DummyBlock { next: block_0 })));
                 let mut iter = ThreadIterator::new(block_1);
                 assert!(iter.next().unwrap().is_some());

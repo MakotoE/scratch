@@ -5,10 +5,9 @@ pub mod runtime;
 pub mod savefile;
 pub mod sprite;
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::Mutex;
+use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
@@ -66,12 +65,12 @@ enum Msg {
 }
 
 impl Page {
-    async fn run(mut runtime: runtime::SpriteRuntime, scratch_file: ScratchFile) {
+    async fn run(context: web_sys::CanvasRenderingContext2d, scratch_file: ScratchFile) {
+        let mut runtime = runtime::SpriteRuntime::new(context);
         runtime.load_costume(&scratch_file.images[0]).await.unwrap();
-        let runtime_mutex = &Mutex::new(runtime);
-        let sprite =
-            sprite::Sprite::new(runtime_mutex, &scratch_file.project.targets[1]);
-        sprite.unwrap().execute().unwrap();
+
+        let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1]).unwrap();
+        sprite.execute().unwrap();
     }
 }
 
@@ -106,8 +105,7 @@ impl Component for Page {
                     .dyn_into()
                     .unwrap();
                 ctx.scale(2.0, 2.0).unwrap();
-                let runtime = runtime::SpriteRuntime::new(ctx);
-                wasm_bindgen_futures::spawn_local(Page::run(runtime, scratch_file));
+                wasm_bindgen_futures::spawn_local(Page::run(ctx, scratch_file));
             }
         }
         true
