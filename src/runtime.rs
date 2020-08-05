@@ -1,5 +1,6 @@
 use super::*;
 use web_sys::{HtmlImageElement, Blob, BlobPropertyBag, Url};
+use wasm_bindgen_futures::JsFuture;
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -21,7 +22,7 @@ impl SpriteRuntime {
         }
     }
 
-    pub fn load_costume(&mut self, file: &str) -> Result<()> {
+    pub async fn load_costume(&mut self, file: &str) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         parts.set(0, file.into());
         let mut properties = BlobPropertyBag::new();
@@ -37,17 +38,13 @@ impl SpriteRuntime {
             );
         image.set_onerror(Some(error_cb.as_ref().unchecked_ref()));
 
-        let url_clone = url.clone();
-        let context_clone = self.context.clone();
-        let image_clone = image.clone();
-        let cb = Closure::once_into_js(Box::new(move || {
-            Url::revoke_object_url(&url_clone).unwrap();
-            // TODO move draw image to new method
-            context_clone.draw_image_with_html_image_element(&image_clone, 0.0, 0.0).unwrap();
-        }) as Box<dyn Fn()>);
-        image.set_onload(Some(cb.as_ref().unchecked_ref()));
-
         image.set_src(&url);
+
+        JsFuture::from(image.decode()).await?;
+
+        Url::revoke_object_url(&url).unwrap();
+        // TODO move draw image to new method
+        self.context.draw_image_with_html_image_element(&image, 0.0, 0.0).unwrap();
 
         self.costumes.push(RefCell::new(image));
 

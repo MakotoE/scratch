@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 pub mod block;
 pub mod runtime;
 pub mod savefile;
@@ -55,13 +57,22 @@ struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
-    runtime: Option<Mutex<runtime::SpriteRuntime>>,
 }
 
 enum Msg {
     Noop,
     ImportFile(web_sys::File),
     Run(FileData),
+}
+
+impl Page {
+    async fn run(mut runtime: runtime::SpriteRuntime, scratch_file: ScratchFile) {
+        runtime.load_costume(&scratch_file.images[0]).await.unwrap();
+        let runtime_mutex = &Mutex::new(runtime);
+        let sprite =
+            sprite::Sprite::new(runtime_mutex, &scratch_file.project.targets[1]);
+        sprite.unwrap().execute().unwrap();
+    }
 }
 
 impl Component for Page {
@@ -73,7 +84,6 @@ impl Component for Page {
             link,
             canvas_ref: NodeRef::default(),
             task: None,
-            runtime: None,
         }
     }
 
@@ -96,12 +106,8 @@ impl Component for Page {
                     .dyn_into()
                     .unwrap();
                 ctx.scale(2.0, 2.0).unwrap();
-                let mut runtime = runtime::SpriteRuntime::new(ctx);
-                runtime.load_costume(&scratch_file.images[0]).unwrap();
-                self.runtime = Some(Mutex::new(runtime));
-                let sprite =
-                    sprite::Sprite::new(&self.runtime.as_ref().unwrap(), &scratch_file.project.targets[1]);
-                sprite.unwrap().execute().unwrap();
+                let runtime = runtime::SpriteRuntime::new(ctx);
+                wasm_bindgen_futures::spawn_local(Page::run(runtime, scratch_file));
             }
         }
         true

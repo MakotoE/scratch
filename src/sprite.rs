@@ -1,10 +1,10 @@
 use super::*;
 use block::*;
-use std::sync::Mutex;
 
 #[derive(Debug)]
 pub struct Sprite<'r> {
     threads: Vec<Thread<'r>>,
+    runtime: &'r Mutex<runtime::SpriteRuntime>,
 }
 
 impl<'r> Sprite<'r> {
@@ -21,11 +21,11 @@ impl<'r> Sprite<'r> {
         let mut threads: Vec<Thread> = Vec::new();
         for hat_id in find_hats(&target.blocks) {
             threads.push(Thread::new(
-                runtime,
-                new_block(hat_id.to_string(), runtime, &target.blocks)?,
+                &runtime,
+                new_block(hat_id.to_string(), &runtime, &target.blocks)?,
             ));
         }
-        Ok(Self { threads })
+        Ok(Self { threads, runtime })
     }
 
     pub fn threads(&self) -> &[Thread<'r>] {
