@@ -14,9 +14,11 @@ impl Sprite {
         let runtime_ref = Rc::new(RefCell::new(runtime));
         let mut threads: Vec<Thread> = Vec::new();
         for hat_id in find_hats(&target.blocks) {
-            threads.push(Thread::new(
-                new_block(hat_id.to_string(), runtime_ref.clone(), &target.blocks)?,
-            ));
+            threads.push(Thread::new(new_block(
+                hat_id.to_string(),
+                runtime_ref.clone(),
+                &target.blocks,
+            )?));
         }
         Ok(Self { threads })
     }

@@ -84,10 +84,7 @@ impl ScratchFile {
             images.push(str);
         }
 
-        Ok(Self{
-            project,
-            images,
-        })
+        Ok(Self { project, images })
     }
 }
 

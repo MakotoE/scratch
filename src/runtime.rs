@@ -1,6 +1,6 @@
 use super::*;
-use web_sys::{HtmlImageElement, Blob, BlobPropertyBag, Url};
 use wasm_bindgen_futures::JsFuture;
+use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -45,16 +45,13 @@ impl SpriteRuntime {
             Some(i) => i,
             None => return Err(format!("index is out of range: {}", index).into()),
         };
-        self.context.draw_image_with_html_image_element(&image, 0.0, 0.0)?;
+        self.context
+            .draw_image_with_html_image_element(&image, 0.0, 0.0)?;
         Ok(())
     }
 
     pub fn say(&self, s: &str) -> Result<()> {
-        js_sys::Reflect::set(
-            &self.context,
-            &"font".into(),
-            &"10px sans-serif".into(),
-        )?;
+        js_sys::Reflect::set(&self.context, &"font".into(), &"10px sans-serif".into())?;
         self.context.fill_text(s, 150.0 + self.x, 150.0 + self.y)?;
         Ok(())
     }

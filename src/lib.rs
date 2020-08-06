@@ -5,14 +5,14 @@ pub mod runtime;
 pub mod savefile;
 pub mod sprite;
 
+use savefile::ScratchFile;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
-use savefile::ScratchFile;
 
 error_chain::error_chain! {
     types {
@@ -69,7 +69,10 @@ enum Msg {
 }
 
 impl Page {
-    async fn run(context: web_sys::CanvasRenderingContext2d, scratch_file: ScratchFile) -> Result<()> {
+    async fn run(
+        context: web_sys::CanvasRenderingContext2d,
+        scratch_file: ScratchFile,
+    ) -> Result<()> {
         let mut runtime = runtime::SpriteRuntime::new(context);
         for image in &scratch_file.images {
             runtime.load_costume(image).await?;
@@ -112,13 +115,11 @@ impl Component for Page {
                     .dyn_into()
                     .unwrap();
                 ctx.scale(2.0, 2.0).unwrap();
-                let run_cb = async || {
-                    match Page::run(ctx, scratch_file).await {
-                        Ok(_) => {},
-                        Err(e) => log::error!("{}", e),
-                    }
-                };
-                wasm_bindgen_futures::spawn_local(run_cb());
+                let future = (async || match Page::run(ctx, scratch_file).await {
+                    Ok(_) => {}
+                    Err(e) => log::error!("{}", e),
+                })();
+                wasm_bindgen_futures::spawn_local(future);
             }
         }
         true
