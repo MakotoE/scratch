@@ -28,7 +28,11 @@ error_chain::error_chain! {
 
 impl std::convert::From<wasm_bindgen::JsValue> for Error {
     fn from(v: JsValue) -> Self {
-        v.into_serde::<String>().unwrap().into()
+        let mut s = format!("{:?}", v);
+        if let Some(stripped_prefix) = s.strip_prefix("JsValue(") {
+            s = stripped_prefix.strip_suffix(")").unwrap_or(&s).to_string();
+        }
+        s.into()
     }
 }
 

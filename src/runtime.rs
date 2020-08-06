@@ -31,21 +31,12 @@ impl SpriteRuntime {
         let url = Url::create_object_url_with_blob(&blob)?;
 
         let image = HtmlImageElement::new()?;
-
-        let error_cb =
-            Closure::once_into_js(
-                Box::new(move || log::error!("context failed to load image")) as Box<dyn Fn()>,
-            );
-        image.set_onerror(Some(error_cb.as_ref().unchecked_ref()));
-
         image.set_src(&url);
-
         JsFuture::from(image.decode()).await?;
 
         Url::revoke_object_url(&url)?;
 
         self.costumes.push(image);
-
         Ok(())
     }
 
