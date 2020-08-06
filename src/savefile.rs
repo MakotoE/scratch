@@ -1,11 +1,13 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 
-// https://en.scratch-wiki.info/wiki/Scratch_File_Format
+/// https://en.scratch-wiki.info/wiki/Scratch_File_Format
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct ScratchFile {
     pub project: Project,
-    pub images: Vec<String>,
+
+    /// Filename to file contents
+    pub images: HashMap<String, String>,
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
@@ -77,11 +79,11 @@ impl ScratchFile {
             }
         }
 
-        let mut images: Vec<String> = Vec::new();
+        let mut images: HashMap<String, String> = HashMap::new();
         for name in &image_names {
             let mut str = String::new();
             archive.by_name(name)?.read_to_string(&mut str)?;
-            images.push(str);
+            images.insert(name.clone(), str);
         }
 
         Ok(Self { project, images })

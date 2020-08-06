@@ -14,6 +14,14 @@ use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
 
+#[wasm_bindgen(start)]
+pub fn start() -> Result<()> {
+    console_error_panic_hook::set_once();
+    wasm_logger::init(wasm_logger::Config::default());
+    App::<Page>::new().mount_to_body();
+    Ok(())
+}
+
 error_chain::error_chain! {
     types {
         Error, ErrorKind, ResultExt, Result;
@@ -48,14 +56,6 @@ impl std::convert::Into<wasm_bindgen::JsValue> for Error {
     }
 }
 
-#[wasm_bindgen(start)]
-pub fn start() -> Result<()> {
-    console_error_panic_hook::set_once();
-    wasm_logger::init(wasm_logger::Config::default());
-    App::<Page>::new().mount_to_body();
-    Ok(())
-}
-
 struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
@@ -74,8 +74,11 @@ impl Page {
         scratch_file: ScratchFile,
     ) -> Result<()> {
         let mut runtime = runtime::SpriteRuntime::new(context);
-        for image in &scratch_file.images {
-            runtime.load_costume(image).await?;
+        for costume in &scratch_file.project.targets[1].costumes {
+            match &scratch_file.images.get(&costume.md5ext) {
+                Some(file) => runtime.load_costume(file, costume.rotation_center_x, costume.rotation_center_y).await?,
+                None => return Err(format!("image not found: {}", costume.md5ext).into()),
+            }
         }
         runtime.change_costume(0)?;
 
@@ -143,9 +146,9 @@ impl Component for Page {
             <div>
                 <canvas
                     ref={self.canvas_ref.clone()}
-                    width="600"
-                    height="450"
-                    style="border: 1px solid black"
+                    width="960"
+                    height="720"
+                    style="height: 360px; width: 480px; border: 1px solid black;"
                 /><br />
                 <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} />
             </div>

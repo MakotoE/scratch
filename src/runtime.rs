@@ -8,7 +8,7 @@ pub struct SpriteRuntime {
     pub x: f64,
     pub y: f64,
     pub variables: HashMap<String, serde_json::Value>,
-    pub costumes: Vec<HtmlImageElement>,
+    pub costumes: Vec<Costume>,
 }
 
 impl SpriteRuntime {
@@ -22,7 +22,7 @@ impl SpriteRuntime {
         }
     }
 
-    pub async fn load_costume(&mut self, file: &str) -> Result<()> {
+    pub async fn load_costume(&mut self, file: &str, rotation_center_x: f64, rotation_center_y: f64) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         parts.set(0, file.into());
         let mut properties = BlobPropertyBag::new();
@@ -36,23 +36,30 @@ impl SpriteRuntime {
 
         Url::revoke_object_url(&url)?;
 
-        self.costumes.push(image);
+        self.costumes.push(Costume{image, rotation_center_x, rotation_center_y});
         Ok(())
     }
 
     pub fn change_costume(&mut self, index: usize) -> Result<()> {
-        let image = match self.costumes.get(index) {
+        let costume = match self.costumes.get(index) {
             Some(i) => i,
             None => return Err(format!("index is out of range: {}", index).into()),
         };
         self.context
-            .draw_image_with_html_image_element(&image, 0.0, 0.0)?;
+            .draw_image_with_html_image_element(&costume.image, 240.0 - costume.rotation_center_x, 180.0 - costume.rotation_center_y)?;
         Ok(())
     }
 
     pub fn say(&self, s: &str) -> Result<()> {
         js_sys::Reflect::set(&self.context, &"font".into(), &"10px sans-serif".into())?;
-        self.context.fill_text(s, 150.0 + self.x, 150.0 + self.y)?;
+        self.context.fill_text(s, 240.0 + self.x, 180.0 + self.y)?;
         Ok(())
     }
+}
+
+#[derive(Debug)]
+pub struct Costume {
+    image: HtmlImageElement,
+    rotation_center_x: f64,
+    rotation_center_y: f64,
 }
