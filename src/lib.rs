@@ -65,12 +65,15 @@ enum Msg {
 }
 
 impl Page {
-    async fn run(context: web_sys::CanvasRenderingContext2d, scratch_file: ScratchFile) {
+    async fn run(context: web_sys::CanvasRenderingContext2d, scratch_file: ScratchFile) -> Result<()> {
         let mut runtime = runtime::SpriteRuntime::new(context);
-        runtime.load_costume(&scratch_file.images[0]).await.unwrap();
+        for image in &scratch_file.images {
+            runtime.load_costume(image).await?;
+        }
+        runtime.change_costume(0)?;
 
-        let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1]).unwrap();
-        sprite.execute().unwrap();
+        let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1])?;
+        sprite.execute()
     }
 }
 
@@ -105,7 +108,13 @@ impl Component for Page {
                     .dyn_into()
                     .unwrap();
                 ctx.scale(2.0, 2.0).unwrap();
-                wasm_bindgen_futures::spawn_local(Page::run(ctx, scratch_file));
+                let run_cb = async || {
+                    match Page::run(ctx, scratch_file).await {
+                        Ok(_) => {},
+                        Err(e) => log::error!("{}", e),
+                    }
+                };
+                wasm_bindgen_futures::spawn_local(run_cb());
             }
         }
         true

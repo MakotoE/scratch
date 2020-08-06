@@ -8,7 +8,7 @@ pub struct SpriteRuntime {
     pub x: f64,
     pub y: f64,
     pub variables: HashMap<String, serde_json::Value>,
-    pub costumes: Vec<RefCell<HtmlImageElement>>,
+    pub costumes: Vec<HtmlImageElement>,
 }
 
 impl SpriteRuntime {
@@ -42,12 +42,19 @@ impl SpriteRuntime {
 
         JsFuture::from(image.decode()).await?;
 
-        Url::revoke_object_url(&url).unwrap();
-        // TODO move draw image to new method
-        self.context.draw_image_with_html_image_element(&image, 0.0, 0.0).unwrap();
+        Url::revoke_object_url(&url)?;
 
-        self.costumes.push(RefCell::new(image));
+        self.costumes.push(image);
 
+        Ok(())
+    }
+
+    pub fn change_costume(&mut self, index: usize) -> Result<()> {
+        let image = match self.costumes.get(index) {
+            Some(i) => i,
+            None => return Err(format!("index is out of range: {}", index).into()),
+        };
+        self.context.draw_image_with_html_image_element(&image, 0.0, 0.0)?;
         Ok(())
     }
 
