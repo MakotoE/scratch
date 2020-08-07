@@ -76,7 +76,11 @@ impl Page {
         let mut runtime = runtime::SpriteRuntime::new(context);
         for costume in &scratch_file.project.targets[1].costumes {
             match &scratch_file.images.get(&costume.md5ext) {
-                Some(file) => runtime.load_costume(file, costume.rotation_center_x, costume.rotation_center_y).await?,
+                Some(file) => {
+                    runtime
+                        .load_costume(file, costume.rotation_center_x, costume.rotation_center_y)
+                        .await?
+                }
                 None => return Err(format!("image not found: {}", costume.md5ext).into()),
             }
         }
