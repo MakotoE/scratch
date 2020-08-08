@@ -1,6 +1,6 @@
 use super::*;
 
-use runtime::SpriteRuntime;
+use runtime::{Coordinate, SpriteRuntime};
 use std::convert::TryFrom;
 
 pub trait Block: std::fmt::Debug {
@@ -217,6 +217,56 @@ impl Block for If {
 }
 
 #[derive(Debug)]
+pub struct MoveSteps {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    steps: Option<Box<dyn Block>>,
+}
+
+impl MoveSteps {
+    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            steps: None,
+        }
+    }
+}
+
+impl Block for MoveSteps {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "STEPS" => self.steps = Some(block),
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn set_field(&mut self, _: &str, _: String) {}
+
+    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+        return Ok(self.next.clone());
+    }
+
+    fn execute(&mut self) -> Result<()> {
+        let steps_value = match &self.steps {
+            Some(block) => block.value()?,
+            None => return Err("steps is None".into()),
+        };
+
+        let steps = steps_value
+            .as_f64()
+            .ok_or_else(|| wrong_type_err(&steps_value))?;
+        self.runtime
+            .borrow_mut()
+            .add_position(&Coordinate { x: steps, y: 0.0 });
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 pub struct Variable {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
@@ -262,9 +312,14 @@ impl TryFrom<serde_json::Value> for Number {
     type Error = Error;
 
     fn try_from(v: serde_json::Value) -> Result<Self> {
-        Ok(Self {
-            value: v.as_f64().ok_or_else(|| wrong_type_err(&v))?,
-        })
+        let value = match v.as_f64() {
+            Some(f) => f,
+            None => {
+                let s = v.as_str().ok_or_else(|| wrong_type_err(&v))?;
+                s.parse()?
+            }
+        };
+        Ok(Self { value })
     }
 }
 
@@ -422,6 +477,7 @@ pub fn get_block(
         "data_setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "operator_equals" => Box::new(Equals::new(id)),
         "control_if" => Box::new(If::new(id, runtime)),
+        "motion_movesteps" => Box::new(MoveSteps::new(id, runtime)),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }

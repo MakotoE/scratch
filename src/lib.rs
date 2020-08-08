@@ -31,6 +31,7 @@ error_chain::error_chain! {
         Zip(zip::result::ZipError);
         JSON(serde_json::error::Error);
         IO(std::io::Error);
+        ParseFloatError(std::num::ParseFloatError);
     }
 }
 

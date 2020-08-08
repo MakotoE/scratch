@@ -5,21 +5,27 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 #[derive(Debug)]
 pub struct SpriteRuntime {
     context: web_sys::CanvasRenderingContext2d,
-    pub x: f64,
-    pub y: f64,
+    position: Coordinate,
     pub variables: HashMap<String, serde_json::Value>,
-    pub costumes: Vec<Costume>,
+    costumes: Vec<Costume>,
 }
 
 impl SpriteRuntime {
     pub fn new(context: web_sys::CanvasRenderingContext2d) -> Self {
         Self {
             context,
-            x: 0.0,
-            y: 0.0,
+            position: Coordinate::default(),
             variables: HashMap::new(),
             costumes: Vec::new(),
         }
+    }
+
+    pub fn set_position(&mut self, position: Coordinate) {
+        self.position = position;
+    }
+
+    pub fn add_position(&mut self, coordinate: &Coordinate) {
+        self.position = self.position.add(coordinate);
     }
 
     pub async fn load_costume(
@@ -74,7 +80,7 @@ impl SpriteRuntime {
         let line_width: f64 = ctx.measure_text(s)?.width();
         let padded_width = line_width.max(50.0) + PADDING * 2.0;
 
-        ctx.translate(260.0 + self.x, 80.0 + self.y)?;
+        ctx.translate(260.0 + self.position.x, 80.0 + self.position.y)?;
 
         ctx.begin_path();
 
@@ -129,6 +135,21 @@ impl SpriteRuntime {
         ctx.set_fill_style(&"#575E75".into());
         ctx.fill_text(s, PADDING, PADDING + 0.9 * 15.0)?;
         Ok(())
+    }
+}
+
+#[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
+pub struct Coordinate {
+    pub x: f64,
+    pub y: f64,
+}
+
+impl Coordinate {
+    pub fn add(&self, other: &Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
     }
 }
 

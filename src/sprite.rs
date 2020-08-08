@@ -1,5 +1,6 @@
 use super::*;
 use block::*;
+use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug)]
 pub struct Sprite {
@@ -7,9 +8,11 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(mut runtime: runtime::SpriteRuntime, target: &savefile::Target) -> Result<Self> {
-        runtime.x = target.x;
-        runtime.y = target.y;
+    pub fn new(mut runtime: SpriteRuntime, target: &savefile::Target) -> Result<Self> {
+        runtime.set_position(Coordinate {
+            x: target.x,
+            y: target.y,
+        });
 
         let runtime_ref = Rc::new(RefCell::new(runtime));
         let mut threads: Vec<Thread> = Vec::new();
