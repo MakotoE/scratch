@@ -261,7 +261,7 @@ impl Block for MoveSteps {
             .ok_or_else(|| wrong_type_err(&steps_value))?;
         self.runtime
             .borrow_mut()
-            .add_position(&Coordinate { x: steps, y: 0.0 });
+            .add_position(&Coordinate::new(steps, 0.0));
         Ok(())
     }
 }

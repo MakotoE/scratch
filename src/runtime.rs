@@ -20,12 +20,17 @@ impl SpriteRuntime {
         }
     }
 
-    pub fn set_position(&mut self, position: Coordinate) {
-        self.position = position;
+    pub fn redraw(&self) -> Result<()> {
+        todo!()
     }
 
-    pub fn add_position(&mut self, coordinate: &Coordinate) {
+    pub fn set_position(&mut self, position: &Coordinate) {
+        self.position = *position;
+    }
+
+    pub fn add_position(&mut self, coordinate: &Coordinate) -> Result<()> {
         self.position = self.position.add(coordinate);
+        self.redraw()
     }
 
     pub async fn load_costume(
@@ -62,8 +67,8 @@ impl SpriteRuntime {
         };
         self.context.draw_image_with_html_image_element(
             &costume.image,
-            240.0 - costume.rotation_center_x,
-            180.0 - costume.rotation_center_y,
+            240.0 - costume.rotation_center_x + self.position.x,
+            180.0 - costume.rotation_center_y + self.position.y,
         )?;
         Ok(())
     }
@@ -140,16 +145,28 @@ impl SpriteRuntime {
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct Coordinate {
-    pub x: f64,
-    pub y: f64,
+    x: f64,
+    y: f64,
 }
 
 impl Coordinate {
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
     pub fn add(&self, other: &Self) -> Self {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
         }
+    }
+
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+
+    pub fn y(&self) -> f64 {
+        self.y
     }
 }
 
