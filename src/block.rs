@@ -51,7 +51,7 @@ impl Block for WhenFlagClicked {
     }
 
     fn execute(&mut self) -> Result<()> {
-        Ok(())
+        self.runtime.borrow().redraw()
     }
 }
 
@@ -90,15 +90,16 @@ impl Block for Say {
     }
 
     fn execute(&mut self) -> Result<()> {
-        match &self.message {
-            Some(value) => {
-                let v = value.value()?;
-                let message = v.as_str().ok_or_else(|| Error::from("invalid type"))?;
-                self.runtime.borrow().say(message)?;
-                Ok(())
-            }
-            None => Err("message is None".into()),
-        }
+        let message_block = match &self.message {
+            Some(v) => v,
+            None => return Err("message is None".into()),
+        };
+
+        let value = message_block.value()?;
+        let message = value.as_str().ok_or_else(|| Error::from("invalid type"))?;
+        self.runtime.borrow_mut().say(Some(message));
+        self.runtime.borrow().redraw()?;
+        Ok(())
     }
 }
 
@@ -262,7 +263,7 @@ impl Block for MoveSteps {
         self.runtime
             .borrow_mut()
             .add_position(&Coordinate::new(steps, 0.0));
-        Ok(())
+        self.runtime.borrow().redraw()
     }
 }
 

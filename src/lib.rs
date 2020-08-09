@@ -85,7 +85,6 @@ impl Page {
                 None => return Err(format!("image not found: {}", costume.md5ext).into()),
             }
         }
-        runtime.change_costume(0)?;
 
         let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1])?;
         sprite.execute()
