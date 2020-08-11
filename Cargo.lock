@@ -301,6 +301,8 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47204a46aaff920a1ea58b11d03dec6f704287d27561724a4631e450654a891f"
 dependencies = [
+ "futures-channel",
+ "futures-core",
  "js-sys",
  "wasm-bindgen",
  "web-sys",
@@ -470,6 +472,7 @@ dependencies = [
  "async-trait",
  "console_error_panic_hook",
  "error-chain",
+ "gloo-timers",
  "js-sys",
  "log",
  "serde",

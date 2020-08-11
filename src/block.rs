@@ -1,8 +1,9 @@
 use super::*;
 
+use async_trait::async_trait;
+use gloo_timers::future::TimeoutFuture;
 use runtime::{Coordinate, SpriteRuntime};
 use std::convert::TryFrom;
-use async_trait::async_trait;
 
 #[async_trait(?Send)]
 pub trait Block: std::fmt::Debug {
@@ -275,6 +276,54 @@ impl Block for MoveSteps {
 }
 
 #[derive(Debug)]
+pub struct Wait {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    duration: Option<Box<dyn Block>>,
+}
+
+impl Wait {
+    pub fn new(id: String) -> Self {
+        Self {
+            id,
+            next: None,
+            duration: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Wait {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "DURATION" => self.duration = Some(block),
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn set_field(&mut self, _: &str, _: String) {}
+
+    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+        return Ok(self.next.clone());
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let duration_value = match &self.duration {
+            Some(block) => block.value()?,
+            None => return Err("duration is None".into()),
+        };
+
+        let duration = duration_value
+            .as_f64()
+            .ok_or_else(|| wrong_type_err(&duration_value))?;
+        const MILLIS_PER_SECOND: f64 = 1000.0;
+        TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 pub struct Variable {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
@@ -491,6 +540,7 @@ pub fn get_block(
         "operator_equals" => Box::new(Equals::new(id)),
         "control_if" => Box::new(If::new(id, runtime)),
         "motion_movesteps" => Box::new(MoveSteps::new(id, runtime)),
+        "control_wait" => Box::new(Wait::new(id)),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }
