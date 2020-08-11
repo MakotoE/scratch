@@ -87,7 +87,7 @@ impl Page {
         }
 
         let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1])?;
-        sprite.execute()
+        sprite.execute().await
     }
 }
 

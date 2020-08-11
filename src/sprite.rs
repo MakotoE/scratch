@@ -27,9 +27,9 @@ impl Sprite {
         self.threads.as_slice()
     }
 
-    pub fn execute(&self) -> Result<()> {
+    pub async fn execute(&self) -> Result<()> {
         for t in &self.threads {
-            t.execute()?;
+            t.execute().await?;
         }
         Ok(())
     }
@@ -58,10 +58,10 @@ impl Thread {
         }
     }
 
-    pub fn execute(&self) -> Result<()> {
+    pub async fn execute(&self) -> Result<()> {
         let mut iter = self.iter();
         while let Some(next) = iter.next()? {
-            next.borrow_mut().execute()?;
+            next.borrow_mut().execute().await?;
         }
 
         Ok(())

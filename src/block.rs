@@ -2,7 +2,9 @@ use super::*;
 
 use runtime::{Coordinate, SpriteRuntime};
 use std::convert::TryFrom;
+use async_trait::async_trait;
 
+#[async_trait(?Send)]
 pub trait Block: std::fmt::Debug {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
     fn set_field(&mut self, key: &str, value_id: String);
@@ -15,7 +17,7 @@ pub trait Block: std::fmt::Debug {
         Err("this block does not return a value".into())
     }
 
-    fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Result<()> {
         Err("this block cannot be executed".into())
     }
 }
@@ -37,6 +39,7 @@ impl WhenFlagClicked {
     }
 }
 
+#[async_trait(?Send)]
 impl Block for WhenFlagClicked {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "next" {
@@ -50,7 +53,7 @@ impl Block for WhenFlagClicked {
         Ok(self.next.clone())
     }
 
-    fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Result<()> {
         self.runtime.borrow().redraw()
     }
 }
@@ -74,6 +77,7 @@ impl Say {
     }
 }
 
+#[async_trait(?Send)]
 impl Block for Say {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
@@ -89,7 +93,7 @@ impl Block for Say {
         Ok(self.next.clone())
     }
 
-    fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Result<()> {
         let message_block = match &self.message {
             Some(v) => v,
             None => return Err("message is None".into()),
@@ -124,6 +128,7 @@ impl SetVariable {
     }
 }
 
+#[async_trait(?Send)]
 impl Block for SetVariable {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
@@ -143,7 +148,7 @@ impl Block for SetVariable {
         Ok(self.next.clone())
     }
 
-    fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Result<()> {
         let variable_id = match &self.variable_id {
             Some(id) => id,
             None => return Err("variable_id is None".into()),
@@ -181,6 +186,7 @@ impl If {
     }
 }
 
+#[async_trait(?Send)]
 impl Block for If {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
@@ -212,7 +218,7 @@ impl Block for If {
         return Ok(self.next.clone());
     }
 
-    fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Result<()> {
         Ok(())
     }
 }
@@ -236,6 +242,7 @@ impl MoveSteps {
     }
 }
 
+#[async_trait(?Send)]
 impl Block for MoveSteps {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
@@ -251,7 +258,7 @@ impl Block for MoveSteps {
         return Ok(self.next.clone());
     }
 
-    fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Result<()> {
         let steps_value = match &self.steps {
             Some(block) => block.value()?,
             None => return Err("steps is None".into()),
@@ -279,6 +286,7 @@ impl Variable {
     }
 }
 
+#[async_trait(?Send)]
 impl Block for Variable {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
@@ -300,6 +308,7 @@ pub struct Number {
     value: f64,
 }
 
+#[async_trait(?Send)]
 impl Block for Number {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
@@ -329,6 +338,7 @@ pub struct BlockString {
     value: String,
 }
 
+#[async_trait(?Send)]
 impl Block for BlockString {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
@@ -365,6 +375,7 @@ impl Equals {
     }
 }
 
+#[async_trait(?Send)]
 impl Block for Equals {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
@@ -459,9 +470,10 @@ pub fn new_block(
     Ok(block)
 }
 
+/// https://en.scratch-wiki.info/wiki/Scratch_File_Format
 pub fn new_value(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Block>> {
     Ok(match value_type {
-        4 => Box::new(Number::try_from(value)?),
+        4 | 5 | 6 | 7 => Box::new(Number::try_from(value)?),
         10 => Box::new(BlockString::try_from(value)?),
         _ => return Err(format!("value_type {} does not exist", value_type).into()),
     })
