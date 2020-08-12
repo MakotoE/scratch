@@ -15,10 +15,11 @@ pub trait Block: std::fmt::Debug {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
 
-    fn set_field(&mut self, key: &str, value_id: String);
+    #[allow(unused_variables)]
+    fn set_field(&mut self, key: &str, value_id: String) {}
 
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
-        Ok(None)
+    fn next(&self) -> Result<Next> {
+        unreachable!()
     }
 
     fn value(&self) -> Result<serde_json::Value> {
@@ -30,11 +31,18 @@ pub trait Block: std::fmt::Debug {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum Next {
+    None,
+    Continue(Rc<RefCell<Box<dyn Block>>>),
+    Loop(Rc<RefCell<Box<dyn Block>>>),
+}
+
 #[derive(Debug)]
 pub struct WhenFlagClicked {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Next,
 }
 
 impl WhenFlagClicked {
@@ -42,7 +50,7 @@ impl WhenFlagClicked {
         Self {
             id: id.to_string(),
             runtime,
-            next: None,
+            next: Next::None,
         }
     }
 }
@@ -59,13 +67,11 @@ impl Block for WhenFlagClicked {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Next::Continue(Rc::new(RefCell::new(block)));
         }
     }
 
-    fn set_field(&mut self, _: &str, _: String) {}
-
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+    fn next(&self) -> Result<Next> {
         Ok(self.next.clone())
     }
 
@@ -79,7 +85,7 @@ pub struct Say {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
     message: Option<Box<dyn Block>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Next,
 }
 
 impl Say {
@@ -88,7 +94,7 @@ impl Say {
             id: id.to_string(),
             runtime,
             message: None,
-            next: None,
+            next: Next::None,
         }
     }
 
@@ -113,15 +119,13 @@ impl Block for Say {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Next::Continue(Rc::new(RefCell::new(block))),
             "MESSAGE" => self.message = Some(block),
             _ => {}
         }
     }
 
-    fn set_field(&mut self, _: &str, _: String) {}
-
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+    fn next(&self) -> Result<Next> {
         Ok(self.next.clone())
     }
 
@@ -145,7 +149,7 @@ pub struct SetVariable {
     runtime: Rc<RefCell<SpriteRuntime>>,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Next,
 }
 
 impl SetVariable {
@@ -155,7 +159,7 @@ impl SetVariable {
             runtime,
             variable_id: None,
             value: None,
-            next: None,
+            next: Next::None,
         }
     }
 }
@@ -172,7 +176,7 @@ impl Block for SetVariable {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Next::Continue(Rc::new(RefCell::new(block))),
             "VALUE" => self.value = Some(block),
             _ => {}
         }
@@ -184,7 +188,7 @@ impl Block for SetVariable {
         }
     }
 
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+    fn next(&self) -> Result<Next> {
         Ok(self.next.clone())
     }
 
@@ -211,7 +215,7 @@ pub struct ChangeVariable {
     runtime: Rc<RefCell<SpriteRuntime>>,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Next,
 }
 
 impl ChangeVariable {
@@ -221,7 +225,7 @@ impl ChangeVariable {
             runtime,
             variable_id: None,
             value: None,
-            next: None,
+            next: Next::None,
         }
     }
 }
@@ -238,7 +242,7 @@ impl Block for ChangeVariable {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Next::Continue(Rc::new(RefCell::new(block))),
             "VALUE" => self.value = Some(block),
             _ => {}
         }
@@ -250,7 +254,7 @@ impl Block for ChangeVariable {
         }
     }
 
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+    fn next(&self) -> Result<Next> {
         Ok(self.next.clone())
     }
 
@@ -294,8 +298,8 @@ pub struct If {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
     condition: Option<Box<dyn Block>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Next,
+    substack: Next,
 }
 
 impl If {
@@ -304,8 +308,8 @@ impl If {
             id,
             runtime,
             condition: None,
-            next: None,
-            substack: None,
+            next: Next::None,
+            substack: Next::None,
         }
     }
 }
@@ -322,16 +326,14 @@ impl Block for If {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Next::Continue(Rc::new(RefCell::new(block))),
             "CONDITION" => self.condition = Some(block),
-            "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
+            "SUBSTACK" => self.substack = Next::Continue(Rc::new(RefCell::new(block))),
             _ => {}
         }
     }
 
-    fn set_field(&mut self, _: &str, _: String) {}
-
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+    fn next(&self) -> Result<Next> {
         let condition = match &self.condition {
             Some(id) => id,
             None => return Ok(self.next.clone()),
@@ -359,7 +361,7 @@ impl Block for If {
 pub struct MoveSteps {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Next,
     steps: Option<Box<dyn Block>>,
 }
 
@@ -368,7 +370,7 @@ impl MoveSteps {
         Self {
             id,
             runtime,
-            next: None,
+            next: Next::None,
             steps: None,
         }
     }
@@ -387,14 +389,12 @@ impl Block for MoveSteps {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "STEPS" => self.steps = Some(block),
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Next::Continue(Rc::new(RefCell::new(block))),
             _ => {}
         }
     }
 
-    fn set_field(&mut self, _: &str, _: String) {}
-
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+    fn next(&self) -> Result<Next> {
         return Ok(self.next.clone());
     }
 
@@ -417,7 +417,7 @@ impl Block for MoveSteps {
 #[derive(Debug)]
 pub struct Wait {
     id: String,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Next,
     duration: Option<Box<dyn Block>>,
 }
 
@@ -425,7 +425,7 @@ impl Wait {
     pub fn new(id: String) -> Self {
         Self {
             id,
-            next: None,
+            next: Next::None,
             duration: None,
         }
     }
@@ -444,15 +444,13 @@ impl Block for Wait {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "DURATION" => self.duration = Some(block),
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Next::Continue(Rc::new(RefCell::new(block))),
             _ => {}
         }
     }
 
-    fn set_field(&mut self, _: &str, _: String) {}
-
-    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
-        return Ok(self.next.clone());
+    fn next(&self) -> Result<Next> {
+        Ok(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -466,6 +464,47 @@ impl Block for Wait {
             .ok_or_else(|| wrong_type_err(&duration_value))?;
         const MILLIS_PER_SECOND: f64 = 1000.0;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct Forever {
+    id: String,
+    substack: Next,
+}
+
+impl Forever {
+    pub fn new(id: String) -> Self {
+        Self {
+            id,
+            substack: Next::None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Forever {
+    fn block_name(&self) -> &'static str {
+        "Forever"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "SUBSTACK" => self.substack = Next::Loop(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn next(&self) -> Result<Next> {
+        Ok(self.substack.clone())
+    }
+
+    async fn execute(&mut self) -> Result<()> {
         Ok(())
     }
 }
@@ -493,7 +532,6 @@ impl Block for Variable {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         match self.runtime.borrow().variables.get(&self.id) {
@@ -519,7 +557,6 @@ impl Block for Number {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.into())
@@ -551,7 +588,6 @@ impl Block for BlockString {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.clone().into())
@@ -602,8 +638,6 @@ impl Block for Equals {
             _ => {}
         }
     }
-
-    fn set_field(&mut self, _: &str, _: String) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         let a = match &self.operand1 {
@@ -711,6 +745,7 @@ pub fn get_block(
         "motion_movesteps" => Box::new(MoveSteps::new(id, runtime)),
         "control_wait" => Box::new(Wait::new(id)),
         "data_changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
+        "control_forever" => Box::new(Forever::new(id)),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }

@@ -38,7 +38,7 @@ error_chain::error_chain! {
         Block(block_name: &'static str, block_id: String, error: Box<Error>) {
             description("block error")
             display(
-                r#"block {} of type {} returned error during execution: {}"#,
+                r#"block "{}" of type {} returned error during execution: {}"#,
                 block_id,
                 block_name,
                 error.to_string(),
