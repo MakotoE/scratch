@@ -88,39 +88,38 @@ pub struct ThreadIterator {
 impl ThreadIterator {
     fn new(hat: Rc<RefCell<Box<dyn Block>>>) -> Self {
         Self {
-            curr: Rc::new(RefCell::new(Box::new(DummyBlock {
-                next: Next::Continue(hat),
-            }))),
+            curr: Rc::new(RefCell::new(Box::new(DummyBlock { next: hat }))),
             loop_stack: Vec::new(),
         }
     }
 
     fn next(&mut self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
         let next = self.curr.borrow().next()?;
-        Ok(match next {
+        match next {
             Next::None => match self.loop_stack.pop() {
                 Some(b) => {
                     self.curr = b.clone();
-                    Some(b)
+                    Ok(Some(b))
                 }
-                None => None,
+                None => Ok(None),
             },
+            Next::Err(e) => Err(e),
             Next::Continue(b) => {
                 self.curr = b.clone();
-                Some(b)
+                Ok(Some(b))
             }
             Next::Loop(b) => {
                 self.loop_stack.push(self.curr.clone());
                 self.curr = b.clone();
-                Some(b)
+                Ok(Some(b))
             }
-        })
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct DummyBlock {
-    next: Next,
+    next: Rc<RefCell<Box<dyn Block>>>,
 }
 
 impl Block for DummyBlock {
@@ -135,8 +134,8 @@ impl Block for DummyBlock {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Result<Next> {
-        Ok(self.next.clone())
+    fn next(&self) -> Next {
+        Next::Continue(self.next.clone())
     }
 }
 
@@ -172,7 +171,8 @@ mod tests {
                 assert!(iter.next().unwrap().is_none());
             }
             {
-                let block_0 = Next::Continue(Rc::new(RefCell::new(Box::new(LastBlock {}))));
+                let block_0: Rc<RefCell<Box<dyn Block>>> =
+                    Rc::new(RefCell::new(Box::new(LastBlock {})));
                 let block_1: Rc<RefCell<Box<dyn Block>>> =
                     Rc::new(RefCell::new(Box::new(DummyBlock { next: block_0 })));
                 let mut iter = ThreadIterator::new(block_1);
