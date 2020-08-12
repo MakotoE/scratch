@@ -76,6 +76,14 @@ impl Say {
             next: None,
         }
     }
+
+    fn value_to_string(value: &serde_json::Value) -> String {
+        match value {
+            serde_json::Value::String(s) => s.to_string(),
+            serde_json::Value::Number(n) => n.to_string(),
+            _ => value.to_string(),
+        }
+    }
 }
 
 #[async_trait(?Send)]
@@ -101,8 +109,8 @@ impl Block for Say {
         };
 
         let value = message_block.value()?;
-        let message = value.as_str().ok_or_else(|| Error::from("invalid type"))?;
-        self.runtime.borrow_mut().say(Some(message));
+        let message = Say::value_to_string(&value);
+        self.runtime.borrow_mut().say(Some(&message));
         self.runtime.borrow().redraw()?;
         Ok(())
     }
@@ -162,6 +170,82 @@ impl Block for SetVariable {
             .borrow_mut()
             .variables
             .insert(variable_id.clone(), value.clone());
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct ChangeVariable {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    variable_id: Option<String>,
+    value: Option<Box<dyn Block>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl ChangeVariable {
+    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id,
+            runtime,
+            variable_id: None,
+            value: None,
+            next: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for ChangeVariable {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "VALUE" => self.value = Some(block),
+            _ => {}
+        }
+    }
+
+    fn set_field(&mut self, key: &str, value_id: String) {
+        if key == "VARIABLE" {
+            self.variable_id = Some(value_id.to_string());
+        }
+    }
+
+    fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
+        Ok(self.next.clone())
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let variable_id = match &self.variable_id {
+            Some(id) => id,
+            None => return Err("variable_id is None".into()),
+        };
+
+        let previous_value = match self.runtime.borrow_mut().variables.remove(variable_id) {
+            Some(v) => v,
+            None => return Err(format!("variable {} does not exist", variable_id).into()),
+        };
+
+        let previous_float: f64 = match previous_value {
+            serde_json::Value::String(s) => serde_json::from_str(&s).unwrap_or(0.0),
+            serde_json::Value::Number(n) => n.as_f64().unwrap_or(0.0),
+            _ => 0.0,
+        };
+
+        let value = match &self.value {
+            Some(v) => v.value()?,
+            None => return Err("value is None".into()),
+        };
+
+        let value_float = match value.as_f64() {
+            Some(f) => f,
+            None => return Err("value is not float".into()),
+        };
+
+        self.runtime
+            .borrow_mut()
+            .variables
+            .insert(variable_id.clone(), (previous_float + value_float).into());
         Ok(())
     }
 }
@@ -541,6 +625,7 @@ pub fn get_block(
         "control_if" => Box::new(If::new(id, runtime)),
         "motion_movesteps" => Box::new(MoveSteps::new(id, runtime)),
         "control_wait" => Box::new(Wait::new(id)),
+        "data_changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }
