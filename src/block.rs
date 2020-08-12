@@ -7,7 +7,14 @@ use std::convert::TryFrom;
 
 #[async_trait(?Send)]
 pub trait Block: std::fmt::Debug {
+    fn block_name(&self) -> &'static str;
+
+    fn id(&self) -> &str {
+        unreachable!()
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
+
     fn set_field(&mut self, key: &str, value_id: String);
 
     fn next(&self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
@@ -42,6 +49,14 @@ impl WhenFlagClicked {
 
 #[async_trait(?Send)]
 impl Block for WhenFlagClicked {
+    fn block_name(&self) -> &'static str {
+        "WhenFlagClicked"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "next" {
             self.next = Some(Rc::new(RefCell::new(block)));
@@ -88,6 +103,14 @@ impl Say {
 
 #[async_trait(?Send)]
 impl Block for Say {
+    fn block_name(&self) -> &'static str {
+        "Say"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
@@ -139,6 +162,14 @@ impl SetVariable {
 
 #[async_trait(?Send)]
 impl Block for SetVariable {
+    fn block_name(&self) -> &'static str {
+        "SetVariable"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
@@ -197,6 +228,14 @@ impl ChangeVariable {
 
 #[async_trait(?Send)]
 impl Block for ChangeVariable {
+    fn block_name(&self) -> &'static str {
+        "ChangeVariable"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
@@ -227,7 +266,7 @@ impl Block for ChangeVariable {
         };
 
         let previous_float: f64 = match previous_value {
-            serde_json::Value::String(s) => serde_json::from_str(&s).unwrap_or(0.0),
+            serde_json::Value::String(s) => s.parse().unwrap_or(0.0),
             serde_json::Value::Number(n) => n.as_f64().unwrap_or(0.0),
             _ => 0.0,
         };
@@ -273,6 +312,14 @@ impl If {
 
 #[async_trait(?Send)]
 impl Block for If {
+    fn block_name(&self) -> &'static str {
+        "If"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
@@ -329,6 +376,14 @@ impl MoveSteps {
 
 #[async_trait(?Send)]
 impl Block for MoveSteps {
+    fn block_name(&self) -> &'static str {
+        "MoveSteps"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "STEPS" => self.steps = Some(block),
@@ -378,6 +433,14 @@ impl Wait {
 
 #[async_trait(?Send)]
 impl Block for Wait {
+    fn block_name(&self) -> &'static str {
+        "Wait"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "DURATION" => self.duration = Some(block),
@@ -421,6 +484,14 @@ impl Variable {
 
 #[async_trait(?Send)]
 impl Block for Variable {
+    fn block_name(&self) -> &'static str {
+        "Variable"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
@@ -443,6 +514,10 @@ pub struct Number {
 
 #[async_trait(?Send)]
 impl Block for Number {
+    fn block_name(&self) -> &'static str {
+        "Number"
+    }
+
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
@@ -455,12 +530,10 @@ impl TryFrom<serde_json::Value> for Number {
     type Error = Error;
 
     fn try_from(v: serde_json::Value) -> Result<Self> {
-        let value = match v.as_f64() {
-            Some(f) => f,
-            None => {
-                let s = v.as_str().ok_or_else(|| wrong_type_err(&v))?;
-                s.parse()?
-            }
+        let value: f64 = match v {
+            serde_json::Value::Number(f) => f.as_f64().unwrap(),
+            serde_json::Value::String(s) => s.parse()?,
+            _ => return Err(wrong_type_err(&v)),
         };
         Ok(Self { value })
     }
@@ -473,6 +546,10 @@ pub struct BlockString {
 
 #[async_trait(?Send)]
 impl Block for BlockString {
+    fn block_name(&self) -> &'static str {
+        "BlockString"
+    }
+
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
@@ -510,6 +587,14 @@ impl Equals {
 
 #[async_trait(?Send)]
 impl Block for Equals {
+    fn block_name(&self) -> &'static str {
+        "Equals"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "OPERAND1" => self.operand1 = Some(block),

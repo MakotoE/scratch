@@ -61,7 +61,14 @@ impl Thread {
     pub async fn execute(&self) -> Result<()> {
         let mut iter = self.iter();
         while let Some(next) = iter.next()? {
-            next.borrow_mut().execute().await?;
+            let result = next.borrow_mut().execute().await;
+            result.map_err(|e| {
+                ErrorKind::Block(
+                    next.borrow().block_name(),
+                    next.borrow().id().to_string(),
+                    Box::new(e),
+                )
+            })?;
         }
 
         Ok(())
@@ -102,6 +109,14 @@ pub struct DummyBlock {
 }
 
 impl Block for DummyBlock {
+    fn block_name(&self) -> &'static str {
+        "DummyBlock"
+    }
+
+    fn id(&self) -> &str {
+        ""
+    }
+
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
@@ -120,6 +135,14 @@ mod tests {
         struct LastBlock {}
 
         impl Block for LastBlock {
+            fn block_name(&self) -> &'static str {
+                "LastBlock"
+            }
+
+            fn id(&self) -> &str {
+                ""
+            }
+
             fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
             fn set_field(&mut self, _: &str, _: String) {}
         }
