@@ -82,13 +82,15 @@ impl Thread {
 #[derive(Debug)]
 pub struct ThreadIterator {
     curr: Rc<RefCell<Box<dyn Block>>>,
-    loop_stack: Vec<Rc<RefCell<Box<dyn Block>>>>
+    loop_stack: Vec<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl ThreadIterator {
     fn new(hat: Rc<RefCell<Box<dyn Block>>>) -> Self {
         Self {
-            curr: Rc::new(RefCell::new(Box::new(DummyBlock { next: Next::Continue(hat) }))),
+            curr: Rc::new(RefCell::new(Box::new(DummyBlock {
+                next: Next::Continue(hat),
+            }))),
             loop_stack: Vec::new(),
         }
     }
@@ -100,7 +102,7 @@ impl ThreadIterator {
                 Some(b) => {
                     self.curr = b.clone();
                     Some(b)
-                },
+                }
                 None => None,
             },
             Next::Continue(b) => {
@@ -108,8 +110,8 @@ impl ThreadIterator {
                 Some(b)
             }
             Next::Loop(b) => {
+                self.loop_stack.push(self.curr.clone());
                 self.curr = b.clone();
-                self.loop_stack.push(b.clone());
                 Some(b)
             }
         })
@@ -170,8 +172,7 @@ mod tests {
                 assert!(iter.next().unwrap().is_none());
             }
             {
-                let block_0 =
-                    Next::Continue(Rc::new(RefCell::new(Box::new(LastBlock {}))));
+                let block_0 = Next::Continue(Rc::new(RefCell::new(Box::new(LastBlock {}))));
                 let block_1: Rc<RefCell<Box<dyn Block>>> =
                     Rc::new(RefCell::new(Box::new(DummyBlock { next: block_0 })));
                 let mut iter = ThreadIterator::new(block_1);

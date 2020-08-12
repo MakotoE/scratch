@@ -13,11 +13,14 @@ pub struct SpriteRuntime {
 }
 
 impl SpriteRuntime {
-    pub fn new(context: web_sys::CanvasRenderingContext2d) -> Self {
+    pub fn new(
+        context: web_sys::CanvasRenderingContext2d,
+        variables: HashMap<String, serde_json::Value>,
+    ) -> Self {
         Self {
             context,
             position: Coordinate::default(),
-            variables: HashMap::new(),
+            variables,
             costumes: Vec::new(),
             current_costume: 0,
             text: None,
@@ -25,6 +28,8 @@ impl SpriteRuntime {
     }
 
     pub fn redraw(&self) -> Result<()> {
+        self.context.reset_transform()?;
+        self.context.scale(2.0, 2.0)?;
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
 
         let costume = match self.costumes.get(self.current_costume) {
@@ -37,8 +42,8 @@ impl SpriteRuntime {
         };
         self.context.draw_image_with_html_image_element(
             &costume.image,
-            240.0 - costume.rotation_center_x + self.position.x,
-            180.0 - costume.rotation_center_y + self.position.y,
+            240.0 - costume.rotation_center.x + self.position.x,
+            180.0 - costume.rotation_center.y + self.position.y,
         )?;
 
         if let Some(text) = &self.text {
@@ -114,12 +119,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    pub async fn load_costume(
-        &mut self,
-        file: &str,
-        rotation_center_x: f64,
-        rotation_center_y: f64,
-    ) -> Result<()> {
+    pub async fn load_costume(&mut self, file: &str, rotation_center: Coordinate) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         parts.set(0, file.into());
         let mut properties = BlobPropertyBag::new();
@@ -135,8 +135,7 @@ impl SpriteRuntime {
 
         self.costumes.push(Costume {
             image,
-            rotation_center_x,
-            rotation_center_y,
+            rotation_center,
         });
         Ok(())
     }
@@ -188,6 +187,5 @@ impl Coordinate {
 #[derive(Debug)]
 pub struct Costume {
     image: HtmlImageElement,
-    rotation_center_x: f64,
-    rotation_center_y: f64,
+    rotation_center: Coordinate,
 }

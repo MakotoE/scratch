@@ -86,13 +86,20 @@ impl Page {
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: ScratchFile,
     ) -> Result<()> {
-        let mut runtime = runtime::SpriteRuntime::new(context);
+        let mut variables: HashMap<String, serde_json::Value> = HashMap::new();
+        for (key, v) in &scratch_file.project.targets[0].variables {
+            variables.insert(key.clone(), v.1.clone());
+        }
+
+        let mut runtime = runtime::SpriteRuntime::new(context, variables);
         for costume in &scratch_file.project.targets[1].costumes {
             match &scratch_file.images.get(&costume.md5ext) {
                 Some(file) => {
-                    runtime
-                        .load_costume(file, costume.rotation_center_x, costume.rotation_center_y)
-                        .await?
+                    let rotation_center = runtime::Coordinate::new(
+                        costume.rotation_center_x,
+                        costume.rotation_center_y,
+                    );
+                    runtime.load_costume(file, rotation_center).await?
                 }
                 None => return Err(format!("image not found: {}", costume.md5ext).into()),
             }
@@ -133,7 +140,6 @@ impl Component for Page {
                     .unwrap()
                     .dyn_into()
                     .unwrap();
-                ctx.scale(2.0, 2.0).unwrap();
                 let future = (async || match Page::run(ctx, scratch_file).await {
                     Ok(_) => {}
                     Err(e) => log::error!("{}", e),

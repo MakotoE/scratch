@@ -24,7 +24,7 @@ pub struct Project {
 pub struct Target {
     pub is_stage: bool,
     pub name: String,
-    pub variables: HashMap<String, (String, f64)>,
+    pub variables: HashMap<String, (String, serde_json::Value)>,
     pub blocks: HashMap<String, Block>,
     pub costumes: Vec<Costume>,
     #[serde(default)]
