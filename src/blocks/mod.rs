@@ -17,20 +17,29 @@ fn get_block(
     info: &savefile::Block,
 ) -> Result<Box<dyn Block>> {
     Ok(match info.opcode.as_str() {
-        "event_whenflagclicked" => Box::new(event::WhenFlagClicked::new(id, runtime)),
-        "looks_say" => Box::new(looks::Say::new(id, runtime)),
-        "looks_sayforsecs" => Box::new(looks::SayForSecs::new(id, runtime)),
-        "data_setvariableto" => Box::new(data::SetVariable::new(id, runtime)),
-        "operator_equals" => Box::new(operator::Equals::new(id)),
         "control_if" => Box::new(control::If::new(id, runtime)),
-        "motion_movesteps" => Box::new(motion::MoveSteps::new(id, runtime)),
-        "control_wait" => Box::new(control::Wait::new(id)),
-        "data_changevariableby" => Box::new(data::ChangeVariable::new(id, runtime)),
         "control_forever" => Box::new(control::Forever::new(id)),
         "control_repeat" => Box::new(control::Repeat::new(id)),
+        "control_wait" => Box::new(control::Wait::new(id)),
+
+        "data_setvariableto" => Box::new(data::SetVariable::new(id, runtime)),
+        "data_changevariableby" => Box::new(data::ChangeVariable::new(id, runtime)),
+
+        "event_whenflagclicked" => Box::new(event::WhenFlagClicked::new(id, runtime)),
+
+        "looks_say" => Box::new(looks::Say::new(id, runtime)),
+        "looks_sayforsecs" => Box::new(looks::SayForSecs::new(id, runtime)),
+
+        "motion_movesteps" => Box::new(motion::MoveSteps::new(id, runtime)),
         "motion_gotoxy" => Box::new(motion::GoToXY::new(id, runtime)),
         "motion_changexby" => Box::new(motion::ChangeXBy::new(id, runtime)),
         "motion_changeyby" => Box::new(motion::ChangeYBy::new(id, runtime)),
+
+        "operator_equals" => Box::new(operator::Equals::new(id)),
+        "operator_add" => Box::new(operator::Add::new(id)),
+        "operator_subtract" => Box::new(operator::Subtract::new(id)),
+        "operator_multiply" => Box::new(operator::Multiply::new(id)),
+        "operator_divide" => Box::new(operator::Divide::new(id)),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }
