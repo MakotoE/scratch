@@ -59,10 +59,12 @@ impl std::ops::Try for Next {
     }
 }
 
-pub(crate) fn option_to_next(next: &Option<Rc<RefCell<Box<dyn Block>>>>) -> Next {
-    match next {
-        Some(b) => Next::Continue(b.clone()),
-        None => Next::None,
+impl std::convert::From<Option<Rc<RefCell<Box<dyn Block>>>>> for Next {
+    fn from(next: Option<Rc<RefCell<Box<dyn Block>>>>) -> Self {
+        match next {
+            Some(b) => Next::Continue(b),
+            None => Next::None,
+        }
     }
 }
 
@@ -100,7 +102,7 @@ impl Block for WhenFlagClicked {
     }
 
     fn next(&self) -> Next {
-        option_to_next(&self.next)
+        self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -154,7 +156,7 @@ impl Block for Say {
     }
 
     fn next(&self) -> Next {
-        option_to_next(&self.next)
+        self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -217,7 +219,7 @@ impl Block for SetVariable {
     }
 
     fn next(&self) -> Next {
-        option_to_next(&self.next)
+        self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -235,6 +237,14 @@ impl Block for SetVariable {
             .insert(variable_id.clone(), value.clone());
         Ok(())
     }
+}
+
+fn value_to_float(value: &serde_json::Value) -> Result<f64> {
+    Ok(match value {
+        serde_json::Value::String(s) => s.parse()?,
+        serde_json::Value::Number(n) => n.as_f64().ok_or_else(|| wrong_type_err(&value))?,
+        _ => return Err(wrong_type_err(&value)),
+    })
 }
 
 #[derive(Debug)]
@@ -283,7 +293,7 @@ impl Block for ChangeVariable {
     }
 
     fn next(&self) -> Next {
-        option_to_next(&self.next)
+        self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -297,11 +307,7 @@ impl Block for ChangeVariable {
             None => return Err(format!("variable {} does not exist", variable_id).into()),
         };
 
-        let previous_float: f64 = match previous_value {
-            serde_json::Value::String(s) => s.parse().unwrap_or(0.0),
-            serde_json::Value::Number(n) => n.as_f64().unwrap_or(0.0),
-            _ => 0.0,
-        };
+        let previous_float: f64 = value_to_float(&previous_value).unwrap_or(0.0);
 
         let value = match &self.value {
             Some(v) => v.value()?,
@@ -364,7 +370,7 @@ impl Block for If {
     fn next(&self) -> Next {
         let condition = match &self.condition {
             Some(id) => id,
-            None => return option_to_next(&self.next),
+            None => return self.next.clone().into(),
         };
 
         let value = condition.value()?;
@@ -374,10 +380,10 @@ impl Block for If {
         };
 
         if value_bool {
-            return option_to_next(&self.substack);
+            return self.substack.clone().into();
         }
 
-        return option_to_next(&self.next);
+        return self.next.clone().into();
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -423,7 +429,7 @@ impl Block for MoveSteps {
     }
 
     fn next(&self) -> Next {
-        return option_to_next(&self.next);
+        return self.next.clone().into();
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -478,7 +484,7 @@ impl Block for Wait {
     }
 
     fn next(&self) -> Next {
-        option_to_next(&self.next)
+        self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -530,6 +536,62 @@ impl Block for Forever {
             Some(b) => Next::Loop(b.clone()),
             None => Next::None,
         }
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct Repeat {
+    id: String,
+    times: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    count: usize,
+}
+
+impl Repeat {
+    pub fn new(id: String) -> Self {
+        Self { id, times: None, next: None, substack: None, count: 0 }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Repeat {
+    fn block_name(&self) -> &'static str {
+        "Repeat"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        let block_ref = Some(Rc::new(RefCell::new(block)));
+        match key {
+            "TIMES" => self.times = block_ref,
+            "NEXT" => self.next = block_ref,
+            "SUBSTACK" => self.substack = block_ref,
+            _ => {}
+        }
+    }
+
+    fn next(&self) -> Next {
+        let times = match &self.times {
+            Some(v) => value_to_float(&v.borrow().value()?)?,
+            None => return Next::Err("times is None".into()),
+        };
+
+        if self.count < times as usize { // Loop until count equals times
+            return match &self.substack {
+                Some(b) => Next::Loop(b.clone()),
+                None => Next::None,
+            };
+        }
+
+        self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -595,12 +657,7 @@ impl TryFrom<serde_json::Value> for Number {
     type Error = Error;
 
     fn try_from(v: serde_json::Value) -> Result<Self> {
-        let value: f64 = match v {
-            serde_json::Value::Number(f) => f.as_f64().unwrap(),
-            serde_json::Value::String(s) => s.parse()?,
-            _ => return Err(wrong_type_err(&v)),
-        };
-        Ok(Self { value })
+        Ok(Self { value: value_to_float(&v)? })
     }
 }
 
@@ -774,6 +831,7 @@ pub fn get_block(
         "control_wait" => Box::new(Wait::new(id)),
         "data_changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
         "control_forever" => Box::new(Forever::new(id)),
+        "control_repeat" => Box::new(Repeat::new(id)),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }
