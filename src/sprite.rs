@@ -94,7 +94,7 @@ impl ThreadIterator {
     }
 
     fn next(&mut self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
-        let next = self.curr.borrow().next()?;
+        let next = self.curr.borrow_mut().next()?;
         match next {
             Next::None => match self.loop_stack.pop() {
                 Some(b) => {
@@ -134,7 +134,7 @@ impl Block for DummyBlock {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
     fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         Next::Continue(self.next.clone())
     }
 }

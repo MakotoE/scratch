@@ -18,7 +18,7 @@ pub trait Block: std::fmt::Debug {
     #[allow(unused_variables)]
     fn set_field(&mut self, key: &str, value_id: String) {}
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         unreachable!()
     }
 
@@ -101,7 +101,7 @@ impl Block for WhenFlagClicked {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         self.next.clone().into()
     }
 
@@ -155,20 +155,79 @@ impl Block for Say {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
-        let message_block = match &self.message {
-            Some(v) => v,
+        let message = match &self.message {
+            Some(b) => Say::value_to_string(&b.value()?),
+            None => return Err("message is None".into()),
+        };
+        self.runtime.borrow_mut().say(Some(&message));
+        self.runtime.borrow().redraw()?;
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct SayForSecs {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    message: Option<Box<dyn Block>>,
+    secs: Option<Box<dyn Block>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl SayForSecs {
+    fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            message: None,
+            secs: None,
+            next: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SayForSecs {
+    fn block_name(&self) -> &'static str {
+        "SayForSecs"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "MESSAGE" => self.message = Some(block),
+            "SECS" => self.secs = Some(block),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let message = match &self.message {
+            Some(b) => Say::value_to_string(&b.value()?),
             None => return Err("message is None".into()),
         };
 
-        let value = message_block.value()?;
-        let message = Say::value_to_string(&value);
+        let seconds = match &self.secs {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("secs is None".into()),
+        };
+
         self.runtime.borrow_mut().say(Some(&message));
         self.runtime.borrow().redraw()?;
+        TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
         Ok(())
     }
 }
@@ -218,7 +277,7 @@ impl Block for SetVariable {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         self.next.clone().into()
     }
 
@@ -243,7 +302,7 @@ fn value_to_float(value: &serde_json::Value) -> Result<f64> {
     Ok(match value {
         serde_json::Value::String(s) => s.parse()?,
         serde_json::Value::Number(n) => n.as_f64().ok_or_else(|| wrong_type_err(&value))?,
-        _ => return Err(wrong_type_err(&value)),
+        _ => return Err(format!("expected String or Number but got: {:?}", value).into()),
     })
 }
 
@@ -292,7 +351,7 @@ impl Block for ChangeVariable {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         self.next.clone().into()
     }
 
@@ -367,7 +426,7 @@ impl Block for If {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         let condition = match &self.condition {
             Some(id) => id,
             None => return self.next.clone().into(),
@@ -428,7 +487,7 @@ impl Block for MoveSteps {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         return self.next.clone().into();
     }
 
@@ -447,6 +506,8 @@ impl Block for MoveSteps {
         self.runtime.borrow().redraw()
     }
 }
+
+const MILLIS_PER_SECOND: f64 = 1000.0;
 
 #[derive(Debug)]
 pub struct Wait {
@@ -483,20 +544,16 @@ impl Block for Wait {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         self.next.clone().into()
     }
 
     async fn execute(&mut self) -> Result<()> {
-        let duration_value = match &self.duration {
-            Some(block) => block.value()?,
+        let duration = match &self.duration {
+            Some(block) => value_to_float(&block.value()?)?,
             None => return Err("duration is None".into()),
         };
 
-        let duration = duration_value
-            .as_f64()
-            .ok_or_else(|| wrong_type_err(&duration_value))?;
-        const MILLIS_PER_SECOND: f64 = 1000.0;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
         Ok(())
     }
@@ -531,7 +588,7 @@ impl Block for Forever {
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         match &self.substack {
             Some(b) => Next::Loop(b.clone()),
             None => Next::None,
@@ -546,7 +603,7 @@ impl Block for Forever {
 #[derive(Debug)]
 pub struct Repeat {
     id: String,
-    times: Option<Rc<RefCell<Box<dyn Block>>>>,
+    times: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
     count: usize,
@@ -569,22 +626,22 @@ impl Block for Repeat {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        let block_ref = Some(Rc::new(RefCell::new(block)));
         match key {
-            "TIMES" => self.times = block_ref,
-            "NEXT" => self.next = block_ref,
-            "SUBSTACK" => self.substack = block_ref,
+            "TIMES" => self.times = Some(block),
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
             _ => {}
         }
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         let times = match &self.times {
-            Some(v) => value_to_float(&v.borrow().value()?)?,
+            Some(v) => value_to_float(&v.value()?)?,
             None => return Next::Err("times is None".into()),
         };
 
         if self.count < times as usize { // Loop until count equals times
+            self.count += 1;
             return match &self.substack {
                 Some(b) => Next::Loop(b.clone()),
                 None => Next::None,
@@ -824,6 +881,7 @@ pub fn get_block(
     Ok(match info.opcode.as_str() {
         "event_whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
         "looks_say" => Box::new(Say::new(id, runtime)),
+        "looks_sayforsecs" => Box::new(SayForSecs::new(id, runtime)),
         "data_setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "operator_equals" => Box::new(Equals::new(id)),
         "control_if" => Box::new(If::new(id, runtime)),
