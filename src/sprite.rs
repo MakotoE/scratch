@@ -1,5 +1,5 @@
 use super::*;
-use block::*;
+use blocks::*;
 use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug)]

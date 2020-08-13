@@ -1,7 +1,7 @@
 #![feature(async_closure)]
 #![feature(try_trait)]
 
-pub mod block;
+pub mod blocks;
 pub mod runtime;
 pub mod savefile;
 pub mod sprite;
