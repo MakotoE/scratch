@@ -144,7 +144,7 @@ impl SpriteRuntime {
         self.position = *position;
     }
 
-    pub fn add_position(&mut self, coordinate: &Coordinate) {
+    pub fn add_coordinate(&mut self, coordinate: &Coordinate) {
         self.position = self.position.add(coordinate)
     }
 
