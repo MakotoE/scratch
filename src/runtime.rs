@@ -28,9 +28,9 @@ impl SpriteRuntime {
     }
 
     pub fn redraw(&self) -> Result<()> {
-        self.context.reset_transform()?;
-        self.context.scale(2.0, 2.0)?;
+        self.context.reset_transform().unwrap();
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
+        self.context.scale(2.0, 2.0).unwrap();
 
         let costume = match self.costumes.get(self.current_costume) {
             Some(i) => i,
@@ -43,7 +43,7 @@ impl SpriteRuntime {
         self.context.draw_image_with_html_image_element(
             &costume.image,
             240.0 - costume.rotation_center.x + self.position.x,
-            180.0 - costume.rotation_center.y + self.position.y,
+            180.0 - costume.rotation_center.y - self.position.y,
         )?;
 
         if let Some(text) = &self.text {
@@ -159,7 +159,10 @@ impl SpriteRuntime {
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct Coordinate {
+    /// 0 is left of stage
     x: f64,
+
+    /// 0 is bottom of stage
     y: f64,
 }
 

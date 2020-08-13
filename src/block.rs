@@ -507,6 +507,66 @@ impl Block for MoveSteps {
     }
 }
 
+#[derive(Debug)]
+pub struct GoToXY {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    x: Option<Box<dyn Block>>,
+    y: Option<Box<dyn Block>>,
+}
+
+impl GoToXY {
+    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            x: None,
+            y: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for GoToXY {
+    fn block_name(&self) -> &'static str {
+        "GoToXY"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "X" => self.x = Some(block),
+            "Y" => self.y = Some(block),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let x = match &self.x {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("x is None".into()),
+        };
+        let y = match &self.y {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("y is None".into()),
+        };
+
+        self.runtime.borrow_mut().set_position(&Coordinate::new(x, y));
+        self.runtime.borrow().redraw()?;
+        Ok(())
+    }
+}
+
 const MILLIS_PER_SECOND: f64 = 1000.0;
 
 #[derive(Debug)]
@@ -890,6 +950,7 @@ pub fn get_block(
         "data_changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
         "control_forever" => Box::new(Forever::new(id)),
         "control_repeat" => Box::new(Repeat::new(id)),
+        "motion_gotoxy" => Box::new(GoToXY::new(id, runtime)),
         _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     })
 }
