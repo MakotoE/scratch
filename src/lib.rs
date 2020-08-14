@@ -1,5 +1,6 @@
 #![feature(async_closure)]
 #![feature(try_trait)]
+#![feature(str_split_once)]
 
 pub mod blocks;
 pub mod runtime;

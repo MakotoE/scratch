@@ -1,6 +1,14 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
 
+pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+    Ok(match name {
+        "say" => Box::new(looks::Say::new(id, runtime)),
+        "sayforsecs" => Box::new(looks::SayForSecs::new(id, runtime)),
+        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+    })
+}
+
 #[derive(Debug)]
 pub struct Say {
     id: String,
@@ -10,7 +18,7 @@ pub struct Say {
 }
 
 impl Say {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -71,7 +79,7 @@ pub struct SayForSecs {
 }
 
 impl SayForSecs {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,

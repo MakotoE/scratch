@@ -1,5 +1,12 @@
 use super::*;
 
+pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+    Ok(match name {
+        "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
+        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+    })
+}
+
 #[derive(Debug)]
 pub struct WhenFlagClicked {
     id: String,
@@ -8,7 +15,7 @@ pub struct WhenFlagClicked {
 }
 
 impl WhenFlagClicked {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,

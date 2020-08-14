@@ -12,36 +12,24 @@ use runtime::Coordinate;
 use runtime::SpriteRuntime;
 
 fn get_block(
-    id: String,
+    id: &str,
     runtime: Rc<RefCell<SpriteRuntime>>,
     info: &savefile::Block,
 ) -> Result<Box<dyn Block>> {
-    Ok(match info.opcode.as_str() {
-        "control_if" => Box::new(control::If::new(id, runtime)),
-        "control_forever" => Box::new(control::Forever::new(id)),
-        "control_repeat" => Box::new(control::Repeat::new(id)),
-        "control_wait" => Box::new(control::Wait::new(id)),
+    let (category, name) = match info.opcode.split_once('_') {
+        Some(s) => s,
+        None => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
+    };
 
-        "data_setvariableto" => Box::new(data::SetVariable::new(id, runtime)),
-        "data_changevariableby" => Box::new(data::ChangeVariable::new(id, runtime)),
-
-        "event_whenflagclicked" => Box::new(event::WhenFlagClicked::new(id, runtime)),
-
-        "looks_say" => Box::new(looks::Say::new(id, runtime)),
-        "looks_sayforsecs" => Box::new(looks::SayForSecs::new(id, runtime)),
-
-        "motion_movesteps" => Box::new(motion::MoveSteps::new(id, runtime)),
-        "motion_gotoxy" => Box::new(motion::GoToXY::new(id, runtime)),
-        "motion_changexby" => Box::new(motion::ChangeXBy::new(id, runtime)),
-        "motion_changeyby" => Box::new(motion::ChangeYBy::new(id, runtime)),
-
-        "operator_equals" => Box::new(operator::Equals::new(id)),
-        "operator_add" => Box::new(operator::Add::new(id)),
-        "operator_subtract" => Box::new(operator::Subtract::new(id)),
-        "operator_multiply" => Box::new(operator::Multiply::new(id)),
-        "operator_divide" => Box::new(operator::Divide::new(id)),
-        _ => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
-    })
+    match category {
+        "control" => control::get_block(name, id, runtime),
+        "data" => data::get_block(name, id, runtime),
+        "event" => event::get_block(name, id, runtime),
+        "looks" => looks::get_block(name, id, runtime),
+        "motion" => motion::get_block(name, id, runtime),
+        "operator" => operator::get_block(name, id, runtime),
+        _ => Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
+    }
 }
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format
@@ -118,14 +106,14 @@ impl std::convert::From<Option<Rc<RefCell<Box<dyn Block>>>>> for Next {
 }
 
 pub fn new_block(
-    block_id: String,
+    block_id: &str,
     runtime: Rc<RefCell<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
-    let info = infos.get(block_id.as_str()).unwrap();
-    let mut block = get_block(block_id.clone(), runtime.clone(), &info)?;
+    let info = infos.get(block_id).unwrap();
+    let mut block = get_block(block_id, runtime.clone(), &info)?;
     if let Some(next_id) = &info.next {
-        block.set_input("next", new_block(next_id.clone(), runtime.clone(), infos)?);
+        block.set_input("next", new_block(next_id, runtime.clone(), infos)?);
     }
     for (k, input) in &info.inputs {
         let input_err_cb =
@@ -155,7 +143,7 @@ pub fn new_block(
                 let input_info = input_arr.get(1).ok_or_else(input_err_cb)?;
                 match input_info {
                     serde_json::Value::String(id) => {
-                        let new_block = new_block(id.clone(), runtime.clone(), infos)?;
+                        let new_block = new_block(id, runtime.clone(), infos)?;
                         block.set_input(k, new_block);
                     }
                     serde_json::Value::Array(arr) => {

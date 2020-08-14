@@ -1,5 +1,15 @@
 use super::*;
 
+pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+    Ok(match name {
+        "movesteps" => Box::new(MoveSteps::new(id, runtime)),
+        "gotoxy" => Box::new(GoToXY::new(id, runtime)),
+        "changexby" => Box::new(ChangeXBy::new(id, runtime)),
+        "changeyby" => Box::new(ChangeYBy::new(id, runtime)),
+        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+    })
+}
+
 #[derive(Debug)]
 pub struct MoveSteps {
     id: String,
@@ -9,9 +19,9 @@ pub struct MoveSteps {
 }
 
 impl MoveSteps {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             runtime,
             next: None,
             steps: None,
@@ -67,9 +77,9 @@ pub struct GoToXY {
 }
 
 impl GoToXY {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             runtime,
             next: None,
             x: None,
@@ -128,9 +138,9 @@ pub struct ChangeXBy {
 }
 
 impl ChangeXBy {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             runtime,
             next: None,
             dx: None,
@@ -183,9 +193,9 @@ pub struct ChangeYBy {
 }
 
 impl ChangeYBy {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             runtime,
             next: None,
             dy: None,

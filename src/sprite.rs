@@ -15,7 +15,7 @@ impl Sprite {
         let mut threads: Vec<Thread> = Vec::new();
         for hat_id in find_hats(&target.blocks) {
             threads.push(Thread::new(new_block(
-                hat_id.to_string(),
+                hat_id,
                 runtime_ref.clone(),
                 &target.blocks,
             )?));

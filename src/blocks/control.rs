@@ -1,6 +1,16 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
 
+pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+    Ok(match name {
+        "if" => Box::new(If::new(id, runtime)),
+        "forever" => Box::new(Forever::new(id)),
+        "repeat" => Box::new(Repeat::new(id)),
+        "wait" => Box::new(Wait::new(id)),
+        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+    })
+}
+
 #[derive(Debug)]
 pub struct If {
     id: String,
@@ -11,9 +21,9 @@ pub struct If {
 }
 
 impl If {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             runtime,
             condition: None,
             next: None,
@@ -73,9 +83,9 @@ pub struct Wait {
 }
 
 impl Wait {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             next: None,
             duration: None,
         }
@@ -122,8 +132,8 @@ pub struct Forever {
 }
 
 impl Forever {
-    pub fn new(id: String) -> Self {
-        Self { id, substack: None }
+    pub fn new(id: &str) -> Self {
+        Self { id: id.to_string(), substack: None }
     }
 }
 
@@ -166,9 +176,9 @@ pub struct Repeat {
 }
 
 impl Repeat {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             times: None,
             next: None,
             substack: None,

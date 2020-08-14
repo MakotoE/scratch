@@ -1,5 +1,16 @@
 use super::*;
 
+pub fn get_block(name: &str, id: &str, _runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+    Ok(match name {
+        "equals" => Box::new(Equals::new(id)),
+        "add" => Box::new(Add::new(id)),
+        "subtract" => Box::new(Subtract::new(id)),
+        "multiply" => Box::new(Multiply::new(id)),
+        "divide" => Box::new(Divide::new(id)),
+        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+    })
+}
+
 #[derive(Debug)]
 pub struct Equals {
     id: String,
@@ -8,9 +19,9 @@ pub struct Equals {
 }
 
 impl Equals {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             operand1: None,
             operand2: None,
         }
@@ -68,9 +79,9 @@ pub struct Add {
 }
 
 impl Add {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             num1: None,
             num2: None,
         }
@@ -109,9 +120,9 @@ pub struct Subtract {
 }
 
 impl Subtract {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             num1: None,
             num2: None,
         }
@@ -150,9 +161,9 @@ pub struct Multiply {
 }
 
 impl Multiply {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             num1: None,
             num2: None,
         }
@@ -191,9 +202,9 @@ pub struct Divide {
 }
 
 impl Divide {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             num1: None,
             num2: None,
         }

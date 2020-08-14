@@ -1,5 +1,13 @@
 use super::*;
 
+pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+    Ok(match name {
+        "setvariableto" => Box::new(SetVariable::new(id, runtime)),
+        "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
+        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+    })
+}
+
 #[derive(Debug)]
 pub struct SetVariable {
     id: String,
@@ -10,9 +18,9 @@ pub struct SetVariable {
 }
 
 impl SetVariable {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             runtime,
             variable_id: None,
             value: None,
@@ -76,9 +84,9 @@ pub struct ChangeVariable {
 }
 
 impl ChangeVariable {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
-            id,
+            id: id.to_string(),
             runtime,
             variable_id: None,
             value: None,
