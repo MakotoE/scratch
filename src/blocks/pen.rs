@@ -9,6 +9,7 @@ pub fn get_block(
         "penDown" => Box::new(PenDown::new(id, runtime)),
         "penUp" => Box::new(PenUp::new(id, runtime)),
         "setPenColorToColor" => Box::new(SetPenColorToColor::new(id, runtime)),
+        "setPenSizeTo" => Box::new(SetPenSizeTo::new(id, runtime)),
         _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
     })
 }
@@ -153,6 +154,58 @@ impl Block for SetPenColorToColor {
         self.runtime
             .borrow_mut()
             .set_pen_color(&runtime::Color::from_hex(color)?);
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct SetPenSizeTo {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    size: Option<Box<dyn Block>>,
+}
+
+impl SetPenSizeTo {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+            size: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SetPenSizeTo {
+    fn block_name(&self) -> &'static str {
+        "SetPenSizeTo"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "SIZE" => self.size = Some(block),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let size = match &self.size {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("color is None".into()),
+        };
+
+        self.runtime.borrow_mut().set_pen_size(size);
         Ok(())
     }
 }

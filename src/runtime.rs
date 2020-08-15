@@ -12,6 +12,7 @@ pub struct SpriteRuntime {
     text: Option<String>,
     pen_path: web_sys::Path2d,
     pen_color: Color,
+    pen_size: f64,
 }
 
 impl SpriteRuntime {
@@ -28,6 +29,7 @@ impl SpriteRuntime {
             text: None,
             pen_path: web_sys::Path2d::new().unwrap(),
             pen_color: Color::new(0, 0, 255),
+            pen_size: 1.0,
         }
     }
 
@@ -36,9 +38,10 @@ impl SpriteRuntime {
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
         self.context.scale(2.0, 2.0).unwrap();
 
+        self.context.set_line_cap("round");
         self.context
             .set_stroke_style(&self.pen_color.to_hex_string().as_str().into());
-        self.context.set_line_width(1.0);
+        self.context.set_line_width(self.pen_size);
         self.context.stroke_with_path(&self.pen_path);
 
         let costume = match self.costumes.get(self.current_costume) {
@@ -179,6 +182,10 @@ impl SpriteRuntime {
 
     pub fn set_pen_color(&mut self, color: &Color) {
         self.pen_color = *color;
+    }
+
+    pub fn set_pen_size(&mut self, size: f64) {
+        self.pen_size = size;
     }
 }
 
