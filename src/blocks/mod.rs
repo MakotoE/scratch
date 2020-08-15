@@ -41,7 +41,7 @@ pub fn new_value(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Bl
     use std::convert::TryFrom;
     Ok(match value_type {
         4 | 5 | 6 | 7 => Box::new(value::Number::try_from(value)?),
-        10 => Box::new(value::BlockString::try_from(value)?),
+        9 | 10 => Box::new(value::BlockString::try_from(value)?),
         _ => return Err(format!("value_type {} does not exist", value_type).into()),
     })
 }

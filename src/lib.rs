@@ -34,6 +34,7 @@ error_chain::error_chain! {
         JSON(serde_json::error::Error);
         IO(std::io::Error);
         ParseFloatError(std::num::ParseFloatError);
+        ParseIntError(std::num::ParseIntError);
     }
 
     errors {

@@ -11,6 +11,7 @@ pub struct SpriteRuntime {
     current_costume: usize,
     text: Option<String>,
     pen_path: web_sys::Path2d,
+    pen_color: Color,
 }
 
 impl SpriteRuntime {
@@ -26,6 +27,7 @@ impl SpriteRuntime {
             current_costume: 0,
             text: None,
             pen_path: web_sys::Path2d::new().unwrap(),
+            pen_color: Color::new(0, 0, 255),
         }
     }
 
@@ -34,7 +36,8 @@ impl SpriteRuntime {
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
         self.context.scale(2.0, 2.0).unwrap();
 
-        self.context.set_stroke_style(&"rgb(0, 0, 0)".into());
+        self.context
+            .set_stroke_style(&self.pen_color.to_hex_string().as_str().into());
         self.context.set_line_width(1.0);
         self.context.stroke_with_path(&self.pen_path);
 
@@ -173,6 +176,10 @@ impl SpriteRuntime {
     }
 
     pub fn pen_up(&mut self) {}
+
+    pub fn set_pen_color(&mut self, color: &Color) {
+        self.pen_color = *color;
+    }
 }
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
@@ -206,4 +213,94 @@ impl Coordinate {
 pub struct Costume {
     image: HtmlImageElement,
     rotation_center: Coordinate,
+}
+
+#[derive(Copy, Clone, Default, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+pub struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+impl Color {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b }
+    }
+
+    pub fn from_hex(s: &str) -> Result<Self> {
+        if s.len() != 7 || s.bytes().next().unwrap() != b'#' {
+            return Err(format!("s is invalid: {}", s).into());
+        }
+
+        Ok(Self {
+            r: u8::from_str_radix(&s[1..3], 16)?,
+            g: u8::from_str_radix(&s[3..5], 16)?,
+            b: u8::from_str_radix(&s[5..7], 16)?,
+        })
+    }
+
+    pub fn to_hex_string(&self) -> String {
+        return format!("#{:02x}", self.r)
+            + &format!("{:02x}", self.g)
+            + &format!("{:02x}", self.b);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn color_from_hex() {
+        struct Test {
+            s: &'static str,
+            expected: Color,
+            expect_err: bool,
+        }
+
+        let tests = vec![
+            Test {
+                s: "",
+                expected: Color { r: 0, g: 0, b: 0 },
+                expect_err: true,
+            },
+            Test {
+                s: "#",
+                expected: Color { r: 0, g: 0, b: 0 },
+                expect_err: true,
+            },
+            Test {
+                s: "#000000",
+                expected: Color { r: 0, g: 0, b: 0 },
+                expect_err: false,
+            },
+            Test {
+                s: "#ffffff",
+                expected: Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                },
+                expect_err: false,
+            },
+            Test {
+                s: "#ffffffa",
+                expected: Color { r: 0, g: 0, b: 0 },
+                expect_err: true,
+            },
+        ];
+
+        for (i, test) in tests.iter().enumerate() {
+            let result = Color::from_hex(test.s);
+            assert_eq!(result.is_err(), test.expect_err, "{}", i);
+            if !test.expect_err {
+                assert_eq!(result.unwrap(), test.expected, "{}", i);
+            }
+        }
+    }
+
+    #[test]
+    fn color_to_hex_string() {
+        assert_eq!(Color { r: 0, g: 1, b: 2 }.to_hex_string(), "#000102");
+    }
 }

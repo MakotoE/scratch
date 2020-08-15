@@ -8,6 +8,7 @@ pub fn get_block(
     Ok(match name {
         "penDown" => Box::new(PenDown::new(id, runtime)),
         "penUp" => Box::new(PenUp::new(id, runtime)),
+        "setPenColorToColor" => Box::new(SetPenColorToColor::new(id, runtime)),
         _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
     })
 }
@@ -96,6 +97,62 @@ impl Block for PenUp {
 
     async fn execute(&mut self) -> Result<()> {
         self.runtime.borrow_mut().pen_up();
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct SetPenColorToColor {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    color: Option<Box<dyn Block>>,
+}
+
+impl SetPenColorToColor {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+            color: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SetPenColorToColor {
+    fn block_name(&self) -> &'static str {
+        "SetPenColorToColor"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "COLOR" => self.color = Some(block),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let color_value = match &self.color {
+            Some(b) => b.value()?,
+            None => return Err("color is None".into()),
+        };
+        let color = color_value
+            .as_str()
+            .ok_or_else(|| Error::from("color is not a string"))?;
+        self.runtime
+            .borrow_mut()
+            .set_pen_color(&runtime::Color::from_hex(color)?);
         Ok(())
     }
 }
