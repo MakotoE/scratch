@@ -14,11 +14,8 @@ impl Sprite {
         let runtime_ref = Rc::new(RefCell::new(runtime));
         let mut threads: Vec<Thread> = Vec::new();
         for hat_id in find_hats(&target.blocks) {
-            threads.push(Thread::new(new_block(
-                hat_id,
-                runtime_ref.clone(),
-                &target.blocks,
-            )?));
+            let block = new_block(hat_id, runtime_ref.clone(), &target.blocks)?;
+            threads.push(Thread::new(block, runtime_ref.clone()));
         }
         Ok(Self { threads })
     }
@@ -49,12 +46,14 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 #[derive(Debug)]
 pub struct Thread {
     hat: Rc<RefCell<Box<dyn Block>>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 }
 
 impl Thread {
-    pub fn new(hat: Box<dyn Block>) -> Self {
+    pub fn new(hat: Box<dyn Block>, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             hat: Rc::new(RefCell::new(hat)),
+            runtime,
         }
     }
 
@@ -69,6 +68,7 @@ impl Thread {
                     Box::new(e),
                 )
             })?;
+            self.runtime.borrow().redraw()?;
         }
 
         Ok(())

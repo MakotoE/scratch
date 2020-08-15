@@ -1,6 +1,10 @@
 use super::*;
 
-pub fn get_block(name: &str, id: &str, _runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+pub fn get_block(
+    name: &str,
+    id: &str,
+    _runtime: Rc<RefCell<SpriteRuntime>>,
+) -> Result<Box<dyn Block>> {
     Ok(match name {
         "equals" => Box::new(Equals::new(id)),
         "add" => Box::new(Add::new(id)),
@@ -59,7 +63,10 @@ impl Block for Equals {
     }
 }
 
-fn get_num1_and_num2(num1: &Option<Box<dyn Block>>, num2: &Option<Box<dyn Block>>) -> Result<(f64, f64)> {
+fn get_num1_and_num2(
+    num1: &Option<Box<dyn Block>>,
+    num2: &Option<Box<dyn Block>>,
+) -> Result<(f64, f64)> {
     let a = match num1 {
         Some(a) => value_to_float(&a.value()?)?,
         None => return Err("num1 is None".into()),
@@ -68,7 +75,7 @@ fn get_num1_and_num2(num1: &Option<Box<dyn Block>>, num2: &Option<Box<dyn Block>
         Some(b) => value_to_float(&b.value()?)?,
         None => return Err("num2 is None".into()),
     };
-    Ok((a,b))
+    Ok((a, b))
 }
 
 #[derive(Debug)]

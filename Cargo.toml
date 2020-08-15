@@ -37,4 +37,5 @@ features = [
     "BlobPropertyBag",
     "Url",
     "TextMetrics",
+    "Path2d",
 ]

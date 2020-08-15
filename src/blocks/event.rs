@@ -1,6 +1,10 @@
 use super::*;
 
-pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+pub fn get_block(
+    name: &str,
+    id: &str,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+) -> Result<Box<dyn Block>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
         _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
@@ -45,6 +49,6 @@ impl Block for WhenFlagClicked {
     }
 
     async fn execute(&mut self) -> Result<()> {
-        self.runtime.borrow().redraw()
+        Ok(())
     }
 }

@@ -136,12 +136,9 @@ impl Component for Page {
                 let reader = std::io::Cursor::new(file.content);
                 let scratch_file = ScratchFile::parse(reader).unwrap();
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
-                let ctx: web_sys::CanvasRenderingContext2d = canvas
-                    .get_context("2d")
-                    .unwrap()
-                    .unwrap()
-                    .dyn_into()
-                    .unwrap();
+                let ctx: web_sys::CanvasRenderingContext2d =
+                    canvas.get_context("2d").unwrap().unwrap().unchecked_into();
+
                 let future = (async || match Page::run(ctx, scratch_file).await {
                     Ok(_) => {}
                     Err(e) => log::error!("{}", e),

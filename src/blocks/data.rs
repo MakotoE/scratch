@@ -1,6 +1,10 @@
 use super::*;
 
-pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+pub fn get_block(
+    name: &str,
+    id: &str,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+) -> Result<Box<dyn Block>> {
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),

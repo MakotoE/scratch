@@ -1,7 +1,11 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
 
-pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+pub fn get_block(
+    name: &str,
+    id: &str,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+) -> Result<Box<dyn Block>> {
     Ok(match name {
         "if" => Box::new(If::new(id, runtime)),
         "forever" => Box::new(Forever::new(id)),
@@ -133,7 +137,10 @@ pub struct Forever {
 
 impl Forever {
     pub fn new(id: &str) -> Self {
-        Self { id: id.to_string(), substack: None }
+        Self {
+            id: id.to_string(),
+            substack: None,
+        }
     }
 }
 

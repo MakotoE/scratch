@@ -1,6 +1,10 @@
 use super::*;
 
-pub fn get_block(name: &str, id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Result<Box<dyn Block>>  {
+pub fn get_block(
+    name: &str,
+    id: &str,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+) -> Result<Box<dyn Block>> {
     Ok(match name {
         "movesteps" => Box::new(MoveSteps::new(id, runtime)),
         "gotoxy" => Box::new(GoToXY::new(id, runtime)),
@@ -63,7 +67,7 @@ impl Block for MoveSteps {
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(steps, 0.0));
-        self.runtime.borrow().redraw()
+        Ok(())
     }
 }
 
@@ -124,7 +128,6 @@ impl Block for GoToXY {
         self.runtime
             .borrow_mut()
             .set_position(&Coordinate::new(x, y));
-        self.runtime.borrow().redraw()?;
         Ok(())
     }
 }
@@ -179,7 +182,6 @@ impl Block for ChangeXBy {
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(x, 0.0));
-        self.runtime.borrow().redraw()?;
         Ok(())
     }
 }
@@ -234,7 +236,6 @@ impl Block for ChangeYBy {
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(0.0, y));
-        self.runtime.borrow().redraw()?;
         Ok(())
     }
 }

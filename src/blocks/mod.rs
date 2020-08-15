@@ -4,6 +4,7 @@ mod event;
 mod looks;
 mod motion;
 mod operator;
+mod pen;
 mod value;
 
 use super::*;
@@ -18,7 +19,9 @@ fn get_block(
 ) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
         Some(s) => s,
-        None => return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
+        None => {
+            return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into())
+        }
     };
 
     match category {
@@ -28,6 +31,7 @@ fn get_block(
         "looks" => looks::get_block(name, id, runtime),
         "motion" => motion::get_block(name, id, runtime),
         "operator" => operator::get_block(name, id, runtime),
+        "pen" => pen::get_block(name, id, runtime),
         _ => Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
     }
 }

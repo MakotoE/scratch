@@ -10,6 +10,7 @@ pub struct SpriteRuntime {
     costumes: Vec<Costume>,
     current_costume: usize,
     text: Option<String>,
+    pen_path: web_sys::Path2d,
 }
 
 impl SpriteRuntime {
@@ -24,6 +25,7 @@ impl SpriteRuntime {
             costumes: Vec::new(),
             current_costume: 0,
             text: None,
+            pen_path: web_sys::Path2d::new().unwrap(),
         }
     }
 
@@ -31,6 +33,10 @@ impl SpriteRuntime {
         self.context.reset_transform().unwrap();
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
         self.context.scale(2.0, 2.0).unwrap();
+
+        self.context.set_stroke_style(&"rgb(0, 0, 0)".into());
+        self.context.set_line_width(1.0);
+        self.context.stroke_with_path(&self.pen_path);
 
         let costume = match self.costumes.get(self.current_costume) {
             Some(i) => i,
@@ -54,7 +60,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    pub fn draw_text_bubble(context: &web_sys::CanvasRenderingContext2d, text: &str) -> Result<()> {
+    fn draw_text_bubble(context: &web_sys::CanvasRenderingContext2d, text: &str) -> Result<()> {
         // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
         const CORNER_RADIUS: f64 = 16.0;
         const PADDING: f64 = 10.0;
@@ -142,10 +148,14 @@ impl SpriteRuntime {
 
     pub fn set_position(&mut self, position: &Coordinate) {
         self.position = *position;
+        self.pen_path
+            .line_to(240.0 + self.position.x, 180.0 - self.position.y);
     }
 
     pub fn add_coordinate(&mut self, coordinate: &Coordinate) {
-        self.position = self.position.add(coordinate)
+        self.position = self.position.add(coordinate);
+        self.pen_path
+            .line_to(240.0 + self.position.x, 180.0 - self.position.y);
     }
 
     pub fn set_costume_index(&mut self, index: usize) {
@@ -155,14 +165,19 @@ impl SpriteRuntime {
     pub fn say(&mut self, text: Option<&str>) {
         self.text = text.map(|s| s.to_string());
     }
+
+    pub fn pen_down(&mut self) {
+        self.pen_path = web_sys::Path2d::new().unwrap();
+        self.pen_path
+            .move_to(240.0 + self.position.x, 180.0 - self.position.y);
+    }
+
+    pub fn pen_up(&mut self) {}
 }
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct Coordinate {
-    /// 0 is left of stage
     x: f64,
-
-    /// 0 is bottom of stage
     y: f64,
 }
 
