@@ -89,7 +89,7 @@ impl ScratchFile {
 
         let mut image_names: Vec<String> = Vec::new();
         for name in archive.file_names() {
-            if name.ends_with(".svg") | name.ends_with(".png"){
+            if name.ends_with(".svg") | name.ends_with(".png") {
                 image_names.push(name.to_string());
             }
         }

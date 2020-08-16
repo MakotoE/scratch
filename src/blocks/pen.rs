@@ -10,6 +10,7 @@ pub fn get_block(
         "penUp" => Box::new(PenUp::new(id, runtime)),
         "setPenColorToColor" => Box::new(SetPenColorToColor::new(id, runtime)),
         "setPenSizeTo" => Box::new(SetPenSizeTo::new(id, runtime)),
+        "clear" => Box::new(Clear::new(id, runtime)),
         _ => return Err(format!("{} does not exist", name).into()),
     })
 }
@@ -206,6 +207,50 @@ impl Block for SetPenSizeTo {
         };
 
         self.runtime.borrow_mut().set_pen_size(size);
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct Clear {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl Clear {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Clear {
+    fn block_name(&self) -> &'static str {
+        "Clear"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        self.runtime.borrow_mut().pen_clear();
         Ok(())
     }
 }

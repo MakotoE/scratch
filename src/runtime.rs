@@ -131,7 +131,11 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    pub async fn load_costume(&mut self, file: &savefile::Image, rotation_center: Coordinate) -> Result<()> {
+    pub async fn load_costume(
+        &mut self,
+        file: &savefile::Image,
+        rotation_center: Coordinate,
+    ) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = file.into();
         parts.set(0, arr.unchecked_into());
@@ -193,6 +197,10 @@ impl SpriteRuntime {
 
     pub fn set_pen_size(&mut self, size: f64) {
         self.pen_size = size;
+    }
+
+    pub fn pen_clear(&mut self) {
+        self.pen_path = web_sys::Path2d::new().unwrap();
     }
 }
 
