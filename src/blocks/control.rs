@@ -12,6 +12,7 @@ pub fn get_block(
         "repeat" => Box::new(Repeat::new(id)),
         "wait" => Box::new(Wait::new(id)),
         "repeat_until" => Box::new(RepeatUntil::new(id)),
+        "if_else" => Box::new(IfElse::new(id)),
         _ => return Err(format!("{} does not exist", name).into()),
     })
 }
@@ -292,6 +293,84 @@ impl Block for RepeatUntil {
             Some(b) => Next::Loop(b.clone()),
             None => Next::None,
         }
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct IfElse {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    condition: Option<Box<dyn Block>>,
+    substack_true: Option<Rc<RefCell<Box<dyn Block>>>>,
+    substack_false: Option<Rc<RefCell<Box<dyn Block>>>>,
+    done: bool,
+}
+
+impl IfElse {
+    pub fn new(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            next: None,
+            condition: None,
+            substack_true: None,
+            substack_false: None,
+            done: false,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for IfElse {
+    fn block_name(&self) -> &'static str {
+        "IfElse"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "CONDITION" => self.condition = Some(block),
+            "SUBSTACK" => self.substack_true = Some(Rc::new(RefCell::new(block))),
+            "SUBSTACK2" => self.substack_false = Some(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        if self.done {
+            return self.next.clone().into();
+        }
+
+        let condition_value = match &self.condition {
+            Some(block) => block.value()?,
+            None => return Next::Err("condition is None".into()),
+        };
+
+        let condition = match condition_value.as_bool() {
+            Some(b) => b,
+            None => return Next::Err(format!("condition is not boolean: {}", condition_value).into()),
+        };
+
+        self.done = true;
+
+        if condition {
+            return match &self.substack_true {
+                Some(b) => Next::Loop(b.clone()),
+                None => Next::None,
+            };
+        }
+
+        return match &self.substack_false {
+            Some(b) => Next::Loop(b.clone()),
+            None => Next::None,
+        };
     }
 
     async fn execute(&mut self) -> Result<()> {
