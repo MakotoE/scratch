@@ -23,6 +23,7 @@ pub struct If {
     condition: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    done: bool,
 }
 
 impl If {
@@ -32,6 +33,7 @@ impl If {
             condition: None,
             next: None,
             substack: None,
+            done: false,
         }
     }
 }
@@ -56,6 +58,10 @@ impl Block for If {
     }
 
     fn next(&mut self) -> Next {
+        if self.done {
+            return Next::continue_(self.next.clone());
+        }
+
         let condition = match &self.condition {
             Some(id) => id,
             None => return Next::continue_(self.next.clone()),
@@ -67,8 +73,10 @@ impl Block for If {
             None => return Next::Err(format!("expected boolean type but got {}", value).into()),
         };
 
+        self.done = true;
+
         if value_bool {
-            return Next::continue_(self.substack.clone());
+            return Next::loop_(self.substack.clone());
         }
 
         return Next::continue_(self.next.clone());
