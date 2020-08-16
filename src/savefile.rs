@@ -2,12 +2,12 @@ use super::*;
 use serde::{Deserialize, Serialize};
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format
-#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Default, Debug)]
 pub struct ScratchFile {
     pub project: Project,
 
     /// Filename to file contents
-    pub images: HashMap<String, String>,
+    pub images: HashMap<String, Image>,
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
@@ -62,6 +62,21 @@ pub struct Meta {
     pub agent: String,
 }
 
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub enum Image {
+    SVG(Vec<u8>),
+    PNG(Vec<u8>),
+}
+
+impl std::convert::Into<js_sys::Uint8Array> for &Image {
+    fn into(self) -> js_sys::Uint8Array {
+        match self {
+            Image::SVG(b) => b.as_slice().into(),
+            Image::PNG(b) => b.as_slice().into(),
+        }
+    }
+}
+
 impl ScratchFile {
     pub fn parse<R>(file: R) -> Result<ScratchFile>
     where
@@ -79,11 +94,11 @@ impl ScratchFile {
             }
         }
 
-        let mut images: HashMap<String, String> = HashMap::new();
+        let mut images: HashMap<String, Image> = HashMap::new();
         for name in &image_names {
-            let mut str = String::new();
-            archive.by_name(name)?.read_to_string(&mut str)?;
-            images.insert(name.clone(), str);
+            let mut b: Vec<u8> = Vec::new();
+            archive.by_name(name)?.read_to_end(&mut b)?;
+            images.insert(name.clone(), Image::SVG(b));
         }
 
         Ok(Self { project, images })

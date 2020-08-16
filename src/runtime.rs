@@ -131,12 +131,19 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    pub async fn load_costume(&mut self, file: &str, rotation_center: Coordinate) -> Result<()> {
+    pub async fn load_costume(&mut self, file: &savefile::Image, rotation_center: Coordinate) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
-        parts.set(0, file.into());
+        let arr: js_sys::Uint8Array = file.into();
+        parts.set(0, arr.unchecked_into());
+
         let mut properties = BlobPropertyBag::new();
-        properties.type_("image/svg+xml");
-        let blob = Blob::new_with_str_sequence_and_options(&parts, &properties)?;
+        let image_type = match file {
+            savefile::Image::SVG(_) => "image/svg+xml",
+            savefile::Image::PNG(_) => "image/png",
+        };
+        properties.type_(image_type);
+
+        let blob = Blob::new_with_u8_array_sequence_and_options(&parts, &properties)?;
         let url = Url::create_object_url_with_blob(&blob)?;
 
         let image = HtmlImageElement::new()?;

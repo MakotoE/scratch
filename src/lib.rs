@@ -96,7 +96,7 @@ impl Page {
 
         let mut runtime = runtime::SpriteRuntime::new(context, variables);
         for costume in &scratch_file.project.targets[1].costumes {
-            match &scratch_file.images.get(&costume.md5ext) {
+            match scratch_file.images.get(&costume.md5ext) {
                 Some(file) => {
                     let rotation_center = runtime::Coordinate::new(
                         costume.rotation_center_x,
