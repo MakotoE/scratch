@@ -50,7 +50,7 @@ impl Block for PenDown {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -94,7 +94,7 @@ impl Block for PenUp {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -141,7 +141,7 @@ impl Block for SetPenColorToColor {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -197,7 +197,7 @@ impl Block for SetPenSizeTo {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -246,7 +246,7 @@ impl Block for Clear {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {

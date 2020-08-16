@@ -45,7 +45,7 @@ impl Block for WhenFlagClicked {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {

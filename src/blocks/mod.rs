@@ -122,10 +122,17 @@ impl std::ops::Try for Next {
     }
 }
 
-impl std::convert::From<Option<Rc<RefCell<Box<dyn Block>>>>> for Next {
-    fn from(next: Option<Rc<RefCell<Box<dyn Block>>>>) -> Self {
-        match next {
+impl Next {
+    pub fn continue_(block: Option<Rc<RefCell<Box<dyn Block>>>>) -> Next {
+        match block {
             Some(b) => Next::Continue(b),
+            None => Next::None,
+        }
+    }
+
+    pub fn loop_(block: Option<Rc<RefCell<Box<dyn Block>>>>) -> Next {
+        match block {
+            Some(b) => Next::Loop(b),
             None => Next::None,
         }
     }

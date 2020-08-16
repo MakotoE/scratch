@@ -58,7 +58,7 @@ impl Block for If {
     fn next(&mut self) -> Next {
         let condition = match &self.condition {
             Some(id) => id,
-            None => return self.next.clone().into(),
+            None => return Next::continue_(self.next.clone()),
         };
 
         let value = condition.value()?;
@@ -68,10 +68,10 @@ impl Block for If {
         };
 
         if value_bool {
-            return self.substack.clone().into();
+            return Next::continue_(self.substack.clone());
         }
 
-        return self.next.clone().into();
+        return Next::continue_(self.next.clone());
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -115,7 +115,7 @@ impl Block for Wait {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -222,13 +222,10 @@ impl Block for Repeat {
         if self.count < times as usize {
             // Loop until count equals times
             self.count += 1;
-            return match &self.substack {
-                Some(b) => Next::Loop(b.clone()),
-                None => Next::None,
-            };
+            return Next::loop_(self.substack.clone());
         }
 
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -286,13 +283,10 @@ impl Block for RepeatUntil {
         };
 
         if condition {
-            return self.next.clone().into();
+            return Next::continue_(self.next.clone());
         }
 
-        match &self.substack {
-            Some(b) => Next::Loop(b.clone()),
-            None => Next::None,
-        }
+        Next::loop_(self.substack.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -345,7 +339,7 @@ impl Block for IfElse {
 
     fn next(&mut self) -> Next {
         if self.done {
-            return self.next.clone().into();
+            return Next::continue_(self.next.clone());
         }
 
         let condition_value = match &self.condition {
@@ -361,16 +355,10 @@ impl Block for IfElse {
         self.done = true;
 
         if condition {
-            return match &self.substack_true {
-                Some(b) => Next::Loop(b.clone()),
-                None => Next::None,
-            };
+            return Next::loop_(self.substack_true.clone());
         }
 
-        return match &self.substack_false {
-            Some(b) => Next::Loop(b.clone()),
-            None => Next::None,
-        };
+        Next::loop_(self.substack_false.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {

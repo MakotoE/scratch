@@ -54,7 +54,7 @@ impl Block for MoveSteps {
     }
 
     fn next(&mut self) -> Next {
-        return self.next.clone().into();
+        return Next::continue_(self.next.clone());
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -114,7 +114,7 @@ impl Block for GoToXY {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -172,7 +172,7 @@ impl Block for ChangeXBy {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -226,7 +226,7 @@ impl Block for ChangeYBy {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -280,7 +280,7 @@ impl Block for SetX {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
@@ -336,7 +336,7 @@ impl Block for SetY {
     }
 
     fn next(&mut self) -> Next {
-        self.next.clone().into()
+        Next::continue_(self.next.clone())
     }
 
     async fn execute(&mut self) -> Result<()> {
