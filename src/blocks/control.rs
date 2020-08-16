@@ -4,13 +4,14 @@ use gloo_timers::future::TimeoutFuture;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    _runtime: Rc<RefCell<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
-        "if" => Box::new(If::new(id, runtime)),
+        "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
         "repeat" => Box::new(Repeat::new(id)),
         "wait" => Box::new(Wait::new(id)),
+        "repeat_until" => Box::new(RepeatUntil::new(id)),
         _ => return Err(format!("{} does not exist", name).into()),
     })
 }
@@ -18,17 +19,15 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct If {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
     condition: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl If {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str) -> Self {
         Self {
             id: id.to_string(),
-            runtime,
             condition: None,
             next: None,
             substack: None,
@@ -229,6 +228,70 @@ impl Block for Repeat {
         }
 
         self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct RepeatUntil {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    condition: Option<Box<dyn Block>>,
+}
+
+impl RepeatUntil {
+    pub fn new(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            next: None,
+            substack: None,
+            condition: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for RepeatUntil {
+    fn block_name(&self) -> &'static str {
+        "RepeatUntil"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
+            "CONDITION" => self.condition = Some(block),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        let condition_value = match &self.condition {
+            Some(block) => block.value()?,
+            None => return Next::Err("condition is None".into()),
+        };
+
+        let condition = match condition_value.as_bool() {
+            Some(b) => b,
+            None => return Next::Err(format!("condition is not boolean: {}", condition_value).into()),
+        };
+
+        if condition {
+            return self.next.clone().into();
+        }
+
+        match &self.substack {
+            Some(b) => Next::Loop(b.clone()),
+            None => Next::None,
+        }
     }
 
     async fn execute(&mut self) -> Result<()> {

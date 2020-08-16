@@ -60,7 +60,7 @@ impl SpriteRuntime {
 
         if let Some(text) = &self.text {
             self.context
-                .translate(260.0 + self.position.x, 80.0 + self.position.y)?;
+                .translate(260.0 + self.position.x, 80.0 - self.position.y)?;
             SpriteRuntime::draw_text_bubble(&self.context, text)?;
         }
         Ok(())
