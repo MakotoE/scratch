@@ -7,7 +7,7 @@ pub fn get_block(
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
-        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+        _ => return Err(format!("{} does not exist", name).into()),
     })
 }
 

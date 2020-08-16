@@ -11,7 +11,7 @@ pub fn get_block(
         "subtract" => Box::new(Subtract::new(id)),
         "multiply" => Box::new(Multiply::new(id)),
         "divide" => Box::new(Divide::new(id)),
-        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+        _ => return Err(format!("{} does not exist", name).into()),
     })
 }
 

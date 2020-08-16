@@ -11,7 +11,7 @@ pub fn get_block(
         "forever" => Box::new(Forever::new(id)),
         "repeat" => Box::new(Repeat::new(id)),
         "wait" => Box::new(Wait::new(id)),
-        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+        _ => return Err(format!("{} does not exist", name).into()),
     })
 }
 

@@ -9,7 +9,7 @@ pub fn get_block(
     Ok(match name {
         "say" => Box::new(looks::Say::new(id, runtime)),
         "sayforsecs" => Box::new(looks::SayForSecs::new(id, runtime)),
-        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+        _ => return Err(format!("{} does not exist", name).into()),
     })
 }
 

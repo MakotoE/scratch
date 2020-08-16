@@ -25,15 +25,19 @@ fn get_block(
     };
 
     match category {
-        "control" => control::get_block(name, id, runtime),
-        "data" => data::get_block(name, id, runtime),
-        "event" => event::get_block(name, id, runtime),
-        "looks" => looks::get_block(name, id, runtime),
-        "motion" => motion::get_block(name, id, runtime),
-        "operator" => operator::get_block(name, id, runtime),
-        "pen" => pen::get_block(name, id, runtime),
-        _ => Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into()),
+        "control" => control::get_block(name, id, runtime).map_err(|e| add_error_context(id, "control", e)),
+        "data" => data::get_block(name, id, runtime).map_err(|e| add_error_context(id, "data", e)),
+        "event" => event::get_block(name, id, runtime).map_err(|e| add_error_context(id, "event", e)),
+        "looks" => looks::get_block(name, id, runtime).map_err(|e| add_error_context(id, "looks", e)),
+        "motion" => motion::get_block(name, id, runtime).map_err(|e| add_error_context(id, "motion", e)),
+        "operator" => operator::get_block(name, id, runtime).map_err(|e| add_error_context(id, "operator", e)),
+        "pen" => pen::get_block(name, id, runtime).map_err(|e| add_error_context(id, "pen", e)),
+        _ => Err(format!("error during block initialization: block id \"{}\": opcode {} does not exist", id, info.opcode).into()),
     }
+}
+
+fn add_error_context(id: &str, category: &str, err: Error) -> Error {
+    format!("error during block initialization: block id \"{}\", category {}: {}", id, category, err).into()
 }
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format

@@ -8,7 +8,7 @@ pub fn get_block(
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
-        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+        _ => return Err(format!("{} does not exist", name).into()),
     })
 }
 

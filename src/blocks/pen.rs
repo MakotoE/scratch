@@ -10,7 +10,7 @@ pub fn get_block(
         "penUp" => Box::new(PenUp::new(id, runtime)),
         "setPenColorToColor" => Box::new(SetPenColorToColor::new(id, runtime)),
         "setPenSizeTo" => Box::new(SetPenSizeTo::new(id, runtime)),
-        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+        _ => return Err(format!("{} does not exist", name).into()),
     })
 }
 

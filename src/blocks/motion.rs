@@ -10,7 +10,7 @@ pub fn get_block(
         "gotoxy" => Box::new(GoToXY::new(id, runtime)),
         "changexby" => Box::new(ChangeXBy::new(id, runtime)),
         "changeyby" => Box::new(ChangeYBy::new(id, runtime)),
-        _ => return Err(format!("block \"{}\": name {} does not exist", id, name).into()),
+        _ => return Err(format!("{} does not exist", name).into()),
     })
 }
 
