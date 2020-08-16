@@ -163,6 +163,10 @@ impl SpriteRuntime {
         Ok(())
     }
 
+    pub fn position(&self) -> &Coordinate {
+        &self.position
+    }
+
     pub fn set_position(&mut self, position: &Coordinate) {
         self.position = *position;
         self.pen_path

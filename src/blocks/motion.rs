@@ -10,6 +10,8 @@ pub fn get_block(
         "gotoxy" => Box::new(GoToXY::new(id, runtime)),
         "changexby" => Box::new(ChangeXBy::new(id, runtime)),
         "changeyby" => Box::new(ChangeYBy::new(id, runtime)),
+        "setx" => Box::new(SetX::new(id, runtime)),
+        "sety" => Box::new(SetY::new(id, runtime)),
         _ => return Err(format!("{} does not exist", name).into()),
     })
 }
@@ -176,7 +178,7 @@ impl Block for ChangeXBy {
     async fn execute(&mut self) -> Result<()> {
         let x = match &self.dx {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("x is None".into()),
+            None => return Err("dx is None".into()),
         };
 
         self.runtime
@@ -230,12 +232,124 @@ impl Block for ChangeYBy {
     async fn execute(&mut self) -> Result<()> {
         let y = match &self.dy {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("y is None".into()),
+            None => return Err("dy is None".into()),
         };
 
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(0.0, y));
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct SetX {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    x: Option<Box<dyn Block>>,
+}
+
+impl SetX {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+            x: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SetX {
+    fn block_name(&self) -> &'static str {
+        "SetX"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "X" => self.x = Some(block),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let x = match &self.x {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("x is None".into()),
+        };
+
+        let curr_y = self.runtime.borrow().position().y();
+
+        self.runtime
+            .borrow_mut()
+            .set_position(&Coordinate::new(x, curr_y));
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct SetY {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    y: Option<Box<dyn Block>>,
+}
+
+impl SetY {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+            y: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SetY {
+    fn block_name(&self) -> &'static str {
+        "SetY"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "Y" => self.y = Some(block),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        self.next.clone().into()
+    }
+
+    async fn execute(&mut self) -> Result<()> {
+        let y = match &self.y {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("y is None".into()),
+        };
+
+        let curr_x = self.runtime.borrow().position().x();
+
+        self.runtime
+            .borrow_mut()
+            .set_position(&Coordinate::new(curr_x, y));
         Ok(())
     }
 }
