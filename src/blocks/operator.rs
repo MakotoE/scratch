@@ -11,6 +11,8 @@ pub fn get_block(
         "subtract" => Box::new(Subtract::new(id)),
         "multiply" => Box::new(Multiply::new(id)),
         "divide" => Box::new(Divide::new(id)),
+        "not" => Box::new(Not::new(id)),
+        "and" => Box::new(And::new(id)),
         _ => return Err(format!("{} does not exist", name).into()),
     })
 }
@@ -239,5 +241,102 @@ impl Block for Divide {
     fn value(&self) -> Result<serde_json::Value> {
         let (a, b) = get_num1_and_num2(&self.num1, &self.num2)?;
         Ok((a / b).into())
+    }
+}
+
+#[derive(Debug)]
+pub struct And {
+    id: String,
+    operand1: Option<Box<dyn Block>>,
+    operand2: Option<Box<dyn Block>>,
+}
+
+impl And {
+    pub fn new(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            operand1: None,
+            operand2: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for And {
+    fn block_name(&self) -> &'static str {
+        "And"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "OPERAND1" => self.operand1 = Some(block),
+            "OPERAND2" => self.operand2 = Some(block),
+            _ => {}
+        }
+    }
+
+    fn value(&self) -> Result<serde_json::Value> {
+        let left = match &self.operand1 {
+            Some(b) => b.value()?,
+            None => return Err("operand1 is None".into()),
+        };
+
+        let right = match &self.operand2 {
+            Some(b) => b.value()?,
+            None => return Err("operand2 is None".into()),
+        };
+
+        Ok((left == right).into())
+    }
+}
+
+#[derive(Debug)]
+pub struct Not {
+    id: String,
+    operand: Option<Box<dyn Block>>,
+}
+
+impl Not {
+    pub fn new(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            operand: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Not {
+    fn block_name(&self) -> &'static str {
+        "Not"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "OPERAND" => self.operand = Some(block),
+            _ => {}
+        }
+    }
+
+    fn value(&self) -> Result<serde_json::Value> {
+        let operand_value = match &self.operand {
+            Some(b) => b.value()?,
+            None => return Err("operand is None".into()),
+        };
+
+        let operand = match operand_value.as_bool() {
+            Some(b) => b,
+            None => return Err(format!("operand is not boolean: {}", operand_value).into()),
+        };
+
+        Ok((!operand).into())
     }
 }
