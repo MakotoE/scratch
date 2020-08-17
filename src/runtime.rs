@@ -313,6 +313,9 @@ mod tests {
 
     #[test]
     fn color_to_hex() {
-        assert_eq!(super::color_to_hex(&palette::rgb::Rgb::new(0.0, 1.0, 0.0)), "#00ff00");
+        assert_eq!(
+            super::color_to_hex(&palette::rgb::Rgb::new(0.0, 1.0, 0.0)),
+            "#00ff00"
+        );
     }
 }

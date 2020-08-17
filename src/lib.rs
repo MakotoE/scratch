@@ -38,6 +38,14 @@ error_chain::error_chain! {
     }
 
     errors {
+        Initialization(error: Box<Error>) {
+            description("initialization error")
+            display(
+                "error during initialization: {}",
+                error.to_string(),
+            )
+        }
+
         Block(block_name: &'static str, block_id: String, error: Box<Error>) {
             description("block error")
             display(

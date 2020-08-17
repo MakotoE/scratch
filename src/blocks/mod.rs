@@ -42,30 +42,16 @@ fn get_block(
             operator::get_block(name, id, runtime).map_err(|e| add_error_context(id, "operator", e))
         }
         "pen" => pen::get_block(name, id, runtime).map_err(|e| add_error_context(id, "pen", e)),
-        _ => Err(format!(
-            "error during block initialization: block id \"{}\": opcode {} does not exist",
-            id, info.opcode
-        )
-        .into()),
+        _ => Err(format!("block id \"{}\": opcode {} does not exist", id, info.opcode).into()),
     }
 }
 
 fn add_error_context(id: &str, category: &str, err: Error) -> Error {
     format!(
-        "error during block initialization: block id \"{}\", category {}: {}",
+        "block id \"{}\", category {}: {}",
         id, category, err
     )
     .into()
-}
-
-/// https://en.scratch-wiki.info/wiki/Scratch_File_Format
-pub fn new_value(value_type: i64, value: serde_json::Value) -> Result<Box<dyn Block>> {
-    use std::convert::TryFrom;
-    Ok(match value_type {
-        4 | 5 | 6 | 7 => Box::new(value::Number::try_from(value)?),
-        9 | 10 => Box::new(value::BlockString::try_from(value)?),
-        _ => return Err(format!("value_type {} does not exist", value_type).into()),
-    })
 }
 
 #[async_trait(?Send)]
@@ -163,13 +149,8 @@ pub fn new_block(
                     .get(1)
                     .and_then(|v| v.as_array())
                     .ok_or_else(input_err_cb)?;
-                let value_type = value_info
-                    .get(0)
-                    .and_then(|v| v.as_i64())
-                    .ok_or_else(input_err_cb)?;
                 let js_value = value_info.get(1).ok_or_else(input_err_cb)?;
-                let value = new_value(value_type, js_value.clone())
-                    .map_err(|e| format!("block \"{}\": {}", block_id, e.to_string()))?;
+                let value = Box::new(value::Value::from(js_value.clone()));
                 block.set_input(k, value);
             }
             2 | 3 => {
@@ -220,7 +201,7 @@ fn value_to_float(value: &serde_json::Value) -> Result<f64> {
                 f = 0.0;
             }
             f
-        },
+        }
         _ => return Err(format!("expected String or Number but got: {:?}", value).into()),
     })
 }

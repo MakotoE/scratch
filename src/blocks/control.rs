@@ -287,7 +287,9 @@ impl Block for RepeatUntil {
 
         let condition = match condition_value.as_bool() {
             Some(b) => b,
-            None => return Next::Err(format!("condition is not boolean: {}", condition_value).into()),
+            None => {
+                return Next::Err(format!("condition is not boolean: {}", condition_value).into())
+            }
         };
 
         if condition {
@@ -357,7 +359,9 @@ impl Block for IfElse {
 
         let condition = match condition_value.as_bool() {
             Some(b) => b,
-            None => return Next::Err(format!("condition is not boolean: {}", condition_value).into()),
+            None => {
+                return Next::Err(format!("condition is not boolean: {}", condition_value).into())
+            }
         };
 
         self.done = true;
