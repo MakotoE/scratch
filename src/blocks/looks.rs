@@ -58,17 +58,13 @@ impl Block for Say {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let message = match &self.message {
             Some(b) => Say::value_to_string(&b.value()?),
-            None => return Err("message is None".into()),
+            None => return Next::Err("message is None".into()),
         };
         self.runtime.borrow_mut().say(Some(&message));
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -112,24 +108,20 @@ impl Block for SayForSecs {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let message = match &self.message {
             Some(b) => Say::value_to_string(&b.value()?),
-            None => return Err("message is None".into()),
+            None => return Next::Err("message is None".into()),
         };
 
         let seconds = match &self.secs {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("secs is None".into()),
+            None => return Next::Err("secs is None".into()),
         };
 
         self.runtime.borrow_mut().say(Some(&message));
         self.runtime.borrow().redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }

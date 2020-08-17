@@ -57,7 +57,7 @@ impl Block for If {
         }
     }
 
-    fn next(&mut self) -> Next {
+    async fn execute(&mut self) -> Next {
         if self.done {
             return Next::continue_(self.next.clone());
         }
@@ -80,10 +80,6 @@ impl Block for If {
         }
 
         return Next::continue_(self.next.clone());
-    }
-
-    async fn execute(&mut self) -> Result<()> {
-        Ok(())
     }
 }
 
@@ -122,18 +118,14 @@ impl Block for Wait {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let duration = match &self.duration {
             Some(block) => value_to_float(&block.value()?)?,
-            None => return Err("duration is None".into()),
+            None => return Next::Err("duration is None".into()),
         };
 
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -169,15 +161,11 @@ impl Block for Forever {
         }
     }
 
-    fn next(&mut self) -> Next {
+    async fn execute(&mut self) -> Next {
         match &self.substack {
             Some(b) => Next::Loop(b.clone()),
             None => Next::None,
         }
-    }
-
-    async fn execute(&mut self) -> Result<()> {
-        Ok(())
     }
 }
 
@@ -221,7 +209,7 @@ impl Block for Repeat {
         }
     }
 
-    fn next(&mut self) -> Next {
+    async fn execute(&mut self) -> Next {
         let times = match &self.times {
             Some(v) => value_to_float(&v.value()?)?,
             None => return Next::Err("times is None".into()),
@@ -234,10 +222,6 @@ impl Block for Repeat {
         }
 
         Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
-        Ok(())
     }
 }
 
@@ -279,7 +263,7 @@ impl Block for RepeatUntil {
         }
     }
 
-    fn next(&mut self) -> Next {
+    async fn execute(&mut self) -> Next {
         let condition_value = match &self.condition {
             Some(block) => block.value()?,
             None => return Next::Err("condition is None".into()),
@@ -297,10 +281,6 @@ impl Block for RepeatUntil {
         }
 
         Next::loop_(self.substack.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
-        Ok(())
     }
 }
 
@@ -347,7 +327,7 @@ impl Block for IfElse {
         }
     }
 
-    fn next(&mut self) -> Next {
+    async fn execute(&mut self) -> Next {
         if self.done {
             return Next::continue_(self.next.clone());
         }
@@ -371,9 +351,5 @@ impl Block for IfElse {
         }
 
         Next::loop_(self.substack_false.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
-        Ok(())
     }
 }

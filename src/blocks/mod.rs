@@ -67,16 +67,12 @@ pub trait Block: std::fmt::Debug {
     #[allow(unused_variables)]
     fn set_field(&mut self, key: &str, value_id: String) {}
 
-    fn next(&mut self) -> Next {
-        unreachable!()
-    }
-
     fn value(&self) -> Result<serde_json::Value> {
         Err("this block does not return a value".into())
     }
 
-    async fn execute(&mut self) -> Result<()> {
-        Err("this block cannot be executed".into())
+    async fn execute(&mut self) -> Next {
+        Next::Err("this block cannot be executed".into())
     }
 }
 

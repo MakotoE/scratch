@@ -1,6 +1,7 @@
 use super::*;
 use blocks::*;
 use runtime::{Coordinate, SpriteRuntime};
+use async_trait::async_trait;
 
 #[derive(Debug)]
 pub struct Sprite {
@@ -59,63 +60,16 @@ impl Thread {
     }
 
     pub async fn execute(&self) -> Result<()> {
-        // TODO have substacks iterate blocks on their own
-        let mut iter = self.iter();
-        while let Some(next) = iter.next()? {
-            let result = next.borrow_mut().execute().await;
-            result.map_err(|e| {
-                ErrorKind::Block(
-                    next.borrow().block_name(),
-                    next.borrow().id().to_string(),
-                    Box::new(e),
-                )
-            })?;
+        let mut next = self.hat.borrow_mut().execute().await;
+        self.runtime.borrow().redraw()?;
+
+        while let Next::Continue(b) = &next {
+            let result = b.borrow_mut().execute().await;
+            next = result;
             self.runtime.borrow().redraw()?;
         }
 
         Ok(())
-    }
-
-    fn iter(&self) -> ThreadIterator {
-        ThreadIterator::new(self.hat.clone())
-    }
-}
-
-#[derive(Debug)]
-pub struct ThreadIterator {
-    curr: Rc<RefCell<Box<dyn Block>>>,
-    loop_stack: Vec<Rc<RefCell<Box<dyn Block>>>>,
-}
-
-impl ThreadIterator {
-    fn new(hat: Rc<RefCell<Box<dyn Block>>>) -> Self {
-        Self {
-            curr: Rc::new(RefCell::new(Box::new(DummyBlock { next: hat }))),
-            loop_stack: Vec::new(),
-        }
-    }
-
-    fn next(&mut self) -> Result<Option<Rc<RefCell<Box<dyn Block>>>>> {
-        let next = self.curr.borrow_mut().next()?;
-        match next {
-            Next::None => match self.loop_stack.pop() {
-                Some(b) => {
-                    self.curr = b.clone();
-                    Ok(Some(b))
-                }
-                None => Ok(None),
-            },
-            Next::Err(e) => Err(e),
-            Next::Continue(b) => {
-                self.curr = b.clone();
-                Ok(Some(b))
-            }
-            Next::Loop(b) => {
-                self.loop_stack.push(self.curr.clone());
-                self.curr = b.clone();
-                Ok(Some(b))
-            }
-        }
     }
 }
 
@@ -124,6 +78,7 @@ pub struct DummyBlock {
     next: Rc<RefCell<Box<dyn Block>>>,
 }
 
+#[async_trait(?Send)]
 impl Block for DummyBlock {
     fn block_name(&self) -> &'static str {
         "DummyBlock"
@@ -134,9 +89,8 @@ impl Block for DummyBlock {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-    fn set_field(&mut self, _: &str, _: String) {}
 
-    fn next(&mut self) -> Next {
+    async fn execute(&mut self) -> Next {
         Next::Continue(self.next.clone())
     }
 }
@@ -160,28 +114,6 @@ mod tests {
             }
 
             fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-            fn set_field(&mut self, _: &str, _: String) {}
-        }
-
-        #[test]
-        fn into_iter() {
-            {
-                let block_0: Rc<RefCell<Box<dyn Block>>> =
-                    Rc::new(RefCell::new(Box::new(LastBlock {})));
-                let mut iter = ThreadIterator::new(block_0);
-                assert!(iter.next().unwrap().is_some());
-                assert!(iter.next().unwrap().is_none());
-            }
-            {
-                let block_0: Rc<RefCell<Box<dyn Block>>> =
-                    Rc::new(RefCell::new(Box::new(LastBlock {})));
-                let block_1: Rc<RefCell<Box<dyn Block>>> =
-                    Rc::new(RefCell::new(Box::new(DummyBlock { next: block_0 })));
-                let mut iter = ThreadIterator::new(block_1);
-                assert!(iter.next().unwrap().is_some());
-                assert!(iter.next().unwrap().is_some());
-                assert!(iter.next().unwrap().is_none());
-            }
         }
     }
 }

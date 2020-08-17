@@ -51,13 +51,9 @@ impl Block for PenDown {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         self.runtime.borrow_mut().pen_down();
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -95,13 +91,9 @@ impl Block for PenUp {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         self.runtime.borrow_mut().pen_up();
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -142,14 +134,10 @@ impl Block for SetPenColorToColor {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let color_value = match &self.color {
             Some(b) => b.value()?,
-            None => return Err("color is None".into()),
+            None => return Next::Err("color is None".into()),
         };
         let color = color_value
             .as_str()
@@ -157,7 +145,7 @@ impl Block for SetPenColorToColor {
         self.runtime
             .borrow_mut()
             .set_pen_color(&runtime::hex_to_color(color)?);
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -198,18 +186,14 @@ impl Block for SetPenSizeTo {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let size = match &self.size {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("color is None".into()),
+            None => return Next::Err("color is None".into()),
         };
 
         self.runtime.borrow_mut().set_pen_size(size);
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -247,13 +231,9 @@ impl Block for Clear {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         self.runtime.borrow_mut().pen_clear();
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -294,21 +274,17 @@ impl Block for SetPenShadeToNumber {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let shade = match &self.shade {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("shade is None".into()),
+            None => return Next::Err("shade is None".into()),
         };
 
         let color = *self.runtime.borrow().pen_color();
         let mut hsv: palette::Hsv = color.into();
         hsv.value = (shade / 100.0) as f32;
         self.runtime.borrow_mut().set_pen_color(&hsv.into());
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -349,20 +325,16 @@ impl Block for SetPenHueToNumber {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let hue = match &self.hue {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("hue is None".into()),
+            None => return Next::Err("hue is None".into()),
         };
 
         let color = *self.runtime.borrow().pen_color();
         let mut hsv: palette::Hsv = color.into();
         hsv.hue = palette::RgbHue::from_degrees((hue / 100.0 * 360.0 - 180.0) as f32);
         self.runtime.borrow_mut().set_pen_color(&hsv.into());
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }

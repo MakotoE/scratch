@@ -55,14 +55,10 @@ impl Block for MoveSteps {
         }
     }
 
-    fn next(&mut self) -> Next {
-        return Next::continue_(self.next.clone());
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let steps_value = match &self.steps {
             Some(block) => block.value()?,
-            None => return Err("steps is None".into()),
+            None => return Next::Err("steps is None".into()),
         };
 
         let steps = steps_value
@@ -71,7 +67,7 @@ impl Block for MoveSteps {
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(steps, 0.0));
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -115,24 +111,20 @@ impl Block for GoToXY {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let x = match &self.x {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("x is None".into()),
+            None => return Next::Err("x is None".into()),
         };
         let y = match &self.y {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("y is None".into()),
+            None => return Next::Err("y is None".into()),
         };
 
         self.runtime
             .borrow_mut()
             .set_position(&Coordinate::new(x, y));
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -173,20 +165,16 @@ impl Block for ChangeXBy {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let x = match &self.dx {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("dx is None".into()),
+            None => return Next::Err("dx is None".into()),
         };
 
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(x, 0.0));
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -227,20 +215,16 @@ impl Block for ChangeYBy {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let y = match &self.dy {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("dy is None".into()),
+            None => return Next::Err("dy is None".into()),
         };
 
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(0.0, y));
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -281,14 +265,10 @@ impl Block for SetX {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let x = match &self.x {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("x is None".into()),
+            None => return Next::Err("x is None".into()),
         };
 
         let curr_y = self.runtime.borrow().position().y();
@@ -296,7 +276,7 @@ impl Block for SetX {
         self.runtime
             .borrow_mut()
             .set_position(&Coordinate::new(x, curr_y));
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -337,14 +317,10 @@ impl Block for SetY {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let y = match &self.y {
             Some(b) => value_to_float(&b.value()?)?,
-            None => return Err("y is None".into()),
+            None => return Next::Err("y is None".into()),
         };
 
         let curr_x = self.runtime.borrow().position().x();
@@ -352,7 +328,7 @@ impl Block for SetY {
         self.runtime
             .borrow_mut()
             .set_position(&Coordinate::new(curr_x, y));
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -360,7 +336,6 @@ impl Block for SetY {
 pub struct XPosition {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl XPosition {
@@ -368,7 +343,6 @@ impl XPosition {
         Self {
             id: id.to_string(),
             runtime,
-            next: None,
         }
     }
 }
@@ -383,16 +357,7 @@ impl Block for XPosition {
         &self.id
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
-        }
-    }
-
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.runtime.borrow().position().x().into())
@@ -403,7 +368,6 @@ impl Block for XPosition {
 pub struct YPosition {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl YPosition {
@@ -411,7 +375,6 @@ impl YPosition {
         Self {
             id: id.to_string(),
             runtime,
-            next: None,
         }
     }
 }
@@ -426,16 +389,7 @@ impl Block for YPosition {
         &self.id
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
-        }
-    }
-
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     fn value(&self) -> Result<serde_json::Value> {
         Ok(self.runtime.borrow().position().y().into())

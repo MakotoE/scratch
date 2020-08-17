@@ -57,24 +57,20 @@ impl Block for SetVariable {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let variable_id = match &self.variable_id {
             Some(id) => id,
-            None => return Err("variable_id is None".into()),
+            None => return Next::Err("variable_id is None".into()),
         };
         let value = match &self.value {
             Some(v) => v.value()?,
-            None => return Err("value is None".into()),
+            None => return Next::Err("value is None".into()),
         };
         self.runtime
             .borrow_mut()
             .variables
             .insert(variable_id.clone(), value.clone());
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -123,37 +119,33 @@ impl Block for ChangeVariable {
         }
     }
 
-    fn next(&mut self) -> Next {
-        Next::continue_(self.next.clone())
-    }
-
-    async fn execute(&mut self) -> Result<()> {
+    async fn execute(&mut self) -> Next {
         let variable_id = match &self.variable_id {
             Some(id) => id,
-            None => return Err("variable_id is None".into()),
+            None => return Next::Err("variable_id is None".into()),
         };
 
         let previous_value = match self.runtime.borrow_mut().variables.remove(variable_id) {
             Some(v) => v,
-            None => return Err(format!("variable {} does not exist", variable_id).into()),
+            None => return Next::Err(format!("variable {} does not exist", variable_id).into()),
         };
 
         let previous_float: f64 = value_to_float(&previous_value).unwrap_or(0.0);
 
         let value = match &self.value {
             Some(v) => v.value()?,
-            None => return Err("value is None".into()),
+            None => return Next::Err("value is None".into()),
         };
 
         let value_float = match value.as_f64() {
             Some(f) => f,
-            None => return Err("value is not float".into()),
+            None => return Next::Err("value is not float".into()),
         };
 
         self.runtime
             .borrow_mut()
             .variables
             .insert(variable_id.clone(), (previous_float + value_float).into());
-        Ok(())
+        Next::continue_(self.next.clone())
     }
 }
