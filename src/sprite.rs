@@ -57,7 +57,7 @@ impl Thread {
         }
     }
 
-    pub async fn execute(&self) -> Result<()> {
+    pub async fn execute(&self) -> Result<()> { // TODO have substacks iterate blocks on their own
         let mut iter = self.iter();
         while let Some(next) = iter.next()? {
             let result = next.borrow_mut().execute().await;

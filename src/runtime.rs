@@ -66,6 +66,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
+    //noinspection RsBorrowChecker
     fn draw_text_bubble(context: &web_sys::CanvasRenderingContext2d, text: &str) -> Result<()> {
         // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
         const CORNER_RADIUS: f64 = 16.0;
@@ -194,6 +195,10 @@ impl SpriteRuntime {
     }
 
     pub fn pen_up(&mut self) {}
+
+    pub fn pen_color(&self) -> &palette::Srgb {
+        &self.pen_color
+    }
 
     pub fn set_pen_color(&mut self, color: &palette::Srgb) {
         self.pen_color = *color;
