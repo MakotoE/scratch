@@ -11,7 +11,7 @@ pub struct SpriteRuntime {
     current_costume: usize,
     text: Option<String>,
     pen_path: web_sys::Path2d,
-    pen_color: Color,
+    pen_color: palette::Srgb,
     pen_size: f64,
 }
 
@@ -28,7 +28,7 @@ impl SpriteRuntime {
             current_costume: 0,
             text: None,
             pen_path: web_sys::Path2d::new().unwrap(),
-            pen_color: Color::new(0, 0, 255),
+            pen_color: palette::Srgb::new(0.0, 0.0, 1.0),
             pen_size: 1.0,
         }
     }
@@ -40,7 +40,7 @@ impl SpriteRuntime {
 
         self.context.set_line_cap("round");
         self.context
-            .set_stroke_style(&self.pen_color.to_hex_string().as_str().into());
+            .set_stroke_style(&color_to_hex(&self.pen_color).as_str().into());
         self.context.set_line_width(self.pen_size);
         self.context.stroke_with_path(&self.pen_path);
 
@@ -195,7 +195,7 @@ impl SpriteRuntime {
 
     pub fn pen_up(&mut self) {}
 
-    pub fn set_pen_color(&mut self, color: &Color) {
+    pub fn set_pen_color(&mut self, color: &palette::Srgb) {
         self.pen_color = *color;
     }
 
@@ -241,83 +241,64 @@ pub struct Costume {
     rotation_center: Coordinate,
 }
 
-#[derive(Copy, Clone, Default, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-pub struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
+pub fn hex_to_color(s: &str) -> Result<palette::Srgb> {
+    if s.len() != 7 || s.bytes().next().unwrap() != b'#' {
+        return Err(format!("s is invalid: {}", s).into());
+    }
+
+    Ok(palette::rgb::Rgb::new(
+        u8::from_str_radix(&s[1..3], 16)? as f32 / 255.0,
+        u8::from_str_radix(&s[3..5], 16)? as f32 / 255.0,
+        u8::from_str_radix(&s[5..7], 16)? as f32 / 255.0,
+    ))
 }
 
-impl Color {
-    pub fn new(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b }
-    }
-
-    pub fn from_hex(s: &str) -> Result<Self> {
-        if s.len() != 7 || s.bytes().next().unwrap() != b'#' {
-            return Err(format!("s is invalid: {}", s).into());
-        }
-
-        Ok(Self {
-            r: u8::from_str_radix(&s[1..3], 16)?,
-            g: u8::from_str_radix(&s[3..5], 16)?,
-            b: u8::from_str_radix(&s[5..7], 16)?,
-        })
-    }
-
-    pub fn to_hex_string(&self) -> String {
-        return format!("#{:02x}", self.r)
-            + &format!("{:02x}", self.g)
-            + &format!("{:02x}", self.b);
-    }
+pub fn color_to_hex(color: &palette::Srgb) -> String {
+    format!("#{:02x}", (color.red * 255.0).round() as u8)
+        + &format!("{:02x}", (color.green * 255.0).round() as u8)
+        + &format!("{:02x}", (color.blue * 255.0).round() as u8)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
-    fn color_from_hex() {
+    fn hex_to_color() {
         struct Test {
             s: &'static str,
-            expected: Color,
+            expected: palette::rgb::Rgb,
             expect_err: bool,
         }
 
         let tests = vec![
             Test {
                 s: "",
-                expected: Color { r: 0, g: 0, b: 0 },
+                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
                 expect_err: true,
             },
             Test {
                 s: "#",
-                expected: Color { r: 0, g: 0, b: 0 },
+                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
                 expect_err: true,
             },
             Test {
                 s: "#000000",
-                expected: Color { r: 0, g: 0, b: 0 },
+                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
                 expect_err: false,
             },
             Test {
                 s: "#ffffff",
-                expected: Color {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                },
+                expected: palette::rgb::Rgb::new(1.0, 1.0, 1.0),
                 expect_err: false,
             },
             Test {
                 s: "#ffffffa",
-                expected: Color { r: 0, g: 0, b: 0 },
+                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
                 expect_err: true,
             },
         ];
 
         for (i, test) in tests.iter().enumerate() {
-            let result = Color::from_hex(test.s);
+            let result = super::hex_to_color(test.s);
             assert_eq!(result.is_err(), test.expect_err, "{}", i);
             if !test.expect_err {
                 assert_eq!(result.unwrap(), test.expected, "{}", i);
@@ -326,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn color_to_hex_string() {
-        assert_eq!(Color { r: 0, g: 1, b: 2 }.to_hex_string(), "#000102");
+    fn color_to_hex() {
+        assert_eq!(super::color_to_hex(&palette::rgb::Rgb::new(0.0, 1.0, 0.0)), "#00ff00");
     }
 }

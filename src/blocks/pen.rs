@@ -154,7 +154,7 @@ impl Block for SetPenColorToColor {
             .ok_or_else(|| Error::from("color is not a string"))?;
         self.runtime
             .borrow_mut()
-            .set_pen_color(&runtime::Color::from_hex(color)?);
+            .set_pen_color(&runtime::hex_to_color(color)?);
         Ok(())
     }
 }
