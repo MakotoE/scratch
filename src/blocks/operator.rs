@@ -13,6 +13,8 @@ pub fn get_block(
         "divide" => Box::new(Divide::new(id)),
         "not" => Box::new(Not::new(id)),
         "and" => Box::new(And::new(id)),
+        "lt" => Box::new(LessThan::new(id)),
+        "gt" => Box::new(GreaterThan::new(id)),
         _ => return Err(format!("{} does not exist", name).into()),
     })
 }
@@ -338,5 +340,105 @@ impl Block for Not {
         };
 
         Ok((!operand).into())
+    }
+}
+
+#[derive(Debug)]
+pub struct LessThan {
+    id: String,
+    operand1: Option<Box<dyn Block>>,
+    operand2: Option<Box<dyn Block>>,
+}
+
+impl LessThan {
+    pub fn new(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            operand1: None,
+            operand2: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for LessThan {
+    fn block_name(&self) -> &'static str {
+        "LessThan"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "OPERAND1" => self.operand1 = Some(block),
+            "OPERAND2" => self.operand2 = Some(block),
+            _ => {}
+        }
+    }
+
+    fn value(&self) -> Result<serde_json::Value> {
+        let left = match &self.operand1 {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("operand1 is None".into()),
+        };
+
+        let right = match &self.operand2 {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("operand2 is None".into()),
+        };
+
+        Ok((left < right).into())
+    }
+}
+
+#[derive(Debug)]
+pub struct GreaterThan {
+    id: String,
+    operand1: Option<Box<dyn Block>>,
+    operand2: Option<Box<dyn Block>>,
+}
+
+impl GreaterThan {
+    pub fn new(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            operand1: None,
+            operand2: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for GreaterThan {
+    fn block_name(&self) -> &'static str {
+        "LessThan"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "OPERAND1" => self.operand1 = Some(block),
+            "OPERAND2" => self.operand2 = Some(block),
+            _ => {}
+        }
+    }
+
+    fn value(&self) -> Result<serde_json::Value> {
+        let left = match &self.operand1 {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("operand1 is None".into()),
+        };
+
+        let right = match &self.operand2 {
+            Some(b) => value_to_float(&b.value()?)?,
+            None => return Err("operand2 is None".into()),
+        };
+
+        Ok((left > right).into())
     }
 }
