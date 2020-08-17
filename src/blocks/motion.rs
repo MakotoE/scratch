@@ -12,6 +12,8 @@ pub fn get_block(
         "changeyby" => Box::new(ChangeYBy::new(id, runtime)),
         "setx" => Box::new(SetX::new(id, runtime)),
         "sety" => Box::new(SetY::new(id, runtime)),
+        "xposition" => Box::new(XPosition::new(id, runtime)),
+        "yposition" => Box::new(YPosition::new(id, runtime)),
         _ => return Err(format!("{} does not exist", name).into()),
     })
 }
@@ -351,5 +353,91 @@ impl Block for SetY {
             .borrow_mut()
             .set_position(&Coordinate::new(curr_x, y));
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct XPosition {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl XPosition {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for XPosition {
+    fn block_name(&self) -> &'static str {
+        "XPosition"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        Next::continue_(self.next.clone())
+    }
+
+    fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.runtime.borrow().position().x().into())
+    }
+}
+
+#[derive(Debug)]
+pub struct YPosition {
+    id: String,
+    runtime: Rc<RefCell<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl YPosition {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for YPosition {
+    fn block_name(&self) -> &'static str {
+        "YPosition"
+    }
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn next(&mut self) -> Next {
+        Next::continue_(self.next.clone())
+    }
+
+    fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.runtime.borrow().position().y().into())
     }
 }
