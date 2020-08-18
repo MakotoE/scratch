@@ -105,8 +105,9 @@ impl DebugController {
         }
     }
 
-    pub async fn run(&self) {
+    pub async fn continue_(&self) {
         *self.blocking.write().await = false;
+        self.semaphore.add_permits(1);
     }
 
     pub async fn pause(&self) {

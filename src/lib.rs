@@ -1,6 +1,7 @@
 #![feature(async_closure)]
 #![feature(try_trait)]
 #![feature(str_split_once)]
+#![recursion_limit="256"]
 
 pub mod blocks;
 pub mod runtime;
@@ -85,12 +86,15 @@ struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
+    status: String,
 }
 
 enum Msg {
     Noop,
     ImportFile(web_sys::File),
     Run(FileData),
+    Continue,
+    Pause,
     Step,
 }
 
@@ -136,6 +140,7 @@ impl Component for Page {
             link,
             canvas_ref: NodeRef::default(),
             task: None,
+            status: "Running".to_string(),
         }
     }
 
@@ -159,6 +164,18 @@ impl Component for Page {
                     Err(e) => log::error!("{}", e),
                 })();
                 wasm_bindgen_futures::spawn_local(future);
+            }
+            Msg::Continue => {
+                wasm_bindgen_futures::spawn_local((async || {
+                    CONTROLLER.continue_().await;
+                })());
+                self.status = "Running".to_string();
+            }
+            Msg::Pause => {
+                wasm_bindgen_futures::spawn_local((async || {
+                    CONTROLLER.pause().await;
+                })());
+                self.status = "Paused".to_string();
             }
             Msg::Step => {
                 wasm_bindgen_futures::spawn_local((async || {
@@ -191,7 +208,10 @@ impl Component for Page {
                     height="720"
                     style="height: 360px; width: 480px; border: 1px solid black;"
                 /><br />
-                <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} /><br /><br />
+                <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} /><br />
+                <p>{self.status.clone()}</p>
+                <button onclick={self.link.callback(|_| Msg::Continue)}>{"Continue"}</button>
+                <button onclick={self.link.callback(|_| Msg::Pause)}>{"Pause"}</button>
                 <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>
             </div>
         }
