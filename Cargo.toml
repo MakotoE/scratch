@@ -22,6 +22,8 @@ wasm-bindgen-futures = "0.4"
 async-trait = "0.1"
 gloo-timers = { version = "0.2", features = ["futures"] }
 palette = "0.5"
+lazy_static = "1.4"
+tokio =  { version = "0.2", features = ["sync"] }
 
 [dependencies.web-sys]
 version = "0.3"

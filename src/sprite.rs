@@ -1,15 +1,19 @@
 use super::*;
+use async_trait::async_trait;
 use blocks::*;
 use runtime::{Coordinate, SpriteRuntime};
-use async_trait::async_trait;
 
 #[derive(Debug)]
-pub struct Sprite {
-    threads: Vec<Thread>,
+pub struct Sprite<'d> {
+    threads: Vec<Thread<'d>>,
 }
 
-impl Sprite {
-    pub fn new(mut runtime: SpriteRuntime, target: &savefile::Target) -> Result<Self> {
+impl<'d> Sprite<'d> {
+    pub fn new(
+        mut runtime: SpriteRuntime,
+        target: &savefile::Target,
+        controller: &'d DebugController,
+    ) -> Result<Self> {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
         let runtime_ref = Rc::new(RefCell::new(runtime));
@@ -17,7 +21,7 @@ impl Sprite {
         for hat_id in find_hats(&target.blocks) {
             let block = new_block(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            threads.push(Thread::new(block, runtime_ref.clone()));
+            threads.push(Thread::new(block, runtime_ref.clone(), controller));
         }
         Ok(Self { threads })
     }
@@ -46,30 +50,73 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 }
 
 #[derive(Debug)]
-pub struct Thread {
+pub struct Thread<'d> {
     hat: Rc<RefCell<Box<dyn Block>>>,
     runtime: Rc<RefCell<SpriteRuntime>>,
+    controller: &'d DebugController,
 }
 
-impl Thread {
-    pub fn new(hat: Box<dyn Block>, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+impl<'d> Thread<'d> {
+    pub fn new(
+        hat: Box<dyn Block>,
+        runtime: Rc<RefCell<SpriteRuntime>>,
+        controller: &'d DebugController,
+    ) -> Self {
         Self {
             hat: Rc::new(RefCell::new(hat)),
             runtime,
+            controller,
         }
     }
 
     pub async fn execute(&self) -> Result<()> {
+        self.controller.wait().await;
         let mut next = self.hat.borrow_mut().execute().await;
         self.runtime.borrow().redraw()?;
 
         while let Next::Continue(b) = &next {
+            self.controller.wait().await;
             let result = b.borrow_mut().execute().await;
             next = result;
             self.runtime.borrow().redraw()?;
         }
 
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct DebugController {
+    semaphore: tokio::sync::Semaphore,
+    blocking: tokio::sync::RwLock<bool>,
+}
+
+impl DebugController {
+    pub fn new() -> Self {
+        Self {
+            semaphore: tokio::sync::Semaphore::new(0),
+            blocking: tokio::sync::RwLock::new(false),
+        }
+    }
+
+    pub async fn wait(&self) {
+        if *self.blocking.read().await {
+            self.semaphore.acquire().await.forget();
+        }
+    }
+
+    pub async fn run(&self) {
+        *self.blocking.write().await = false;
+    }
+
+    pub async fn pause(&self) {
+        *self.blocking.write().await = true;
+    }
+
+    pub async fn step(&self) {
+        if *self.blocking.read().await {
+            self.semaphore.add_permits(1);
+        }
     }
 }
 

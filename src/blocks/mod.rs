@@ -47,11 +47,7 @@ fn get_block(
 }
 
 fn add_error_context(id: &str, category: &str, err: Error) -> Error {
-    format!(
-        "block id \"{}\", category {}: {}",
-        id, category, err
-    )
-    .into()
+    format!("block id \"{}\", category {}: {}", id, category, err).into()
 }
 
 #[async_trait(?Send)]

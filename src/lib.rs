@@ -8,6 +8,7 @@ pub mod savefile;
 pub mod sprite;
 
 use savefile::ScratchFile;
+use sprite::DebugController;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -90,6 +91,11 @@ enum Msg {
     Noop,
     ImportFile(web_sys::File),
     Run(FileData),
+    Step,
+}
+
+lazy_static::lazy_static! {
+    static ref CONTROLLER: DebugController = DebugController::new();
 }
 
 impl Page {
@@ -116,7 +122,7 @@ impl Page {
             }
         }
 
-        let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1])?;
+        let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1], &CONTROLLER)?;
         sprite.execute().await
     }
 }
@@ -154,6 +160,11 @@ impl Component for Page {
                 })();
                 wasm_bindgen_futures::spawn_local(future);
             }
+            Msg::Step => {
+                wasm_bindgen_futures::spawn_local((async || {
+                    CONTROLLER.step().await;
+                })());
+            }
         }
         true
     }
@@ -180,7 +191,8 @@ impl Component for Page {
                     height="720"
                     style="height: 360px; width: 480px; border: 1px solid black;"
                 /><br />
-                <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} />
+                <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} /><br /><br />
+                <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>
             </div>
         }
     }

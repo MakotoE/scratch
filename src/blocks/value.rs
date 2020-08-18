@@ -52,6 +52,6 @@ impl Block for Value {
 
 impl std::convert::From<serde_json::Value> for Value {
     fn from(value: serde_json::Value) -> Self {
-        Self{value}
+        Self { value }
     }
 }
