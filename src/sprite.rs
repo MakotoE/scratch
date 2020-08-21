@@ -94,14 +94,15 @@ pub struct DebugController {
 impl DebugController {
     pub fn new() -> Self {
         Self {
-            semaphore: tokio::sync::Semaphore::new(0),
+            semaphore: tokio::sync::Semaphore::new(1),
             blocking: tokio::sync::RwLock::new(false),
         }
     }
 
     pub async fn wait(&self) {
-        if *self.blocking.read().await {
-            self.semaphore.acquire().await.forget();
+        self.semaphore.acquire().await.forget();
+        if !*self.blocking.read().await {
+            self.step();
         }
     }
 
@@ -112,12 +113,16 @@ impl DebugController {
 
     pub async fn pause(&self) {
         *self.blocking.write().await = true;
+        while self.semaphore.available_permits() > 0 {
+            match self.semaphore.try_acquire() {
+                Ok(p) => p.forget(),
+                Err(_) => break,
+            }
+        }
     }
 
     pub async fn step(&self) {
-        if *self.blocking.read().await {
-            self.semaphore.add_permits(1);
-        }
+        self.semaphore.add_permits(1);
     }
 }
 
