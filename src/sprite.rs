@@ -71,13 +71,34 @@ impl<'d> Thread<'d> {
 
     pub async fn execute(&self) -> Result<()> {
         self.controller.wait().await;
+        let debug_info = if self.controller.display_debug().await {
+            DebugInfo{
+                show: true,
+                block_name: self.hat.borrow().block_name().to_string(),
+                block_id: self.hat.borrow().id().to_string(),
+            }
+        } else {
+            DebugInfo::default()
+        };
+        self.runtime.borrow_mut().set_debug_info(&debug_info);
         let mut next = self.hat.borrow_mut().execute().await;
         self.runtime.borrow().redraw()?;
 
         while let Next::Continue(b) = &next {
             self.controller.wait().await;
+            let debug_info = if self.controller.display_debug().await {
+                DebugInfo{
+                    show: true,
+                    block_name: b.borrow().block_name().to_string(),
+                    block_id: b.borrow().id().to_string(),
+                }
+            } else {
+                DebugInfo::default()
+            };
+            self.runtime.borrow_mut().set_debug_info(&debug_info);
             let result = b.borrow_mut().execute().await;
             next = result;
+
             self.runtime.borrow().redraw()?;
         }
 
@@ -85,10 +106,18 @@ impl<'d> Thread<'d> {
     }
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct DebugInfo {
+    pub show: bool,
+    pub block_id: String,
+    pub block_name: String,
+}
+
 #[derive(Debug)]
 pub struct DebugController {
     semaphore: tokio::sync::Semaphore,
     blocking: tokio::sync::RwLock<bool>,
+    display_debug: tokio::sync::RwLock<bool>,
 }
 
 impl DebugController {
@@ -96,19 +125,21 @@ impl DebugController {
         Self {
             semaphore: tokio::sync::Semaphore::new(1),
             blocking: tokio::sync::RwLock::new(false),
+            display_debug: tokio::sync::RwLock::new(false),
         }
     }
 
     pub async fn wait(&self) {
         self.semaphore.acquire().await.forget();
         if !*self.blocking.read().await {
-            self.step();
+            self.step().await;
         }
     }
 
     pub async fn continue_(&self) {
         *self.blocking.write().await = false;
         self.semaphore.add_permits(1);
+        *self.display_debug.write().await = false;
     }
 
     pub async fn pause(&self) {
@@ -119,10 +150,15 @@ impl DebugController {
                 Err(_) => break,
             }
         }
+        *self.display_debug.write().await = true;
     }
 
     pub async fn step(&self) {
         self.semaphore.add_permits(1);
+    }
+
+    pub async fn display_debug(&self) -> bool {
+        *self.display_debug.read().await
     }
 }
 

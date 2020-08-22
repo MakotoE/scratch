@@ -216,6 +216,4 @@ impl Component for Page {
             </div>
         }
     }
-
-    fn rendered(&mut self, _: bool) {}
 }

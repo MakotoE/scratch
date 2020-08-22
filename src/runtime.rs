@@ -1,6 +1,7 @@
 use super::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
+use sprite::DebugInfo;
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -13,6 +14,7 @@ pub struct SpriteRuntime {
     pen_path: web_sys::Path2d,
     pen_color: palette::Srgb,
     pen_size: f64,
+    debug_info: DebugInfo,
 }
 
 impl SpriteRuntime {
@@ -30,6 +32,7 @@ impl SpriteRuntime {
             pen_path: web_sys::Path2d::new().unwrap(),
             pen_color: palette::Srgb::new(0.0, 0.0, 1.0),
             pen_size: 1.0,
+            debug_info: DebugInfo::default(),
         }
     }
 
@@ -58,11 +61,15 @@ impl SpriteRuntime {
             180.0 - costume.rotation_center.y - self.position.y,
         )?;
 
+        self.context.save();
         if let Some(text) = &self.text {
             self.context
                 .translate(260.0 + self.position.x, 80.0 - self.position.y)?;
             SpriteRuntime::draw_text_bubble(&self.context, text)?;
         }
+        self.context.restore();
+
+        SpriteRuntime::draw_debug_info(&self.context, &self.debug_info)?;
         Ok(())
     }
 
@@ -129,6 +136,16 @@ impl SpriteRuntime {
 
         context.set_fill_style(&"#575E75".into());
         context.fill_text(text, PADDING, PADDING + 0.9 * 15.0)?;
+        Ok(())
+    }
+
+    fn draw_debug_info(context: &web_sys::CanvasRenderingContext2d, debug_info: &DebugInfo) -> Result<()> {
+        if debug_info.show {
+            context.set_font("12px monospace");
+            context.set_fill_style(&"#080808".into());
+            context.fill_text(&format!("block_id: {}", &debug_info.block_id), 15.0, 20.0)?;
+            context.fill_text(&format!("block_name: {}", &debug_info.block_name), 15.0, 35.0)?;
+        }
         Ok(())
     }
 
@@ -210,6 +227,10 @@ impl SpriteRuntime {
 
     pub fn pen_clear(&mut self) {
         self.pen_path = web_sys::Path2d::new().unwrap();
+    }
+
+    pub fn set_debug_info(&mut self, debug_info: &DebugInfo) {
+        self.debug_info = debug_info.clone();
     }
 }
 
