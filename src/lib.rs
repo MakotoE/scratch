@@ -190,7 +190,7 @@ impl Component for Page {
             }
             Msg::Slow => {
                 wasm_bindgen_futures::spawn_local((async || {
-                    CONTROLLER.slow().await;
+                    CONTROLLER.slow_speed().await;
                 })());
             }
             Msg::Step => {
@@ -198,7 +198,8 @@ impl Component for Page {
                     CONTROLLER.step().await;
                 })());
             }
-            Msg::Restart => { // TODO prevent restart when not loaded
+            Msg::Restart => {
+                // TODO prevent restart when not loaded
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx: web_sys::CanvasRenderingContext2d =
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
@@ -260,7 +261,7 @@ impl Component for Page {
                             html! {
                                 <>
                                     <button onclick={self.link.callback(|_| Msg::Slow)}>
-                                        {"Slow"}
+                                        {"Normal speed"}
                                     </button>
                                     {"\u{00a0}"}
                                     <button onclick={self.link.callback(|_| Msg::Step)}>

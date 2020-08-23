@@ -171,17 +171,16 @@ impl DebugController {
         *self.display_debug.write().await = true;
     }
 
-    pub async fn slow(&self) {
+    pub async fn slow_speed(&self) {
         self.pause().await;
         let cb = Closure::wrap(Box::new(|| {
-            log::info!("add permit");
             CONTROLLER_SEMAPHORE.add_permits(1);
         }) as Box<dyn Fn()>);
         *self.interval_id.write().await = web_sys::window()
             .unwrap()
             .set_interval_with_callback_and_timeout_and_arguments_0(
                 &cb.as_ref().unchecked_ref(),
-                500,
+                100,
             )
             .unwrap();
         cb.forget();
