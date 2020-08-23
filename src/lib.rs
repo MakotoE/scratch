@@ -1,7 +1,7 @@
 #![feature(async_closure)]
 #![feature(try_trait)]
 #![feature(str_split_once)]
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 
 pub mod blocks;
 pub mod runtime;
@@ -95,6 +95,7 @@ enum Msg {
     ImportFile(web_sys::File),
     Run(FileData),
     ContinuePause,
+    Slow,
     Step,
     Restart,
 }
@@ -182,10 +183,15 @@ impl Component for Page {
                     VMState::Running => self.state = VMState::Paused,
                 }
 
-                wasm_bindgen_futures::spawn_local((async move || match state {
-                    VMState::Paused => CONTROLLER.continue_().await,
-                    VMState::Running => CONTROLLER.pause().await,
+                wasm_bindgen_futures::spawn_local((async move || {
+                    match state {
+                        VMState::Paused => CONTROLLER.continue_().await,
+                        VMState::Running => CONTROLLER.pause().await,
+                    }
                 })());
+            }
+            Msg::Slow => {
+                todo!()
             }
             Msg::Step => {
                 wasm_bindgen_futures::spawn_local((async || {
@@ -248,7 +254,24 @@ impl Component for Page {
                         }
                     }
                 </button>{"\u{00a0}"}
-                <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>{"\u{00a0}"}
+                {
+                    match self.state {
+                        VMState::Paused => {
+                            html! {
+                                <>
+                                    <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>{"\u{00a0}"}
+                                </>
+                            }
+                        }
+                        VMState::Running => {
+                            html! {
+                                <>
+                                    <button onclick={self.link.callback(|_| Msg::Slow)}>{"Slow"}</button>{"\u{00a0}"}
+                                </>
+                            }
+                        }
+                    }
+                }
                 <button onclick={self.link.callback(|_| Msg::Restart)}>{"Restart"}</button>{"\u{00a0}"}
             </div>
         }
