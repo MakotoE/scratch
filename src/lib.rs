@@ -249,9 +249,9 @@ impl Component for Page {
                             VMState::Running => "Pause",
                         }
                     }
-                </button>
-                <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>
-                <button onclick={self.link.callback(|_| Msg::Restart)}>{"Restart"}</button>
+                </button>{"\u{00a0}"}
+                <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>{"\u{00a0}"}
+                <button onclick={self.link.callback(|_| Msg::Restart)}>{"Restart"}</button>{"\u{00a0}"}
             </div>
         }
     }

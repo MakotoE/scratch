@@ -82,23 +82,37 @@ impl<'d> Thread<'d> {
         self.runtime.borrow_mut().set_debug_info(&debug_info);
         self.runtime.borrow().redraw()?; // Clears screen on restart
 
-        let mut next = Next::Continue(self.hat.clone());
+        let mut curr_block = self.hat.clone();
+        let mut loop_start: Option<Rc<RefCell<Box<dyn Block>>>> = None;
 
-        while let Next::Continue(b) = &next {
+        loop {
             let debug_info = if self.controller.display_debug().await {
                 DebugInfo {
                     show: true,
-                    block_name: b.borrow().block_name().to_string(),
-                    block_id: b.borrow().id().to_string(),
+                    block_name: curr_block.borrow().block_name().to_string(),
+                    block_id: curr_block.borrow().id().to_string(),
                 }
             } else {
                 DebugInfo::default()
             };
             self.runtime.borrow_mut().set_debug_info(&debug_info);
-            let result = b.borrow_mut().execute().await;
-            next = result;
 
+            let execute_result = curr_block.borrow_mut().execute().await;
             self.runtime.borrow().redraw()?;
+            match execute_result {
+                Next::None => {
+                    match loop_start.take() {
+                        None => break,
+                        Some(b) => curr_block = b,
+                    }
+                }
+                Next::Err(e) => return Err(e),
+                Next::Continue(b) => curr_block = b,
+                Next::Loop(b) => {
+                    loop_start = Some(curr_block.clone());
+                    curr_block = b;
+                }
+            }
             self.controller.wait().await;
         }
 
