@@ -182,11 +182,9 @@ impl Component for Page {
                     VMState::Running => self.state = VMState::Paused,
                 }
 
-                wasm_bindgen_futures::spawn_local((async move || {
-                    match state {
-                        VMState::Paused => CONTROLLER.continue_().await,
-                        VMState::Running => CONTROLLER.pause().await,
-                    }
+                wasm_bindgen_futures::spawn_local((async move || match state {
+                    VMState::Paused => CONTROLLER.continue_().await,
+                    VMState::Running => CONTROLLER.pause().await,
                 })());
             }
             Msg::Step => {
@@ -205,7 +203,7 @@ impl Component for Page {
                     CONTROLLER.continue_().await;
                     match state {
                         VMState::Paused => CONTROLLER.pause().await,
-                        _ => {},
+                        _ => {}
                     }
                     match Page::run(ctx, scratch_file).await {
                         Ok(_) => {}

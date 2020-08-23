@@ -49,7 +49,10 @@ impl SpriteRuntime {
         );
 
         let costume = self.costumes.get(self.current_costume).ok_or_else(|| {
-            Error::from(format!("current_costume is out of range: {}", self.current_costume))
+            Error::from(format!(
+                "current_costume is out of range: {}",
+                self.current_costume
+            ))
         })?;
         SpriteRuntime::draw_costume(&self.context, costume, &self.position)?;
 

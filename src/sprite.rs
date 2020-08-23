@@ -83,7 +83,7 @@ impl<'d> Thread<'d> {
         self.runtime.borrow().redraw()?; // Clears screen on restart
 
         let mut curr_block = self.hat.clone();
-        let mut loop_start: Option<Rc<RefCell<Box<dyn Block>>>> = None;
+        let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
 
         loop {
             let debug_info = if self.controller.display_debug().await {
@@ -101,15 +101,15 @@ impl<'d> Thread<'d> {
             self.runtime.borrow().redraw()?;
             match execute_result {
                 Next::None => {
-                    match loop_start.take() {
+                    match loop_start.pop() {
                         None => break,
                         Some(b) => curr_block = b,
                     }
-                }
+                },
                 Next::Err(e) => return Err(e),
                 Next::Continue(b) => curr_block = b,
                 Next::Loop(b) => {
-                    loop_start = Some(curr_block.clone());
+                    loop_start.push(curr_block.clone());
                     curr_block = b;
                 }
             }
