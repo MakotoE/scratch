@@ -86,18 +86,23 @@ struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
-    status: String,
     scratch_file: ScratchFile,
+    state: VMState,
 }
 
 enum Msg {
     Noop,
     ImportFile(web_sys::File),
     Run(FileData),
-    Continue,
-    Pause,
+    ContinuePause,
     Step,
     Restart,
+}
+
+#[derive(Copy, Clone)]
+enum VMState {
+    Running,
+    Paused,
 }
 
 lazy_static::lazy_static! {
@@ -142,8 +147,8 @@ impl Component for Page {
             link,
             canvas_ref: NodeRef::default(),
             task: None,
-            status: "Running".to_string(),
             scratch_file: ScratchFile::default(),
+            state: VMState::Running,
         }
     }
 
@@ -169,17 +174,20 @@ impl Component for Page {
                 })();
                 wasm_bindgen_futures::spawn_local(future);
             }
-            Msg::Continue => {
-                wasm_bindgen_futures::spawn_local((async || {
-                    CONTROLLER.continue_().await;
+            Msg::ContinuePause => {
+                let state = self.state;
+
+                match state {
+                    VMState::Paused => self.state = VMState::Running,
+                    VMState::Running => self.state = VMState::Paused,
+                }
+
+                wasm_bindgen_futures::spawn_local((async move || {
+                    match state {
+                        VMState::Paused => CONTROLLER.continue_().await,
+                        VMState::Running => CONTROLLER.pause().await,
+                    }
                 })());
-                self.status = "Running".to_string();
-            }
-            Msg::Pause => {
-                wasm_bindgen_futures::spawn_local((async || {
-                    CONTROLLER.pause().await;
-                })());
-                self.status = "Paused".to_string();
             }
             Msg::Step => {
                 wasm_bindgen_futures::spawn_local((async || {
@@ -192,12 +200,12 @@ impl Component for Page {
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
                 let scratch_file = self.scratch_file.clone();
 
-                let paused = self.status == "Paused";
-
+                let state = self.state;
                 let future = (async move || {
                     CONTROLLER.continue_().await;
-                    if paused {
-                        CONTROLLER.pause().await;
+                    match state {
+                        VMState::Paused => CONTROLLER.pause().await,
+                        _ => {},
                     }
                     match Page::run(ctx, scratch_file).await {
                         Ok(_) => {}
@@ -233,9 +241,15 @@ impl Component for Page {
                     style="height: 360px; width: 480px; border: 1px solid black;"
                 /><br />
                 <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} /><br />
-                <p>{self.status.clone()}</p>
-                <button onclick={self.link.callback(|_| Msg::Continue)}>{"Continue"}</button>
-                <button onclick={self.link.callback(|_| Msg::Pause)}>{"Pause"}</button>
+                <br />
+                <button onclick={self.link.callback(|_| Msg::ContinuePause)} style="width: 120px;">
+                    {
+                        match self.state {
+                            VMState::Paused => "Continue",
+                            VMState::Running => "Pause",
+                        }
+                    }
+                </button>
                 <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>
                 <button onclick={self.link.callback(|_| Msg::Restart)}>{"Restart"}</button>
             </div>
