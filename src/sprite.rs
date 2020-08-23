@@ -125,45 +125,70 @@ pub struct DebugInfo {
     pub block_name: String,
 }
 
+lazy_static::lazy_static! {
+    static ref CONTROLLER_SEMAPHORE: tokio::sync::Semaphore = tokio::sync::Semaphore::new(0);
+}
+
 #[derive(Debug)]
 pub struct DebugController {
-    semaphore: tokio::sync::Semaphore,
     blocking: tokio::sync::RwLock<bool>,
     display_debug: tokio::sync::RwLock<bool>,
+    interval_id: tokio::sync::RwLock<i32>,
 }
 
 impl DebugController {
     pub fn new() -> Self {
         Self {
-            semaphore: tokio::sync::Semaphore::new(1),
             blocking: tokio::sync::RwLock::new(false),
             display_debug: tokio::sync::RwLock::new(false),
+            interval_id: tokio::sync::RwLock::new(0),
         }
     }
 
     pub async fn wait(&self) {
-        self.semaphore.acquire().await.forget();
-        if !*self.blocking.read().await {
-            self.step().await;
+        if *self.blocking.read().await {
+            CONTROLLER_SEMAPHORE.acquire().await.forget();
         }
     }
 
     /// This method resets this DebugController's state.
     pub async fn continue_(&self) {
+        web_sys::window()
+            .unwrap()
+            .clear_interval_with_handle(*self.interval_id.read().await);
         *self.blocking.write().await = false;
-        DebugController::reset_semaphore(&self.semaphore).await;
-        self.semaphore.add_permits(1);
+        DebugController::reset_semaphore(&CONTROLLER_SEMAPHORE).await;
+        CONTROLLER_SEMAPHORE.add_permits(1);
         *self.display_debug.write().await = false;
     }
 
     pub async fn pause(&self) {
+        web_sys::window()
+            .unwrap()
+            .clear_interval_with_handle(*self.interval_id.read().await);
         *self.blocking.write().await = true;
-        DebugController::reset_semaphore(&self.semaphore).await;
+        DebugController::reset_semaphore(&CONTROLLER_SEMAPHORE).await;
         *self.display_debug.write().await = true;
     }
 
+    pub async fn slow(&self) {
+        self.pause().await;
+        let cb = Closure::wrap(Box::new(|| {
+            log::info!("add permit");
+            CONTROLLER_SEMAPHORE.add_permits(1);
+        }) as Box<dyn Fn()>);
+        *self.interval_id.write().await = web_sys::window()
+            .unwrap()
+            .set_interval_with_callback_and_timeout_and_arguments_0(
+                &cb.as_ref().unchecked_ref(),
+                500,
+            )
+            .unwrap();
+        cb.forget();
+    }
+
     pub async fn step(&self) {
-        self.semaphore.add_permits(1);
+        CONTROLLER_SEMAPHORE.add_permits(1);
     }
 
     pub async fn display_debug(&self) -> bool {

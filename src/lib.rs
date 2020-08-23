@@ -183,22 +183,22 @@ impl Component for Page {
                     VMState::Running => self.state = VMState::Paused,
                 }
 
-                wasm_bindgen_futures::spawn_local((async move || {
-                    match state {
-                        VMState::Paused => CONTROLLER.continue_().await,
-                        VMState::Running => CONTROLLER.pause().await,
-                    }
+                wasm_bindgen_futures::spawn_local((async move || match state {
+                    VMState::Paused => CONTROLLER.continue_().await,
+                    VMState::Running => CONTROLLER.pause().await,
                 })());
             }
             Msg::Slow => {
-                todo!()
+                wasm_bindgen_futures::spawn_local((async || {
+                    CONTROLLER.slow().await;
+                })());
             }
             Msg::Step => {
                 wasm_bindgen_futures::spawn_local((async || {
                     CONTROLLER.step().await;
                 })());
             }
-            Msg::Restart => {
+            Msg::Restart => { // TODO prevent restart when not loaded
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx: web_sys::CanvasRenderingContext2d =
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
@@ -259,17 +259,19 @@ impl Component for Page {
                         VMState::Paused => {
                             html! {
                                 <>
-                                    <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>{"\u{00a0}"}
+                                    <button onclick={self.link.callback(|_| Msg::Slow)}>
+                                        {"Slow"}
+                                    </button>
+                                    {"\u{00a0}"}
+                                    <button onclick={self.link.callback(|_| Msg::Step)}>
+                                        {"Step"}
+                                    </button>
+                                    {"\u{00a0}"}
+
                                 </>
                             }
                         }
-                        VMState::Running => {
-                            html! {
-                                <>
-                                    <button onclick={self.link.callback(|_| Msg::Slow)}>{"Slow"}</button>{"\u{00a0}"}
-                                </>
-                            }
-                        }
+                        VMState::Running => html! {<></>}
                     }
                 }
                 <button onclick={self.link.callback(|_| Msg::Restart)}>{"Restart"}</button>{"\u{00a0}"}
