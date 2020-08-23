@@ -87,6 +87,7 @@ struct Page {
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
     status: String,
+    scratch_file: ScratchFile,
 }
 
 enum Msg {
@@ -96,6 +97,7 @@ enum Msg {
     Continue,
     Pause,
     Step,
+    Restart,
 }
 
 lazy_static::lazy_static! {
@@ -141,6 +143,7 @@ impl Component for Page {
             canvas_ref: NodeRef::default(),
             task: None,
             status: "Running".to_string(),
+            scratch_file: ScratchFile::default(),
         }
     }
 
@@ -155,6 +158,7 @@ impl Component for Page {
             Msg::Run(file) => {
                 let reader = std::io::Cursor::new(file.content);
                 let scratch_file = ScratchFile::parse(reader).unwrap();
+                self.scratch_file = scratch_file.clone();
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx: web_sys::CanvasRenderingContext2d =
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
@@ -181,6 +185,26 @@ impl Component for Page {
                 wasm_bindgen_futures::spawn_local((async || {
                     CONTROLLER.step().await;
                 })());
+            }
+            Msg::Restart => {
+                let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
+                let ctx: web_sys::CanvasRenderingContext2d =
+                    canvas.get_context("2d").unwrap().unwrap().unchecked_into();
+                let scratch_file = self.scratch_file.clone();
+
+                let paused = self.status == "Paused";
+
+                let future = (async move || {
+                    CONTROLLER.continue_().await;
+                    if paused {
+                        CONTROLLER.pause().await;
+                    }
+                    match Page::run(ctx, scratch_file).await {
+                        Ok(_) => {}
+                        Err(e) => log::error!("{}", e),
+                    }
+                })();
+                wasm_bindgen_futures::spawn_local(future);
             }
         }
         true
@@ -213,6 +237,7 @@ impl Component for Page {
                 <button onclick={self.link.callback(|_| Msg::Continue)}>{"Continue"}</button>
                 <button onclick={self.link.callback(|_| Msg::Pause)}>{"Pause"}</button>
                 <button onclick={self.link.callback(|_| Msg::Step)}>{"Step"}</button>
+                <button onclick={self.link.callback(|_| Msg::Restart)}>{"Restart"}</button>
             </div>
         }
     }

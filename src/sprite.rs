@@ -70,7 +70,6 @@ impl<'d> Thread<'d> {
     }
 
     pub async fn execute(&self) -> Result<()> {
-        self.controller.wait().await;
         let debug_info = if self.controller.display_debug().await {
             DebugInfo {
                 show: true,
@@ -81,11 +80,11 @@ impl<'d> Thread<'d> {
             DebugInfo::default()
         };
         self.runtime.borrow_mut().set_debug_info(&debug_info);
-        let mut next = self.hat.borrow_mut().execute().await;
-        self.runtime.borrow().redraw()?;
+        self.runtime.borrow().redraw()?; // Clears screen on restart
+
+        let mut next = Next::Continue(self.hat.clone());
 
         while let Next::Continue(b) = &next {
-            self.controller.wait().await;
             let debug_info = if self.controller.display_debug().await {
                 DebugInfo {
                     show: true,
@@ -100,6 +99,7 @@ impl<'d> Thread<'d> {
             next = result;
 
             self.runtime.borrow().redraw()?;
+            self.controller.wait().await;
         }
 
         Ok(())
@@ -136,20 +136,17 @@ impl DebugController {
         }
     }
 
+    /// This method resets this DebugController's state.
     pub async fn continue_(&self) {
         *self.blocking.write().await = false;
+        DebugController::reset_semaphore(&self.semaphore).await;
         self.semaphore.add_permits(1);
         *self.display_debug.write().await = false;
     }
 
     pub async fn pause(&self) {
         *self.blocking.write().await = true;
-        while self.semaphore.available_permits() > 0 {
-            match self.semaphore.try_acquire() {
-                Ok(p) => p.forget(),
-                Err(_) => break,
-            }
-        }
+        DebugController::reset_semaphore(&self.semaphore).await;
         *self.display_debug.write().await = true;
     }
 
@@ -159,6 +156,15 @@ impl DebugController {
 
     pub async fn display_debug(&self) -> bool {
         *self.display_debug.read().await
+    }
+
+    async fn reset_semaphore(semaphore: &tokio::sync::Semaphore) {
+        while semaphore.available_permits() > 0 {
+            match semaphore.try_acquire() {
+                Ok(p) => p.forget(),
+                Err(_) => break,
+            }
+        }
     }
 }
 

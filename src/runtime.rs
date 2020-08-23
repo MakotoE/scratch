@@ -51,7 +51,7 @@ impl SpriteRuntime {
         let costume = self.costumes.get(self.current_costume).ok_or_else(|| {
             Error::from(format!("current_costume is out of range: {}", self.current_costume))
         })?;
-        SpriteRuntime::draw_costume(&self.context, costume, &self.position);
+        SpriteRuntime::draw_costume(&self.context, costume, &self.position)?;
 
         if let Some(text) = &self.text {
             self.context.save();
@@ -164,10 +164,10 @@ impl SpriteRuntime {
         if debug_info.show {
             context.set_font("12px monospace");
             context.set_fill_style(&"#080808".into());
-            context.fill_text(&format!("block_id: {}", &debug_info.block_id), 12.0, 20.0)?;
+            context.fill_text(&format!("block_id: {}", &debug_info.block_id), 10.0, 20.0)?;
             context.fill_text(
                 &format!("block_name: {}", &debug_info.block_name),
-                15.0,
+                10.0,
                 35.0,
             )?;
         }
