@@ -11,7 +11,8 @@ pub struct SpriteRuntime {
     costumes: Vec<Costume>,
     current_costume: usize,
     text: Option<String>,
-    pen_path: web_sys::Path2d,
+    combined_pen_path: web_sys::Path2d,
+    curr_pen_path: web_sys::Path2d,
     pen_color: palette::Srgb,
     pen_size: f64,
     debug_info: DebugInfo,
@@ -29,7 +30,8 @@ impl SpriteRuntime {
             costumes: Vec::new(),
             current_costume: 0,
             text: None,
-            pen_path: web_sys::Path2d::new().unwrap(),
+            combined_pen_path: web_sys::Path2d::new().unwrap(),
+            curr_pen_path: web_sys::Path2d::new().unwrap(),
             pen_color: palette::Srgb::new(0.0, 0.0, 1.0),
             pen_size: 1.0,
             debug_info: DebugInfo::default(),
@@ -41,12 +43,9 @@ impl SpriteRuntime {
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
         self.context.scale(2.0, 2.0).unwrap();
 
-        SpriteRuntime::draw_pen(
-            &self.context,
-            &self.pen_path,
-            &self.pen_color,
-            self.pen_size,
-        );
+        let pen_path = self.combined_pen_path.clone();
+        pen_path.add_path(&self.curr_pen_path);
+        SpriteRuntime::draw_pen(&self.context, &pen_path, &self.pen_color, self.pen_size);
 
         let costume = self.costumes.get(self.current_costume).ok_or_else(|| {
             Error::from(format!(
@@ -215,13 +214,13 @@ impl SpriteRuntime {
 
     pub fn set_position(&mut self, position: &Coordinate) {
         self.position = *position;
-        self.pen_path
+        self.curr_pen_path
             .line_to(240.0 + self.position.x, 180.0 - self.position.y);
     }
 
     pub fn add_coordinate(&mut self, coordinate: &Coordinate) {
         self.position = self.position.add(coordinate);
-        self.pen_path
+        self.curr_pen_path
             .line_to(240.0 + self.position.x, 180.0 - self.position.y);
     }
 
@@ -234,12 +233,17 @@ impl SpriteRuntime {
     }
 
     pub fn pen_down(&mut self) {
-        self.pen_path = web_sys::Path2d::new().unwrap();
-        self.pen_path
+        self.curr_pen_path = web_sys::Path2d::new().unwrap();
+        self.curr_pen_path
             .move_to(240.0 + self.position.x, 180.0 - self.position.y);
     }
 
-    pub fn pen_up(&mut self) {}
+    pub fn pen_up(&mut self) {
+        self.curr_pen_path
+            .line_to(240.0 + self.position.x, 180.0 - self.position.y);
+        self.combined_pen_path.add_path(&self.curr_pen_path);
+        self.curr_pen_path = web_sys::Path2d::new().unwrap();
+    }
 
     pub fn pen_color(&self) -> &palette::Srgb {
         &self.pen_color
@@ -254,7 +258,8 @@ impl SpriteRuntime {
     }
 
     pub fn pen_clear(&mut self) {
-        self.pen_path = web_sys::Path2d::new().unwrap();
+        self.combined_pen_path = web_sys::Path2d::new().unwrap();
+        self.curr_pen_path = web_sys::Path2d::new().unwrap();
     }
 
     pub fn set_debug_info(&mut self, debug_info: &DebugInfo) {

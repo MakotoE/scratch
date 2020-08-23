@@ -100,11 +100,9 @@ impl<'d> Thread<'d> {
             let execute_result = curr_block.borrow_mut().execute().await;
             self.runtime.borrow().redraw()?;
             match execute_result {
-                Next::None => {
-                    match loop_start.pop() {
-                        None => break,
-                        Some(b) => curr_block = b,
-                    }
+                Next::None => match loop_start.pop() {
+                    None => break,
+                    Some(b) => curr_block = b,
                 },
                 Next::Err(e) => return Err(e),
                 Next::Continue(b) => curr_block = b,
