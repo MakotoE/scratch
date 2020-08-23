@@ -1,7 +1,7 @@
 use super::*;
+use sprite::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
-use sprite::DebugInfo;
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -41,40 +41,58 @@ impl SpriteRuntime {
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
         self.context.scale(2.0, 2.0).unwrap();
 
-        self.context.set_line_cap("round");
-        self.context
-            .set_stroke_style(&color_to_hex(&self.pen_color).as_str().into());
-        self.context.set_line_width(self.pen_size);
-        self.context.stroke_with_path(&self.pen_path);
+        SpriteRuntime::draw_pen(
+            &self.context,
+            &self.pen_path,
+            &self.pen_color,
+            self.pen_size,
+        );
 
-        let costume = match self.costumes.get(self.current_costume) {
-            Some(i) => i,
-            None => {
-                return Err(
-                    format!("current_costume is out of range: {}", self.current_costume).into(),
-                )
-            }
-        };
-        self.context.draw_image_with_html_image_element(
-            &costume.image,
-            240.0 - costume.rotation_center.x + self.position.x,
-            180.0 - costume.rotation_center.y - self.position.y,
-        )?;
+        let costume = self.costumes.get(self.current_costume).ok_or_else(|| {
+            Error::from(format!("current_costume is out of range: {}", self.current_costume))
+        })?;
+        SpriteRuntime::draw_costume(&self.context, costume, &self.position);
 
-        self.context.save();
         if let Some(text) = &self.text {
+            self.context.save();
             self.context
                 .translate(260.0 + self.position.x, 80.0 - self.position.y)?;
             SpriteRuntime::draw_text_bubble(&self.context, text)?;
+            self.context.restore();
         }
-        self.context.restore();
 
         SpriteRuntime::draw_debug_info(&self.context, &self.debug_info)?;
         Ok(())
     }
 
+    fn draw_pen(
+        context: &web_sys::CanvasRenderingContext2d,
+        path: &web_sys::Path2d,
+        color: &palette::Srgb,
+        size: f64,
+    ) {
+        context.set_line_cap("round");
+        context.set_stroke_style(&color_to_hex(color).as_str().into());
+        context.set_line_width(size);
+        context.stroke_with_path(path);
+    }
+
+    fn draw_costume(
+        context: &web_sys::CanvasRenderingContext2d,
+        costume: &Costume,
+        position: &Coordinate,
+    ) -> Result<()> {
+        context.draw_image_with_html_image_element(
+            &costume.image,
+            240.0 - costume.rotation_center.x + position.x,
+            180.0 - costume.rotation_center.y - position.y,
+        )?;
+        Ok(())
+    }
+
     //noinspection RsBorrowChecker
     fn draw_text_bubble(context: &web_sys::CanvasRenderingContext2d, text: &str) -> Result<()> {
+        // Original implementation:
         // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
         const CORNER_RADIUS: f64 = 16.0;
         const PADDING: f64 = 10.0;
@@ -139,12 +157,19 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    fn draw_debug_info(context: &web_sys::CanvasRenderingContext2d, debug_info: &DebugInfo) -> Result<()> {
+    fn draw_debug_info(
+        context: &web_sys::CanvasRenderingContext2d,
+        debug_info: &DebugInfo,
+    ) -> Result<()> {
         if debug_info.show {
             context.set_font("12px monospace");
             context.set_fill_style(&"#080808".into());
-            context.fill_text(&format!("block_id: {}", &debug_info.block_id), 15.0, 20.0)?;
-            context.fill_text(&format!("block_name: {}", &debug_info.block_name), 15.0, 35.0)?;
+            context.fill_text(&format!("block_id: {}", &debug_info.block_id), 12.0, 20.0)?;
+            context.fill_text(
+                &format!("block_name: {}", &debug_info.block_name),
+                15.0,
+                35.0,
+            )?;
         }
         Ok(())
     }

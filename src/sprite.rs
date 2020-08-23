@@ -72,7 +72,7 @@ impl<'d> Thread<'d> {
     pub async fn execute(&self) -> Result<()> {
         self.controller.wait().await;
         let debug_info = if self.controller.display_debug().await {
-            DebugInfo{
+            DebugInfo {
                 show: true,
                 block_name: self.hat.borrow().block_name().to_string(),
                 block_id: self.hat.borrow().id().to_string(),
@@ -87,7 +87,7 @@ impl<'d> Thread<'d> {
         while let Next::Continue(b) = &next {
             self.controller.wait().await;
             let debug_info = if self.controller.display_debug().await {
-                DebugInfo{
+                DebugInfo {
                     show: true,
                     block_name: b.borrow().block_name().to_string(),
                     block_id: b.borrow().id().to_string(),
