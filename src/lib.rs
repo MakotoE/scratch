@@ -195,7 +195,7 @@ impl Component for Page {
             }
             Msg::Step => {
                 wasm_bindgen_futures::spawn_local((async || {
-                    CONTROLLER.step().await;
+                    CONTROLLER.step();
                 })());
             }
             Msg::Restart => {
