@@ -7,9 +7,10 @@ pub mod blocks;
 pub mod runtime;
 pub mod savefile;
 pub mod sprite;
+mod controller;
 
 use savefile::ScratchFile;
-use sprite::DebugController;
+use controller::DebugController;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

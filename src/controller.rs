@@ -1,0 +1,134 @@
+use std::sync::Arc;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+
+#[derive(Debug)]
+pub struct DebugController {
+    semphore: Arc<ControllerSemaphore>,
+    display_debug: tokio::sync::RwLock<bool>,
+    interval_id: tokio::sync::RwLock<i32>,
+}
+
+impl DebugController {
+    pub fn new() -> Self {
+        Self {
+            semphore: Arc::new(ControllerSemaphore::new()),
+            display_debug: tokio::sync::RwLock::new(false),
+            interval_id: tokio::sync::RwLock::new(0),
+        }
+    }
+
+    pub async fn wait(&self) {
+        self.semphore.acquire().await;
+    }
+
+    /// This method resets this DebugController's state.
+    pub async fn continue_(&self) {
+        web_sys::window()
+            .unwrap()
+            .clear_interval_with_handle(*self.interval_id.read().await);
+        self.semphore.reset().await;
+        *self.display_debug.write().await = false;
+    }
+
+    pub async fn pause(&self) {
+        web_sys::window()
+            .unwrap()
+            .clear_interval_with_handle(*self.interval_id.read().await);
+        self.semphore.reset().await;
+        self.semphore.set_blocking(true).await;
+        *self.display_debug.write().await = true;
+    }
+
+    pub async fn slow_speed(&self) {
+        web_sys::window()
+            .unwrap()
+            .clear_interval_with_handle(*self.interval_id.read().await);
+        self.semphore.reset().await;
+        self.semphore.set_blocking(true).await;
+
+        let semaphore = self.semphore.clone();
+        let cb = Closure::wrap(Box::new(move || {
+            semaphore.add_permit();
+        }) as Box<dyn Fn()>);
+        *self.interval_id.write().await = web_sys::window()
+            .unwrap()
+            .set_interval_with_callback_and_timeout_and_arguments_0(
+                &cb.as_ref().unchecked_ref(),
+                100,
+            )
+            .unwrap();
+        cb.forget();
+    }
+
+    pub fn step(&self) {
+        self.semphore.add_permit();
+    }
+
+    pub async fn display_debug(&self) -> bool {
+        *self.display_debug.read().await
+    }
+}
+
+#[derive(Debug)]
+struct ControllerSemaphore {
+    semaphore: tokio::sync::Semaphore,
+    blocking: tokio::sync::RwLock<bool>,
+}
+
+impl ControllerSemaphore {
+    fn new() -> Self {
+        Self {
+            semaphore: tokio::sync::Semaphore::new(0),
+            blocking: tokio::sync::RwLock::new(false),
+        }
+    }
+
+    async fn acquire(&self) {
+        if *self.blocking.read().await {
+            self.semaphore.acquire().await.forget();
+        }
+    }
+
+    fn add_permit(&self) {
+        self.semaphore.add_permits(1);
+    }
+
+    async fn set_blocking(&self, blocking: bool) {
+        *self.blocking.write().await = blocking;
+    }
+
+    async fn reset(&self) {
+        while self.semaphore.available_permits() > 0 {
+            match self.semaphore.try_acquire() {
+                Ok(p) => p.forget(),
+                Err(_) => break,
+            }
+        }
+        self.set_blocking(false).await;
+    }
+
+    #[allow(dead_code)]
+    async fn available(&self) -> bool {
+        self.semaphore.available_permits() > 0 || !*self.blocking.read().await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn controller_semaphore() {
+        let semaphore = ControllerSemaphore::new();
+        assert!(semaphore.available().await);
+        semaphore.set_blocking(true).await;
+        assert!(!semaphore.available().await);
+        semaphore.add_permit();
+        assert!(semaphore.available().await);
+        semaphore.acquire().await;
+        assert!(!semaphore.available().await);
+        semaphore.reset().await;
+        assert!(semaphore.available().await);
+    }
+}
