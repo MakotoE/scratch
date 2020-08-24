@@ -3,23 +3,25 @@ use controller::DebugController;
 use savefile::ScratchFile;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
+use sprite::Sprite;
 
 pub struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
-    scratch_file: ScratchFile,
     state: VMState,
+    sprite: Arc<RwLock<Sprite>>
 }
 
 pub enum Msg {
     Noop,
     ImportFile(web_sys::File),
-    Run(FileData),
+    Load(FileData),
+    LoadFinished(Sprite),
+    Run,
     ContinuePause,
     Slow,
     Step,
-    Restart,
 }
 
 #[derive(Copy, Clone)]
@@ -28,15 +30,11 @@ enum VMState {
     Paused,
 }
 
-lazy_static::lazy_static! {
-    static ref CONTROLLER: DebugController = DebugController::new();
-}
-
 impl Page {
-    async fn run(
+    async fn load(
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: ScratchFile,
-    ) -> Result<()> {
+    ) -> Result<Sprite> {
         let mut variables: HashMap<String, serde_json::Value> = HashMap::new();
         for (key, v) in &scratch_file.project.targets[0].variables {
             variables.insert(key.clone(), v.1.clone());
@@ -56,8 +54,7 @@ impl Page {
             }
         }
 
-        let sprite = sprite::Sprite::new(runtime, &scratch_file.project.targets[1], &CONTROLLER)?;
-        sprite.execute().await
+        Sprite::new(runtime, &scratch_file.project.targets[1], DebugController::new())
     }
 }
 
@@ -70,8 +67,8 @@ impl Component for Page {
             link,
             canvas_ref: NodeRef::default(),
             task: None,
-            scratch_file: ScratchFile::default(),
             state: VMState::Running,
+            sprite: Arc::new(RwLock::default()),
         }
     }
 
@@ -80,66 +77,61 @@ impl Component for Page {
             Msg::Noop => return false,
             Msg::ImportFile(file) => {
                 let mut reader = ReaderService::new();
-                let cb = self.link.callback(Msg::Run);
+                let cb = self.link.callback(Msg::Load);
                 self.task = Some(reader.read_file(file, cb).unwrap());
             }
-            Msg::Run(file) => {
-                let reader = std::io::Cursor::new(file.content);
+            Msg::Load(file_data) => {
+                let reader = std::io::Cursor::new(file_data.content);
                 let scratch_file = ScratchFile::parse(reader).unwrap();
-                self.scratch_file = scratch_file.clone();
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx: web_sys::CanvasRenderingContext2d =
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
-                let future = (async || match Page::run(ctx, scratch_file).await {
-                    Ok(_) => {}
-                    Err(e) => log::error!("{}", e),
-                })();
-                wasm_bindgen_futures::spawn_local(future);
+                let cb = self.link.callback(Msg::LoadFinished);
+                wasm_bindgen_futures::spawn_local((async move || {
+                    let sprite = match Page::load(ctx, scratch_file).await {
+                        Ok(s) => cb.emit(s),
+                        Err(e) => log::error!("{}", e), // TODO error Msg
+                    };
+                })());
+            }
+            Msg::LoadFinished(sprite) => {
+                self.sprite = Arc::new(RwLock::new(sprite));
+            }
+            Msg::Run => {
+                let sprite = self.sprite.clone();
+                wasm_bindgen_futures::spawn_local((async move || {
+                    sprite.write().await.reset().await;
+                    match sprite.read().await.execute().await {
+                        Ok(_) => {}
+                        Err(e) => log::error!("{}", e),
+                    }
+                })());
             }
             Msg::ContinuePause => {
                 let state = self.state;
-
                 match state {
                     VMState::Paused => self.state = VMState::Running,
                     VMState::Running => self.state = VMState::Paused,
                 }
 
+                let sprite = self.sprite.clone();
                 wasm_bindgen_futures::spawn_local((async move || match state {
-                    VMState::Paused => CONTROLLER.continue_().await,
-                    VMState::Running => CONTROLLER.pause().await,
+                    VMState::Paused => sprite.write().await.continue_().await,
+                    VMState::Running => sprite.write().await.pause().await,
                 })());
             }
             Msg::Slow => {
-                wasm_bindgen_futures::spawn_local((async || {
-                    CONTROLLER.slow_speed().await;
+                let sprite = self.sprite.clone();
+                wasm_bindgen_futures::spawn_local((async move || {
+                    sprite.write().await.slow_speed().await;
                 })());
             }
             Msg::Step => {
-                wasm_bindgen_futures::spawn_local((async || {
-                    CONTROLLER.step();
+                let sprite = self.sprite.clone();
+                wasm_bindgen_futures::spawn_local((async move || {
+                    sprite.read().await.step();
                 })());
-            }
-            Msg::Restart => {
-                // TODO prevent restart when not loaded
-                let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
-                let ctx: web_sys::CanvasRenderingContext2d =
-                    canvas.get_context("2d").unwrap().unwrap().unchecked_into();
-                let scratch_file = self.scratch_file.clone();
-
-                let state = self.state;
-                let future = (async move || {
-                    CONTROLLER.continue_().await;
-                    match state {
-                        VMState::Paused => CONTROLLER.pause().await,
-                        _ => {}
-                    }
-                    match Page::run(ctx, scratch_file).await {
-                        Ok(_) => {}
-                        Err(e) => log::error!("{}", e),
-                    }
-                })();
-                wasm_bindgen_futures::spawn_local(future);
             }
         }
         true
@@ -197,7 +189,7 @@ impl Component for Page {
                         VMState::Running => html! {<></>}
                     }
                 }
-                <button onclick={self.link.callback(|_| Msg::Restart)}>{"Restart"}</button>{"\u{00a0}"}
+                <button onclick={self.link.callback(|_| Msg::Run)}>{"Restart"}</button>{"\u{00a0}"}
             </div>
         }
     }
