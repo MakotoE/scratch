@@ -1,6 +1,7 @@
 use super::*;
 use async_trait::async_trait;
 use blocks::*;
+use controller::DebugController;
 use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug)]
@@ -24,10 +25,6 @@ impl<'d> Sprite<'d> {
             threads.push(Thread::new(block, runtime_ref.clone(), controller));
         }
         Ok(Self { threads })
-    }
-
-    pub fn threads(&self) -> &[Thread] {
-        self.threads.as_slice()
     }
 
     pub async fn execute(&self) -> Result<()> {

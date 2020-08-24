@@ -18,6 +18,7 @@ pub struct SpriteRuntime {
     debug_info: DebugInfo,
 }
 
+#[allow(dead_code)]
 impl SpriteRuntime {
     pub fn new(
         context: web_sys::CanvasRenderingContext2d,
