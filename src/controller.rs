@@ -28,6 +28,7 @@ impl DebugController {
             .unwrap()
             .clear_interval_with_handle(*self.interval_id.read().await);
         self.semphore.reset().await;
+        self.semphore.set_blocking(false).await;
         *self.display_debug.write().await = false;
     }
 
@@ -96,6 +97,10 @@ impl ControllerSemaphore {
 
     async fn set_blocking(&self, blocking: bool) {
         *self.blocking.write().await = blocking;
+
+        if !blocking {
+            self.add_permit();
+        }
     }
 
     async fn reset(&self) {
@@ -105,7 +110,7 @@ impl ControllerSemaphore {
                 Err(_) => break,
             }
         }
-        self.set_blocking(false).await;
+        *self.blocking.write().await = false;
     }
 
     #[allow(dead_code)]

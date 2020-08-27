@@ -6,57 +6,74 @@ use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug, Default)]
 pub struct Sprite {
-    threads: Vec<Thread>,
+    controllers: Vec<Arc<DebugController>>,
+    start_paused: bool,
 }
 
 impl Sprite {
-    pub fn new(
-        mut runtime: SpriteRuntime,
-        target: &savefile::Target,
-        controller: DebugController,
-    ) -> Result<Self> {
+    pub fn new() -> Self {
+        Self {
+            controllers: Vec::new(),
+            start_paused: false,
+        }
+    }
+
+    pub fn start(&mut self, mut runtime: SpriteRuntime, target: &savefile::Target) -> Result<()> {
+        self.controllers.clear();
+
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
         let runtime_ref = Rc::new(RefCell::new(runtime));
-        let mut threads: Vec<Thread> = Vec::new();
-        let controller_ref = Rc::new(controller);
+        let controller_ref = Arc::new(DebugController::new());
+
+        let start_paused = self.start_paused;
+
         for hat_id in find_hats(&target.blocks) {
+            self.controllers.push(controller_ref.clone());
+
             let block = new_block(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            threads.push(Thread::new(block, runtime_ref.clone(), controller_ref.clone()));
-        }
-        Ok(Self { threads })
-    }
-
-    pub async fn execute(&self) -> Result<()> {
-        for t in &self.threads {
-            t.execute().await?;
+            let thread = Thread::new(block, runtime_ref.clone(), controller_ref.clone());
+            let controller = controller_ref.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                if start_paused {
+                    controller.pause().await;
+                }
+                match thread.start().await {
+                    Ok(_) => {}
+                    Err(e) => log::error!("{}", e),
+                }
+            });
         }
         Ok(())
     }
 
-    pub async fn continue_(&mut self) { // TODO
+    pub async fn continue_(&mut self) {
+        self.start_paused = false;
 
+        for c in &self.controllers {
+            c.continue_().await;
+        }
     }
 
     pub async fn pause(&mut self) {
+        self.start_paused = true;
 
+        for c in &self.controllers {
+            c.pause().await;
+        }
     }
 
     pub async fn slow_speed(&mut self) {
-
+        for c in &self.controllers {
+            c.slow_speed().await;
+        }
     }
 
     pub fn step(&self) {
-
-    }
-
-    pub async fn display_debug(&mut self) {
-
-    }
-
-    pub async fn reset(&mut self) {
-
+        for c in &self.controllers {
+            c.step();
+        }
     }
 }
 
@@ -75,14 +92,14 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 pub struct Thread {
     hat: Rc<RefCell<Box<dyn Block>>>,
     runtime: Rc<RefCell<SpriteRuntime>>,
-    controller: Rc<DebugController>,
+    controller: Arc<DebugController>,
 }
 
 impl Thread {
     pub fn new(
         hat: Box<dyn Block>,
         runtime: Rc<RefCell<SpriteRuntime>>,
-        controller: Rc<DebugController>,
+        controller: Arc<DebugController>,
     ) -> Self {
         Self {
             hat: Rc::new(RefCell::new(hat)),
@@ -91,7 +108,7 @@ impl Thread {
         }
     }
 
-    pub async fn execute(&self) -> Result<()> {
+    pub async fn start(&self) -> Result<()> {
         let debug_info = if self.controller.display_debug().await {
             DebugInfo {
                 show: true,
