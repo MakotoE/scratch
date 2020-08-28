@@ -30,7 +30,7 @@ impl Sprite {
             wasm_bindgen_futures::spawn_local(async move {
                 match start_state {
                     page::VMState::Paused => controller.pause().await,
-                    page::VMState::Running => controller.continue_().await,
+                    page::VMState::Running => controller.continue_(controller::Speed::Normal).await,
                 }
                 match thread.start().await {
                     Ok(_) => {}
@@ -42,21 +42,15 @@ impl Sprite {
         Ok(Self { controllers })
     }
 
-    pub async fn continue_(&mut self) {
+    pub async fn continue_(&mut self, speed: controller::Speed) {
         for c in &self.controllers {
-            c.continue_().await;
+            c.continue_(speed).await;
         }
     }
 
     pub async fn pause(&mut self) {
         for c in &self.controllers {
             c.pause().await;
-        }
-    }
-
-    pub async fn slow_speed(&mut self) {
-        for c in &self.controllers {
-            c.slow_speed().await;
         }
     }
 

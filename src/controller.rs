@@ -22,14 +22,26 @@ impl DebugController {
         self.semphore.acquire().await;
     }
 
-    /// This method resets this DebugController's state.
-    pub async fn continue_(&self) {
+    pub async fn continue_(&self, _speed: Speed) {
         web_sys::window()
             .unwrap()
             .clear_interval_with_handle(*self.interval_id.read().await);
         self.semphore.reset().await;
-        self.semphore.set_blocking(false).await;
+        self.semphore.set_blocking(true).await;
         *self.display_debug.write().await = false;
+
+        let semaphore = self.semphore.clone();
+        let cb = Closure::wrap(Box::new(move || {
+            semaphore.add_permit();
+        }) as Box<dyn Fn()>);
+        *self.interval_id.write().await = web_sys::window()
+            .unwrap()
+            .set_interval_with_callback_and_timeout_and_arguments_0(
+                &cb.as_ref().unchecked_ref(),
+                10,
+            )
+            .unwrap();
+        cb.forget();
 
         log::debug!("continuing");
     }
@@ -45,27 +57,6 @@ impl DebugController {
         log::debug!("paused");
     }
 
-    pub async fn slow_speed(&self) {
-        web_sys::window()
-            .unwrap()
-            .clear_interval_with_handle(*self.interval_id.read().await);
-        self.semphore.reset().await;
-        self.semphore.set_blocking(true).await;
-
-        let semaphore = self.semphore.clone();
-        let cb = Closure::wrap(Box::new(move || {
-            semaphore.add_permit();
-        }) as Box<dyn Fn()>);
-        *self.interval_id.write().await = web_sys::window()
-            .unwrap()
-            .set_interval_with_callback_and_timeout_and_arguments_0(
-                &cb.as_ref().unchecked_ref(),
-                100,
-            )
-            .unwrap();
-        cb.forget();
-    }
-
     pub fn step(&self) {
         self.semphore.add_permit();
 
@@ -75,6 +66,11 @@ impl DebugController {
     pub async fn display_debug(&self) -> bool {
         *self.display_debug.read().await
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Speed {
+    Normal,
 }
 
 #[derive(Debug)]

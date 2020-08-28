@@ -21,7 +21,6 @@ pub enum Msg {
     Run,
     SetSprite(Sprite),
     ContinuePause,
-    Slow,
     Step,
 }
 
@@ -124,16 +123,15 @@ impl Component for Page {
                 if let Some(sprite) = self.sprite.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
                         match state {
-                            VMState::Paused => sprite.write().await.continue_().await,
+                            VMState::Paused => {
+                                sprite
+                                    .write()
+                                    .await
+                                    .continue_(controller::Speed::Normal)
+                                    .await
+                            }
                             VMState::Running => sprite.write().await.pause().await,
                         }
-                    });
-                }
-            }
-            Msg::Slow => {
-                if let Some(sprite) = self.sprite.clone() {
-                    wasm_bindgen_futures::spawn_local(async move {
-                        sprite.write().await.slow_speed().await;
                     });
                 }
             }
@@ -182,24 +180,18 @@ impl Component for Page {
                 </button>{"\u{00a0}"}
                 {
                     match self.vm_state {
-                        VMState::Paused => {
-                            html! {
-                                <>
-                                    <button onclick={self.link.callback(|_| Msg::Slow)}>
-                                        {"Normal speed"}
-                                    </button>
-                                    {"\u{00a0}"}
-                                    <button onclick={self.link.callback(|_| Msg::Step)}>
-                                        {"Step"}
-                                    </button>
-                                    {"\u{00a0}"}
-
-                                </>
-                            }
-                        }
-                        VMState::Running => html! {<></>}
+                        VMState::Paused => html! {
+                            <button onclick={self.link.callback(|_| Msg::Step)}>
+                                {"Step"}
+                            </button>
+                        },
+                        VMState::Running => html! {
+                            <select>
+                                <option>{"Normal speed"}</option>
+                            </select>
+                        },
                     }
-                }
+                }{"\u{00a0}"}
                 <button onclick={self.link.callback(|_| Msg::Run)}>{"Restart"}</button>{"\u{00a0}"}
             </div>
         }
