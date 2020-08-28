@@ -7,37 +7,30 @@ use runtime::{Coordinate, SpriteRuntime};
 #[derive(Debug, Default)]
 pub struct Sprite {
     controllers: Vec<Arc<DebugController>>,
-    start_paused: bool,
 }
 
 impl Sprite {
-    pub fn new() -> Self {
-        Self {
-            controllers: Vec::new(),
-            start_paused: false,
-        }
-    }
-
-    pub fn start(&mut self, mut runtime: SpriteRuntime, target: &savefile::Target) -> Result<()> {
-        self.controllers.clear();
-
+    pub fn new(
+        mut runtime: SpriteRuntime,
+        target: &savefile::Target,
+        start_state: page::VMState,
+    ) -> Result<Self> {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
         let runtime_ref = Rc::new(RefCell::new(runtime));
-        let controller_ref = Arc::new(DebugController::new());
-
-        let start_paused = self.start_paused;
+        let mut controllers: Vec<Arc<DebugController>> = Vec::new();
 
         for hat_id in find_hats(&target.blocks) {
-            self.controllers.push(controller_ref.clone());
+            let controller = Arc::new(DebugController::new());
+            controllers.push(controller.clone());
 
             let block = new_block(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            let thread = Thread::new(block, runtime_ref.clone(), controller_ref.clone());
-            let controller = controller_ref.clone();
+            let thread = Thread::new(block, runtime_ref.clone(), controller.clone());
             wasm_bindgen_futures::spawn_local(async move {
-                if start_paused {
-                    controller.pause().await;
+                match start_state {
+                    page::VMState::Paused => controller.pause().await,
+                    page::VMState::Running => controller.continue_().await,
                 }
                 match thread.start().await {
                     Ok(_) => {}
@@ -45,20 +38,17 @@ impl Sprite {
                 }
             });
         }
-        Ok(())
+
+        Ok(Self { controllers })
     }
 
     pub async fn continue_(&mut self) {
-        self.start_paused = false;
-
         for c in &self.controllers {
             c.continue_().await;
         }
     }
 
     pub async fn pause(&mut self) {
-        self.start_paused = true;
-
         for c in &self.controllers {
             c.pause().await;
         }

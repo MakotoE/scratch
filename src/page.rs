@@ -9,9 +9,9 @@ pub struct Page {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
-    state: VMState,
+    vm_state: VMState,
     file: Option<ScratchFile>,
-    sprite: Arc<RwLock<Sprite>>,
+    sprite: Option<Arc<RwLock<Sprite>>>,
 }
 
 pub enum Msg {
@@ -19,13 +19,14 @@ pub enum Msg {
     ImportFile(web_sys::File),
     Load(FileData),
     Run,
+    SetSprite(Sprite),
     ContinuePause,
     Slow,
     Step,
 }
 
 #[derive(Copy, Clone)]
-enum VMState {
+pub enum VMState {
     Running,
     Paused,
 }
@@ -67,9 +68,9 @@ impl Component for Page {
             link,
             canvas_ref: NodeRef::default(),
             task: None,
-            state: VMState::Running,
+            vm_state: VMState::Running,
             file: None,
-            sprite: Arc::new(RwLock::new(Sprite::new())),
+            sprite: None,
         }
     }
 
@@ -91,48 +92,57 @@ impl Component for Page {
                 let ctx: web_sys::CanvasRenderingContext2d =
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
-                let sprite = self.sprite.clone();
                 let scratch_file = self.file.as_ref().unwrap().clone();
+                let start_state = self.vm_state;
+                let set_sprite = self.link.callback(Msg::SetSprite);
                 wasm_bindgen_futures::spawn_local(async move {
                     match Page::runtime(ctx, &scratch_file).await {
-                        Ok(s) => match sprite
-                            .write()
-                            .await
-                            .start(s, &scratch_file.project.targets[1])
-                        {
-                            Ok(_) => {}
-                            Err(e) => log::error!("{}", e),
-                        },
+                        Ok(runtime) => {
+                            match Sprite::new(
+                                runtime,
+                                &scratch_file.project.targets[1],
+                                start_state,
+                            ) {
+                                Ok(s) => set_sprite.emit(s),
+                                Err(e) => log::error!("{}", e),
+                            }
+                        }
                         Err(e) => log::error!("{}", e),
                     };
                 });
             }
+            Msg::SetSprite(sprite) => {
+                self.sprite = Some(Arc::new(RwLock::new(sprite)));
+            }
             Msg::ContinuePause => {
-                let state = self.state;
+                let state = self.vm_state;
                 match state {
-                    VMState::Paused => self.state = VMState::Running,
-                    VMState::Running => self.state = VMState::Paused,
+                    VMState::Paused => self.vm_state = VMState::Running,
+                    VMState::Running => self.vm_state = VMState::Paused,
                 }
 
-                let sprite = self.sprite.clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    match state {
-                        VMState::Paused => sprite.write().await.continue_().await,
-                        VMState::Running => sprite.write().await.pause().await,
-                    }
-                });
+                if let Some(sprite) = self.sprite.clone() {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        match state {
+                            VMState::Paused => sprite.write().await.continue_().await,
+                            VMState::Running => sprite.write().await.pause().await,
+                        }
+                    });
+                }
             }
             Msg::Slow => {
-                let sprite = self.sprite.clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    sprite.write().await.slow_speed().await;
-                });
+                if let Some(sprite) = self.sprite.clone() {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        sprite.write().await.slow_speed().await;
+                    });
+                }
             }
             Msg::Step => {
-                let sprite = self.sprite.clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    sprite.read().await.step();
-                });
+                if let Some(sprite) = self.sprite.clone() {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        sprite.read().await.step();
+                    });
+                }
             }
         }
         true
@@ -164,14 +174,14 @@ impl Component for Page {
                 <br />
                 <button onclick={self.link.callback(|_| Msg::ContinuePause)} style="width: 120px;">
                     {
-                        match self.state {
+                        match self.vm_state {
                             VMState::Paused => "Continue",
                             VMState::Running => "Pause",
                         }
                     }
                 </button>{"\u{00a0}"}
                 {
-                    match self.state {
+                    match self.vm_state {
                         VMState::Paused => {
                             html! {
                                 <>

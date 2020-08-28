@@ -30,6 +30,8 @@ impl DebugController {
         self.semphore.reset().await;
         self.semphore.set_blocking(false).await;
         *self.display_debug.write().await = false;
+
+        log::debug!("continuing");
     }
 
     pub async fn pause(&self) {
@@ -39,6 +41,8 @@ impl DebugController {
         self.semphore.reset().await;
         self.semphore.set_blocking(true).await;
         *self.display_debug.write().await = true;
+
+        log::debug!("paused");
     }
 
     pub async fn slow_speed(&self) {
@@ -64,6 +68,8 @@ impl DebugController {
 
     pub fn step(&self) {
         self.semphore.add_permit();
+
+        log::debug!("step");
     }
 
     pub async fn display_debug(&self) -> bool {
