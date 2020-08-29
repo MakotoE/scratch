@@ -1,4 +1,6 @@
 use super::*;
+use palette::IntoColor;
+use palette::Mix;
 
 pub fn get_block(
     name: &str,
@@ -242,7 +244,7 @@ pub struct SetPenShadeToNumber {
     id: String,
     runtime: Rc<RefCell<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    shade: Option<Box<dyn Block>>, // [0, 100]
+    shade: Option<Box<dyn Block>>,
 }
 
 impl SetPenShadeToNumber {
@@ -252,6 +254,28 @@ impl SetPenShadeToNumber {
             runtime,
             next: None,
             shade: None,
+        }
+    }
+
+    fn set_shade(color: &palette::Hsv, shade: f32) -> palette::Hsv {
+        // https://github.com/LLK/scratch-vm/blob/c6962cb390ba2835d64eb21c0456707b51642084/src/extensions/scratch3_pen/index.js#L718
+        let mut new_shade = shade % 200.0;
+        if new_shade < 0.0 {
+            new_shade += 200.0
+        }
+
+        // https://github.com/LLK/scratch-vm/blob/c6962cb390ba2835d64eb21c0456707b51642084/src/extensions/scratch3_pen/index.js#L750
+        let constrained_shade = if new_shade > 100.0 {
+            200.0 - new_shade
+        } else {
+            new_shade
+        };
+
+        let bright = palette::Hsv::new(color.hue, 1.0, 1.0);
+        if constrained_shade < 50.0 {
+            palette::Hsv::new(0.0, 0.0, 0.0).mix(&bright, (10.0 + shade) / 60.0)
+        } else {
+            bright.mix(&palette::Hsv::new(0.0, 0.0, 1.0), (shade - 50.0) / 60.0)
         }
     }
 }
@@ -279,11 +303,10 @@ impl Block for SetPenShadeToNumber {
             Some(b) => value_to_float(&b.value()?)?,
             None => return Next::Err("shade is None".into()),
         };
-
-        let color = *self.runtime.borrow().pen_color();
-        let mut hsv: palette::Hsv = color.into();
-        hsv.value = (shade / 100.0) as f32;
-        self.runtime.borrow_mut().set_pen_color(&hsv.into());
+        let mut runtime = self.runtime.borrow_mut();
+        let color = runtime.pen_color().into_hsv();
+        let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
+        runtime.set_pen_color(&new_color.into());
         Next::continue_(self.next.clone())
     }
 }
@@ -336,5 +359,56 @@ impl Block for SetPenHueToNumber {
         hsv.hue = palette::RgbHue::from_degrees((hue / 100.0 * 360.0 - 180.0) as f32);
         self.runtime.borrow_mut().set_pen_color(&hsv.into());
         Next::continue_(self.next.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod set_pen_shade_to_number {
+        use super::*;
+
+        #[test]
+        fn set_shade() {
+            struct Test {
+                color: palette::Hsv,
+                shade: f32,
+                expected: palette::Hsv,
+            }
+
+            let tests: Vec<Test> = vec![
+                Test {
+                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    shade: 0.0,
+                    expected: palette::Hsv::new(0.0, 0.16666667, 0.16666667),
+                },
+                Test {
+                    color: palette::Hsv::new(0.0, 0.0, 1.0),
+                    shade: 0.0,
+                    expected: palette::Hsv::new(0.0, 0.16666667, 0.16666667),
+                },
+                Test {
+                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    shade: 100.0,
+                    expected: palette::Hsv::new(0.0, 0.16666669, 1.0),
+                },
+                Test {
+                    color: palette::Hsv::new(0.0, 0.0, 1.0),
+                    shade: 100.0,
+                    expected: palette::Hsv::new(0.0, 0.16666669, 1.0),
+                },
+                Test {
+                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    shade: 50.0,
+                    expected: palette::Hsv::new(0.0, 1.0, 1.0),
+                },
+            ];
+
+            for (i, test) in tests.iter().enumerate() {
+                let result = SetPenShadeToNumber::set_shade(&test.color, test.shade);
+                assert_eq!(result, test.expected, "{}", i);
+            }
+        }
     }
 }
