@@ -2,6 +2,7 @@ use super::*;
 use sprite::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
+use palette::IntoColor;
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -13,7 +14,7 @@ pub struct SpriteRuntime {
     text: Option<String>,
     combined_pen_path: web_sys::Path2d,
     curr_pen_path: web_sys::Path2d,
-    pen_color: palette::Srgb,
+    pen_color: palette::Hsv,
     pen_size: f64,
     debug_info: DebugInfo,
 }
@@ -33,7 +34,7 @@ impl SpriteRuntime {
             text: None,
             combined_pen_path: web_sys::Path2d::new().unwrap(),
             curr_pen_path: web_sys::Path2d::new().unwrap(),
-            pen_color: palette::Srgb::new(0.0, 0.0, 1.0),
+            pen_color: palette::Hsv::new(240.0, 1.0, 1.0),
             pen_size: 1.0,
             debug_info: DebugInfo::default(),
         }
@@ -71,11 +72,11 @@ impl SpriteRuntime {
     fn draw_pen(
         context: &web_sys::CanvasRenderingContext2d,
         path: &web_sys::Path2d,
-        color: &palette::Srgb,
+        color: &palette::Hsv,
         size: f64,
     ) {
         context.set_line_cap("round");
-        context.set_stroke_style(&color_to_hex(color).as_str().into());
+        context.set_stroke_style(&color_to_hex(color.into()).as_str().into());
         context.set_line_width(size);
         context.stroke_with_path(path);
     }
@@ -246,11 +247,11 @@ impl SpriteRuntime {
         self.curr_pen_path = web_sys::Path2d::new().unwrap();
     }
 
-    pub fn pen_color(&self) -> &palette::Srgb {
+    pub fn pen_color(&self) -> &palette::Hsv {
         &self.pen_color
     }
 
-    pub fn set_pen_color(&mut self, color: &palette::Srgb) {
+    pub fn set_pen_color(&mut self, color: &palette::Hsv) {
         self.pen_color = *color;
     }
 
@@ -301,22 +302,24 @@ pub struct Costume {
     rotation_center: Coordinate,
 }
 
-pub fn hex_to_color(s: &str) -> Result<palette::Srgb> {
+pub fn hex_to_color(s: &str) -> Result<palette::Hsv> {
     if s.len() != 7 || s.bytes().next().unwrap() != b'#' {
         return Err(format!("s is invalid: {}", s).into());
     }
 
-    Ok(palette::rgb::Rgb::new(
+    let rgb = palette::Srgb::new(
         u8::from_str_radix(&s[1..3], 16)? as f32 / 255.0,
         u8::from_str_radix(&s[3..5], 16)? as f32 / 255.0,
         u8::from_str_radix(&s[5..7], 16)? as f32 / 255.0,
-    ))
+    );
+    Ok(palette::Hsv::from(rgb))
 }
 
-pub fn color_to_hex(color: &palette::Srgb) -> String {
-    format!("#{:02x}", (color.red * 255.0).round() as u8)
-        + &format!("{:02x}", (color.green * 255.0).round() as u8)
-        + &format!("{:02x}", (color.blue * 255.0).round() as u8)
+pub fn color_to_hex(color: &palette::Hsv) -> String {
+    let rgb = palette::Srgb::from_linear(color.into_rgb());
+    format!("#{:02x}", (rgb.red * 255.0).round() as u8)
+        + &format!("{:02x}", (rgb.green * 255.0).round() as u8)
+        + &format!("{:02x}", (rgb.blue * 255.0).round() as u8)
 }
 
 #[cfg(test)]
@@ -325,34 +328,34 @@ mod tests {
     fn hex_to_color() {
         struct Test {
             s: &'static str,
-            expected: palette::rgb::Rgb,
+            expected: palette::Hsv,
             expect_err: bool,
         }
 
         let tests = vec![
             Test {
                 s: "",
-                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
+                expected: palette::Hsv::new(0.0, 0.0, 0.0),
                 expect_err: true,
             },
             Test {
                 s: "#",
-                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
+                expected: palette::Hsv::new(0.0, 0.0, 0.0),
                 expect_err: true,
             },
             Test {
                 s: "#000000",
-                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
+                expected: palette::Hsv::new(0.0, 0.0, 0.0),
                 expect_err: false,
             },
             Test {
                 s: "#ffffff",
-                expected: palette::rgb::Rgb::new(1.0, 1.0, 1.0),
+                expected: palette::Hsv::new(0.0, 0.0, 1.0),
                 expect_err: false,
             },
             Test {
                 s: "#ffffffa",
-                expected: palette::rgb::Rgb::new(0.0, 0.0, 0.0),
+                expected: palette::Hsv::new(0.0, 0.0, 0.0),
                 expect_err: true,
             },
         ];
@@ -369,8 +372,8 @@ mod tests {
     #[test]
     fn color_to_hex() {
         assert_eq!(
-            super::color_to_hex(&palette::rgb::Rgb::new(0.0, 1.0, 0.0)),
-            "#00ff00"
+            super::color_to_hex(&palette::Hsv::new(0.0, 1.0, 1.0)),
+            "#ff0000"
         );
     }
 }
