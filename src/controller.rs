@@ -38,7 +38,7 @@ impl DebugController {
             .unwrap()
             .set_interval_with_callback_and_timeout_and_arguments_0(
                 &cb.as_ref().unchecked_ref(),
-                10,
+                1,
             )
             .unwrap();
         cb.forget();

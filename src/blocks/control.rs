@@ -59,6 +59,7 @@ impl Block for If {
 
     async fn execute(&mut self) -> Next {
         if self.done {
+            self.done = false;
             return Next::continue_(self.next.clone());
         }
 
@@ -330,6 +331,7 @@ impl Block for IfElse {
 
     async fn execute(&mut self) -> Next {
         if self.done {
+            self.done = false;
             return Next::continue_(self.next.clone());
         }
 
