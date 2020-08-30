@@ -328,6 +328,14 @@ impl SetPenHueToNumber {
             hue: None,
         }
     }
+
+    fn set_hue(color: &palette::Hsv, hue: f32) -> palette::Hsv {
+        palette::Hsv::new(
+            hue / 200.0 * 360.0,
+            color.saturation,
+            color.value,
+        )
+    }
 }
 
 #[async_trait(?Send)]
@@ -354,10 +362,9 @@ impl Block for SetPenHueToNumber {
             None => return Next::Err("hue is None".into()),
         };
 
-        let color = *self.runtime.borrow().pen_color();
-        let mut hsv: palette::Hsv = color.into();
-        hsv.hue = palette::RgbHue::from_degrees((hue / 100.0 * 360.0 - 180.0) as f32);
-        self.runtime.borrow_mut().set_pen_color(&hsv.into());
+        let mut runtime = self.runtime.borrow_mut();
+        let new_color = SetPenHueToNumber::set_hue(runtime.pen_color(), hue as f32);
+        runtime.set_pen_color(&new_color);
         Next::continue_(self.next.clone())
     }
 }
@@ -370,7 +377,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn set_shade() {
+        fn test_set_shade() {
             struct Test {
                 color: palette::Hsv,
                 shade: f32,
@@ -403,10 +410,61 @@ mod tests {
                     shade: 50.0,
                     expected: palette::Hsv::new(0.0, 1.0, 1.0),
                 },
+                Test {
+                    color: palette::Hsv::new(240.0, 1.0, 1.0),
+                    shade: 50.0,
+                    expected: palette::Hsv::new(240.0, 1.0, 1.0),
+                },
             ];
 
             for (i, test) in tests.iter().enumerate() {
                 let result = SetPenShadeToNumber::set_shade(&test.color, test.shade);
+                assert_eq!(result, test.expected, "{}", i);
+            }
+        }
+    }
+
+    mod set_pen_hue_to_number {
+        use super::*;
+
+        #[test]
+        fn test_set_hue() {
+            struct Test {
+                color: palette::Hsv,
+                hue: f32,
+                expected: palette::Hsv,
+            }
+
+            let tests: Vec<Test> = vec![
+                Test{
+                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    hue: 0.0,
+                    expected: palette::Hsv::new(0.0, 0.0, 0.0),
+                },
+                Test{
+                    color: palette::Hsv::new(0.0, 1.0, 1.0),
+                    hue: 0.0,
+                    expected: palette::Hsv::new(0.0, 1.0, 1.0),
+                },
+                Test{
+                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    hue: 50.0,
+                    expected: palette::Hsv::new(90.0, 0.0, 0.0),
+                },
+                Test{
+                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    hue: 100.0,
+                    expected: palette::Hsv::new(180.0, 0.0, 0.0),
+                },
+                Test{
+                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    hue: 200.0,
+                    expected: palette::Hsv::new(360.0, 0.0, 0.0),
+                },
+            ];
+
+            for (i, test) in tests.iter().enumerate() {
+                let result = SetPenHueToNumber::set_hue(&test.color, test.hue);
                 assert_eq!(result, test.expected, "{}", i);
             }
         }

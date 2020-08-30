@@ -114,11 +114,10 @@ impl ScratchFile {
 
 #[cfg(test)]
 mod tests {
-    #[allow(unused_imports)]
     use super::*;
 
     #[test]
-    fn savefile() {
+    fn test_savefile() {
         let dir = std::path::Path::new(file!())
             .parent()
             .unwrap()

@@ -34,7 +34,7 @@ impl SpriteRuntime {
             text: None,
             combined_pen_path: web_sys::Path2d::new().unwrap(),
             curr_pen_path: web_sys::Path2d::new().unwrap(),
-            pen_color: palette::Hsv::new(240.0, 1.0, 1.0),
+            pen_color: palette::Hsv::new(0.0, 1.0, 1.0),
             pen_size: 1.0,
             debug_info: DebugInfo::default(),
         }
@@ -324,8 +324,10 @@ pub fn color_to_hex(color: &palette::Hsv) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn hex_to_color() {
+    fn test_hex_to_color() {
         struct Test {
             s: &'static str,
             expected: palette::Hsv,
@@ -361,7 +363,7 @@ mod tests {
         ];
 
         for (i, test) in tests.iter().enumerate() {
-            let result = super::hex_to_color(test.s);
+            let result = hex_to_color(test.s);
             assert_eq!(result.is_err(), test.expect_err, "{}", i);
             if !test.expect_err {
                 assert_eq!(result.unwrap(), test.expected, "{}", i);
@@ -370,9 +372,9 @@ mod tests {
     }
 
     #[test]
-    fn color_to_hex() {
+    fn test_color_to_hex() {
         assert_eq!(
-            super::color_to_hex(&palette::Hsv::new(0.0, 1.0, 1.0)),
+            color_to_hex(&palette::Hsv::new(0.0, 1.0, 1.0)),
             "#ff0000"
         );
     }
