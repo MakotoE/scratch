@@ -130,22 +130,18 @@ impl Block for ChangeVariable {
             None => return Next::Err(format!("variable {} does not exist", variable_id).into()),
         };
 
-        let previous_float: f64 = value_to_float(&previous_value).unwrap_or(0.0);
+        let previous_float = value_to_float(&previous_value).unwrap_or(0.0);
 
         let value = match &self.value {
-            Some(v) => v.value()?,
+            Some(b) => b.value()?,
             None => return Next::Err("value is None".into()),
         };
 
-        let value_float = match value.as_f64() {
-            Some(f) => f,
-            None => return Next::Err("value is not float".into()),
-        };
-
+        let new_value = previous_float + value_to_float(&value)?;
         self.runtime
             .borrow_mut()
             .variables
-            .insert(variable_id.clone(), (previous_float + value_float).into());
+            .insert(variable_id.clone(), new_value.into());
         Next::continue_(self.next.clone())
     }
 }
