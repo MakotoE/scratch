@@ -330,11 +330,7 @@ impl SetPenHueToNumber {
     }
 
     fn set_hue(color: &palette::Hsv, hue: f32) -> palette::Hsv {
-        palette::Hsv::new(
-            hue / 200.0 * 360.0,
-            color.saturation,
-            color.value,
-        )
+        palette::Hsv::new(hue / 200.0 * 360.0, color.saturation, color.value)
     }
 }
 
@@ -436,27 +432,27 @@ mod tests {
             }
 
             let tests: Vec<Test> = vec![
-                Test{
+                Test {
                     color: palette::Hsv::new(0.0, 0.0, 0.0),
                     hue: 0.0,
                     expected: palette::Hsv::new(0.0, 0.0, 0.0),
                 },
-                Test{
+                Test {
                     color: palette::Hsv::new(0.0, 1.0, 1.0),
                     hue: 0.0,
                     expected: palette::Hsv::new(0.0, 1.0, 1.0),
                 },
-                Test{
+                Test {
                     color: palette::Hsv::new(0.0, 0.0, 0.0),
                     hue: 50.0,
                     expected: palette::Hsv::new(90.0, 0.0, 0.0),
                 },
-                Test{
+                Test {
                     color: palette::Hsv::new(0.0, 0.0, 0.0),
                     hue: 100.0,
                     expected: palette::Hsv::new(180.0, 0.0, 0.0),
                 },
-                Test{
+                Test {
                     color: palette::Hsv::new(0.0, 0.0, 0.0),
                     hue: 200.0,
                     expected: palette::Hsv::new(360.0, 0.0, 0.0),

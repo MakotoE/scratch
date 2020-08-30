@@ -187,17 +187,16 @@ const MILLIS_PER_SECOND: f64 = 1000.0;
 fn value_to_float(value: &serde_json::Value) -> Result<f64> {
     Ok(match value {
         serde_json::Value::String(s) => s.parse()?,
-        serde_json::Value::Number(n) => {
-            let mut f = n.as_f64().ok_or_else(|| wrong_type_err(&value))?;
-            if f.is_nan() {
-                f = 0.0;
+        serde_json::Value::Number(n) => match n.as_f64() {
+            Some(f) => {
+                if f.is_nan() {
+                    0.0
+                } else {
+                    f
+                }
             }
-            f
-        }
+            None => unreachable!(),
+        },
         _ => return Err(format!("expected String or Number but got: {:?}", value).into()),
     })
-}
-
-fn wrong_type_err(value: &serde_json::Value) -> Error {
-    format!("value has wrong type: {:?}", value).into()
 }

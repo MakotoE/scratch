@@ -61,9 +61,7 @@ impl Block for MoveSteps {
             None => return Next::Err("steps is None".into()),
         };
 
-        let steps = steps_value
-            .as_f64()
-            .ok_or_else(|| wrong_type_err(&steps_value))?;
+        let steps = value_to_float(&steps_value)?;
         self.runtime
             .borrow_mut()
             .add_coordinate(&Coordinate::new(steps, 0.0));

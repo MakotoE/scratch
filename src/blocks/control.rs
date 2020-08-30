@@ -221,6 +221,7 @@ impl Block for Repeat {
             return Next::loop_(self.substack.clone());
         }
 
+        self.count = 0;
         Next::continue_(self.next.clone())
     }
 }

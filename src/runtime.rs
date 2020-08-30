@@ -1,8 +1,8 @@
 use super::*;
+use palette::IntoColor;
 use sprite::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
-use palette::IntoColor;
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -373,9 +373,6 @@ mod tests {
 
     #[test]
     fn test_color_to_hex() {
-        assert_eq!(
-            color_to_hex(&palette::Hsv::new(0.0, 1.0, 1.0)),
-            "#ff0000"
-        );
+        assert_eq!(color_to_hex(&palette::Hsv::new(0.0, 1.0, 1.0)), "#ff0000");
     }
 }
