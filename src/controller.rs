@@ -36,10 +36,7 @@ impl DebugController {
         }) as Box<dyn Fn()>);
         *self.interval_id.write().await = web_sys::window()
             .unwrap()
-            .set_interval_with_callback_and_timeout_and_arguments_0(
-                &cb.as_ref().unchecked_ref(),
-                1,
-            )
+            .set_interval_with_callback_and_timeout_and_arguments_0(&cb.as_ref().unchecked_ref(), 1)
             .unwrap();
         cb.forget();
 

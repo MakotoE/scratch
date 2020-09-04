@@ -1,5 +1,6 @@
 use super::*;
 use palette::IntoColor;
+use pen::Pen;
 use sprite::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
@@ -12,10 +13,7 @@ pub struct SpriteRuntime {
     costumes: Vec<Costume>,
     current_costume: usize,
     text: Option<String>,
-    combined_pen_path: web_sys::Path2d,
-    curr_pen_path: web_sys::Path2d,
-    pen_color: palette::Hsv,
-    pen_size: f64,
+    pen: Pen,
     debug_info: DebugInfo,
 }
 
@@ -32,10 +30,7 @@ impl SpriteRuntime {
             costumes: Vec::new(),
             current_costume: 0,
             text: None,
-            combined_pen_path: web_sys::Path2d::new().unwrap(),
-            curr_pen_path: web_sys::Path2d::new().unwrap(),
-            pen_color: palette::Hsv::new(0.0, 1.0, 1.0),
-            pen_size: 1.0,
+            pen: Pen::new(),
             debug_info: DebugInfo::default(),
         }
     }
@@ -45,9 +40,7 @@ impl SpriteRuntime {
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
         self.context.scale(2.0, 2.0).unwrap();
 
-        let pen_path = self.combined_pen_path.clone();
-        pen_path.add_path(&self.curr_pen_path);
-        SpriteRuntime::draw_pen(&self.context, &pen_path, &self.pen_color, self.pen_size);
+        self.pen.draw(&self.context);
 
         let costume = self.costumes.get(self.current_costume).ok_or_else(|| {
             Error::from(format!(
@@ -67,18 +60,6 @@ impl SpriteRuntime {
 
         SpriteRuntime::draw_debug_info(&self.context, &self.debug_info)?;
         Ok(())
-    }
-
-    fn draw_pen(
-        context: &web_sys::CanvasRenderingContext2d,
-        path: &web_sys::Path2d,
-        color: &palette::Hsv,
-        size: f64,
-    ) {
-        context.set_line_cap("round");
-        context.set_stroke_style(&color_to_hex(color.into()).as_str().into());
-        context.set_line_width(size);
-        context.stroke_with_path(path);
     }
 
     fn draw_costume(
@@ -216,14 +197,14 @@ impl SpriteRuntime {
 
     pub fn set_position(&mut self, position: &Coordinate) {
         self.position = *position;
-        self.curr_pen_path
-            .line_to(240.0 + self.position.x, 180.0 - self.position.y);
+        self.pen().set_position(position);
     }
 
+    // TODO remove
     pub fn add_coordinate(&mut self, coordinate: &Coordinate) {
         self.position = self.position.add(coordinate);
-        self.curr_pen_path
-            .line_to(240.0 + self.position.x, 180.0 - self.position.y);
+        let position = self.position;
+        self.pen().set_position(&position);
     }
 
     pub fn set_costume_index(&mut self, index: usize) {
@@ -234,34 +215,8 @@ impl SpriteRuntime {
         self.text = text.map(|s| s.to_string());
     }
 
-    pub fn pen_down(&mut self) {
-        self.curr_pen_path = web_sys::Path2d::new().unwrap();
-        self.curr_pen_path
-            .move_to(240.0 + self.position.x, 180.0 - self.position.y);
-    }
-
-    pub fn pen_up(&mut self) {
-        self.curr_pen_path
-            .line_to(240.0 + self.position.x, 180.0 - self.position.y);
-        self.combined_pen_path.add_path(&self.curr_pen_path);
-        self.curr_pen_path = web_sys::Path2d::new().unwrap();
-    }
-
-    pub fn pen_color(&self) -> &palette::Hsv {
-        &self.pen_color
-    }
-
-    pub fn set_pen_color(&mut self, color: &palette::Hsv) {
-        self.pen_color = *color;
-    }
-
-    pub fn set_pen_size(&mut self, size: f64) {
-        self.pen_size = size;
-    }
-
-    pub fn pen_clear(&mut self) {
-        self.combined_pen_path = web_sys::Path2d::new().unwrap();
-        self.curr_pen_path = web_sys::Path2d::new().unwrap();
+    pub fn pen(&mut self) -> &mut Pen {
+        &mut self.pen
     }
 
     pub fn set_debug_info(&mut self, debug_info: &DebugInfo) {
@@ -271,8 +226,8 @@ impl SpriteRuntime {
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct Coordinate {
-    x: f64,
-    y: f64,
+    pub x: f64,
+    pub y: f64,
 }
 
 impl Coordinate {
@@ -317,9 +272,12 @@ pub fn hex_to_color(s: &str) -> Result<palette::Hsv> {
 
 pub fn color_to_hex(color: &palette::Hsv) -> String {
     let rgb = palette::Srgb::from_linear(color.into_rgb());
-    format!("#{:02x}", (rgb.red * 255.0).round() as u8)
-        + &format!("{:02x}", (rgb.green * 255.0).round() as u8)
-        + &format!("{:02x}", (rgb.blue * 255.0).round() as u8)
+    format!(
+        "#{:02x}{:02x}{:02x}",
+        (rgb.red * 255.0).round() as u8,
+        (rgb.green * 255.0).round() as u8,
+        (rgb.blue * 255.0).round() as u8
+    )
 }
 
 #[cfg(test)]

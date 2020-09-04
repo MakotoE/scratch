@@ -6,6 +6,7 @@
 mod blocks;
 mod controller;
 mod page;
+mod pen;
 mod runtime;
 mod savefile;
 mod sprite;

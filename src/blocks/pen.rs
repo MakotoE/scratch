@@ -54,7 +54,9 @@ impl Block for PenDown {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.borrow_mut().pen_down();
+        let mut runtime = self.runtime.borrow_mut();
+        let position = *runtime.position();
+        runtime.pen().pen_down(&position);
         Next::continue_(self.next.clone())
     }
 }
@@ -94,7 +96,7 @@ impl Block for PenUp {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.borrow_mut().pen_up();
+        self.runtime.borrow_mut().pen().pen_up();
         Next::continue_(self.next.clone())
     }
 }
@@ -146,7 +148,8 @@ impl Block for SetPenColorToColor {
             .ok_or_else(|| Error::from("color is not a string"))?;
         self.runtime
             .borrow_mut()
-            .set_pen_color(&runtime::hex_to_color(color)?);
+            .pen()
+            .set_color(&runtime::hex_to_color(color)?);
         Next::continue_(self.next.clone())
     }
 }
@@ -194,7 +197,7 @@ impl Block for SetPenSizeTo {
             None => return Next::Err("color is None".into()),
         };
 
-        self.runtime.borrow_mut().set_pen_size(size);
+        self.runtime.borrow_mut().pen().set_size(size);
         Next::continue_(self.next.clone())
     }
 }
@@ -234,7 +237,7 @@ impl Block for Clear {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.borrow_mut().pen_clear();
+        self.runtime.borrow_mut().pen().clear();
         Next::continue_(self.next.clone())
     }
 }
@@ -304,9 +307,9 @@ impl Block for SetPenShadeToNumber {
             None => return Next::Err("shade is None".into()),
         };
         let mut runtime = self.runtime.borrow_mut();
-        let color = runtime.pen_color().into_hsv();
+        let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
-        runtime.set_pen_color(&new_color.into());
+        runtime.pen().set_color(&new_color.into());
         Next::continue_(self.next.clone())
     }
 }
@@ -359,8 +362,8 @@ impl Block for SetPenHueToNumber {
         };
 
         let mut runtime = self.runtime.borrow_mut();
-        let new_color = SetPenHueToNumber::set_hue(runtime.pen_color(), hue as f32);
-        runtime.set_pen_color(&new_color);
+        let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
+        runtime.pen().set_color(&new_color);
         Next::continue_(self.next.clone())
     }
 }
