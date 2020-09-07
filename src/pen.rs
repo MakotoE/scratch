@@ -67,7 +67,6 @@ impl Pen {
     }
 
     pub fn draw(&self, context: &web_sys::CanvasRenderingContext2d) {
-        log::info!("draw {:?}", self);
         context.set_line_cap("round");
         for line in &self.lines {
             line.draw(context, None);
@@ -129,14 +128,16 @@ impl Line {
 
     fn draw(&self, context: &web_sys::CanvasRenderingContext2d, extra_point: Option<Coordinate>) {
         context.begin_path();
-        let mut point_iter = self.points.iter();
-        match point_iter.next() {
-            Some(point) => context.move_to(240.0 + point.x, 180.0 - point.y),
-            None => return,
-        };
+        for (i, point) in self.points.iter().enumerate() {
+            if i == 0 {
+                context.move_to(240.0 + point.x, 180.0 - point.y);
 
-        for point in point_iter {
-            context.line_to(240.0 + point.x, 180.0 - point.y);
+                if self.points.len() == 1 {
+                    context.line_to(240.0 + point.x, 180.0 - point.y);
+                }
+            } else {
+                context.line_to(240.0 + point.x, 180.0 - point.y);
+            }
         }
 
         if let Some(extra_point) = extra_point {

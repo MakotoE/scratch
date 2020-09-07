@@ -40,7 +40,7 @@ impl DebugController {
             .unwrap();
         cb.forget();
 
-        log::debug!("continuing");
+        log::info!("continuing");
     }
 
     pub async fn pause(&self) {
@@ -51,13 +51,13 @@ impl DebugController {
         self.semphore.set_blocking(true).await;
         *self.display_debug.write().await = true;
 
-        log::debug!("paused");
+        log::info!("paused");
     }
 
     pub fn step(&self) {
         self.semphore.add_permit();
 
-        log::debug!("step");
+        log::info!("step");
     }
 
     pub async fn display_debug(&self) -> bool {
