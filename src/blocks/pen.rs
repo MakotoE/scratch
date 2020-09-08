@@ -5,7 +5,7 @@ use palette::Mix;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "penDown" => Box::new(PenDown::new(id, runtime)),
@@ -22,12 +22,12 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct PenDown {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl PenDown {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -54,7 +54,7 @@ impl Block for PenDown {
     }
 
     async fn execute(&mut self) -> Next {
-        let mut runtime = self.runtime.borrow_mut();
+        let mut runtime = self.runtime.write().await;
         let position = *runtime.position();
         runtime.pen().pen_down(&position);
         Next::continue_(self.next.clone())
@@ -64,12 +64,12 @@ impl Block for PenDown {
 #[derive(Debug)]
 pub struct PenUp {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl PenUp {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -96,7 +96,7 @@ impl Block for PenUp {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.borrow_mut().pen().pen_up();
+        self.runtime.write().await.pen().pen_up();
         Next::continue_(self.next.clone())
     }
 }
@@ -104,13 +104,13 @@ impl Block for PenUp {
 #[derive(Debug)]
 pub struct SetPenColorToColor {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     color: Option<Box<dyn Block>>,
 }
 
 impl SetPenColorToColor {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -140,14 +140,15 @@ impl Block for SetPenColorToColor {
 
     async fn execute(&mut self) -> Next {
         let color_value = match &self.color {
-            Some(b) => b.value()?,
+            Some(b) => b.value().await?,
             None => return Next::Err("color is None".into()),
         };
         let color = color_value
             .as_str()
             .ok_or_else(|| Error::from("color is not a string"))?;
         self.runtime
-            .borrow_mut()
+            .write()
+            .await
             .pen()
             .set_color(&runtime::hex_to_color(color)?);
         Next::continue_(self.next.clone())
@@ -157,13 +158,13 @@ impl Block for SetPenColorToColor {
 #[derive(Debug)]
 pub struct SetPenSizeTo {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     size: Option<Box<dyn Block>>,
 }
 
 impl SetPenSizeTo {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -193,11 +194,11 @@ impl Block for SetPenSizeTo {
 
     async fn execute(&mut self) -> Next {
         let size = match &self.size {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Next::Err("color is None".into()),
         };
 
-        self.runtime.borrow_mut().pen().set_size(size);
+        self.runtime.write().await.pen().set_size(size);
         Next::continue_(self.next.clone())
     }
 }
@@ -205,12 +206,12 @@ impl Block for SetPenSizeTo {
 #[derive(Debug)]
 pub struct Clear {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Clear {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -237,7 +238,7 @@ impl Block for Clear {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.borrow_mut().pen().clear();
+        self.runtime.write().await.pen().clear();
         Next::continue_(self.next.clone())
     }
 }
@@ -245,13 +246,13 @@ impl Block for Clear {
 #[derive(Debug)]
 pub struct SetPenShadeToNumber {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     shade: Option<Box<dyn Block>>,
 }
 
 impl SetPenShadeToNumber {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -303,10 +304,10 @@ impl Block for SetPenShadeToNumber {
 
     async fn execute(&mut self) -> Next {
         let shade = match &self.shade {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Next::Err("shade is None".into()),
         };
-        let mut runtime = self.runtime.borrow_mut();
+        let mut runtime = self.runtime.write().await;
         let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
         runtime.pen().set_color(&new_color.into());
@@ -317,13 +318,13 @@ impl Block for SetPenShadeToNumber {
 #[derive(Debug)]
 pub struct SetPenHueToNumber {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     hue: Option<Box<dyn Block>>, // [0, 100]
 }
 
 impl SetPenHueToNumber {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -357,11 +358,11 @@ impl Block for SetPenHueToNumber {
 
     async fn execute(&mut self) -> Next {
         let hue = match &self.hue {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Next::Err("hue is None".into()),
         };
 
-        let mut runtime = self.runtime.borrow_mut();
+        let mut runtime = self.runtime.write().await;
         let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
         runtime.pen().set_color(&new_color);
         Next::continue_(self.next.clone())

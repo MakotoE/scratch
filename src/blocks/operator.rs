@@ -3,7 +3,7 @@ use super::*;
 pub fn get_block(
     name: &str,
     id: &str,
-    _runtime: Rc<RefCell<SpriteRuntime>>,
+    _runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "equals" => Box::new(Equals::new(id)),
@@ -54,29 +54,29 @@ impl Block for Equals {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<serde_json::Value> {
         let a = match &self.operand1 {
-            Some(a) => a.value()?,
+            Some(a) => a.value().await?,
             None => return Err("operand1 is None".into()),
         };
         let b = match &self.operand2 {
-            Some(b) => b.value()?,
+            Some(b) => b.value().await?,
             None => return Err("operand2 is None".into()),
         };
         Ok((a == b).into())
     }
 }
 
-fn get_num1_and_num2(
+async fn get_num1_and_num2(
     num1: &Option<Box<dyn Block>>,
     num2: &Option<Box<dyn Block>>,
 ) -> Result<(f64, f64)> {
     let a = match num1 {
-        Some(a) => value_to_float(&a.value()?)?,
+        Some(a) => value_to_float(&a.value().await?)?,
         None => return Err("num1 is None".into()),
     };
     let b = match num2 {
-        Some(b) => value_to_float(&b.value()?)?,
+        Some(b) => value_to_float(&b.value().await?)?,
         None => return Err("num2 is None".into()),
     };
     Ok((a, b))
@@ -117,8 +117,8 @@ impl Block for Add {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2)?;
+    async fn value(&self) -> Result<serde_json::Value> {
+        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
         Ok((a + b).into())
     }
 }
@@ -158,8 +158,8 @@ impl Block for Subtract {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2)?;
+    async fn value(&self) -> Result<serde_json::Value> {
+        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
         Ok((a - b).into())
     }
 }
@@ -199,8 +199,8 @@ impl Block for Multiply {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2)?;
+    async fn value(&self) -> Result<serde_json::Value> {
+        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
         Ok((a * b).into())
     }
 }
@@ -240,8 +240,8 @@ impl Block for Divide {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2)?;
+    async fn value(&self) -> Result<serde_json::Value> {
+        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
         Ok((a / b).into())
     }
 }
@@ -281,14 +281,14 @@ impl Block for And {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<serde_json::Value> {
         let left = match &self.operand1 {
-            Some(b) => b.value()?,
+            Some(b) => b.value().await?,
             None => return Err("operand1 is None".into()),
         };
 
         let right = match &self.operand2 {
-            Some(b) => b.value()?,
+            Some(b) => b.value().await?,
             None => return Err("operand2 is None".into()),
         };
 
@@ -328,9 +328,9 @@ impl Block for Not {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<serde_json::Value> {
         let operand_value = match &self.operand {
-            Some(b) => b.value()?,
+            Some(b) => b.value().await?,
             None => return Err("operand is None".into()),
         };
 
@@ -378,14 +378,14 @@ impl Block for LessThan {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<serde_json::Value> {
         let left = match &self.operand1 {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Err("operand1 is None".into()),
         };
 
         let right = match &self.operand2 {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Err("operand2 is None".into()),
         };
 
@@ -428,14 +428,14 @@ impl Block for GreaterThan {
         }
     }
 
-    fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<serde_json::Value> {
         let left = match &self.operand1 {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Err("operand1 is None".into()),
         };
 
         let right = match &self.operand2 {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Err("operand2 is None".into()),
         };
 

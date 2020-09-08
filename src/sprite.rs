@@ -3,10 +3,14 @@ use async_trait::async_trait;
 use blocks::*;
 use controller::DebugController;
 use runtime::{Coordinate, SpriteRuntime};
+use yew::services::render::RenderTask;
+use yew::services::RenderService;
+use yew::Callback;
 
 #[derive(Debug, Default)]
 pub struct Sprite {
     controllers: Vec<Arc<DebugController>>,
+    closure: Rc<RefCell<Option<Closure<dyn Fn()>>>>,
 }
 
 impl Sprite {
@@ -17,7 +21,7 @@ impl Sprite {
     ) -> Result<Self> {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
-        let runtime_ref = Rc::new(RefCell::new(runtime));
+        let runtime_ref = Rc::new(RwLock::new(runtime));
         let mut controllers: Vec<Arc<DebugController>> = Vec::new();
 
         for hat_id in find_hats(&target.blocks) {
@@ -39,7 +43,26 @@ impl Sprite {
             });
         }
 
-        Ok(Self { controllers })
+        let cb_ref: Rc<RefCell<Option<Closure<dyn Fn()>>>> = Rc::new(RefCell::new(None));
+        let cb_ref_clone = cb_ref.clone();
+        *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+            let runtime_arc = Arc::new(runtime_ref.clone());
+            wasm_bindgen_futures::spawn_local(async move {
+                runtime_arc.write().await.redraw().unwrap();
+            });
+
+            let cb = cb_ref_clone.borrow();
+            let f = cb.as_ref().unwrap();
+            web_sys::window().unwrap().request_animation_frame(f.as_ref().unchecked_ref());
+        }) as Box<dyn Fn()>));
+        let cb = cb_ref.borrow();
+        let f = cb.as_ref().unwrap();
+        web_sys::window().unwrap().request_animation_frame(f.as_ref().unchecked_ref());
+
+        Ok(Self {
+            controllers,
+            closure: cb_ref.clone(),
+        })
     }
 
     pub async fn continue_(&mut self, speed: controller::Speed) {
@@ -75,14 +98,14 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 #[derive(Debug)]
 pub struct Thread {
     hat: Rc<RefCell<Box<dyn Block>>>,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     controller: Arc<DebugController>,
 }
 
 impl Thread {
     pub fn new(
         hat: Box<dyn Block>,
-        runtime: Rc<RefCell<SpriteRuntime>>,
+        runtime: Rc<RwLock<SpriteRuntime>>,
         controller: Arc<DebugController>,
     ) -> Self {
         Self {
@@ -102,11 +125,7 @@ impl Thread {
         } else {
             DebugInfo::default()
         };
-        {
-            let mut runtime = self.runtime.borrow_mut();
-            runtime.set_debug_info(&debug_info);
-            runtime.redraw()?; // Clears screen on restart
-        }
+        self.runtime.write().await.set_debug_info(&debug_info);
 
         let mut curr_block = self.hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
@@ -121,10 +140,9 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            self.runtime.borrow_mut().set_debug_info(&debug_info);
+            self.runtime.write().await.set_debug_info(&debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
-            self.runtime.borrow_mut().redraw()?;
             match execute_result {
                 Next::None => match loop_start.pop() {
                     None => break,

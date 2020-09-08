@@ -4,7 +4,7 @@ use gloo_timers::future::TimeoutFuture;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "say" => Box::new(looks::Say::new(id, runtime)),
@@ -16,13 +16,13 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct Say {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     message: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Say {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -60,10 +60,10 @@ impl Block for Say {
 
     async fn execute(&mut self) -> Next {
         let message = match &self.message {
-            Some(b) => Say::value_to_string(&b.value()?),
+            Some(b) => Say::value_to_string(&b.value().await?),
             None => return Next::Err("message is None".into()),
         };
-        self.runtime.borrow_mut().say(Some(&message));
+        self.runtime.write().await.say(Some(&message));
         Next::continue_(self.next.clone())
     }
 }
@@ -71,14 +71,14 @@ impl Block for Say {
 #[derive(Debug)]
 pub struct SayForSecs {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     message: Option<Box<dyn Block>>,
     secs: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SayForSecs {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -110,16 +110,16 @@ impl Block for SayForSecs {
 
     async fn execute(&mut self) -> Next {
         let message = match &self.message {
-            Some(b) => Say::value_to_string(&b.value()?),
+            Some(b) => Say::value_to_string(&b.value().await?),
             None => return Next::Err("message is None".into()),
         };
 
         let seconds = match &self.secs {
-            Some(b) => value_to_float(&b.value()?)?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Next::Err("secs is None".into()),
         };
 
-        let mut runtime = self.runtime.borrow_mut();
+        let mut runtime = self.runtime.write().await;
         runtime.say(Some(&message));
         runtime.redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;

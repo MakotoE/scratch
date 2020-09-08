@@ -4,7 +4,7 @@ use gloo_timers::future::TimeoutFuture;
 pub fn get_block(
     name: &str,
     id: &str,
-    _runtime: Rc<RefCell<SpriteRuntime>>,
+    _runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "if" => Box::new(If::new(id)),
@@ -68,7 +68,7 @@ impl Block for If {
             None => return Next::continue_(self.next.clone()),
         };
 
-        let value = condition.value()?;
+        let value = condition.value().await?;
         let value_bool = match value.as_bool() {
             Some(b) => b,
             None => return Next::Err(format!("expected boolean type but got {}", value).into()),
@@ -121,7 +121,7 @@ impl Block for Wait {
 
     async fn execute(&mut self) -> Next {
         let duration = match &self.duration {
-            Some(block) => value_to_float(&block.value()?)?,
+            Some(block) => value_to_float(&block.value().await?)?,
             None => return Next::Err("duration is None".into()),
         };
 
@@ -212,7 +212,7 @@ impl Block for Repeat {
 
     async fn execute(&mut self) -> Next {
         let times = match &self.times {
-            Some(v) => value_to_float(&v.value()?)?,
+            Some(v) => value_to_float(&v.value().await?)?,
             None => return Next::Err("times is None".into()),
         };
 
@@ -267,7 +267,7 @@ impl Block for RepeatUntil {
 
     async fn execute(&mut self) -> Next {
         let condition_value = match &self.condition {
-            Some(block) => block.value()?,
+            Some(block) => block.value().await?,
             None => return Next::Err("condition is None".into()),
         };
 
@@ -336,7 +336,7 @@ impl Block for IfElse {
         }
 
         let condition_value = match &self.condition {
-            Some(block) => block.value()?,
+            Some(block) => block.value().await?,
             None => return Next::Err("condition is None".into()),
         };
 

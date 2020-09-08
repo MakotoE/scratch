@@ -1,3 +1,4 @@
+use gloo_timers::future::TimeoutFuture;
 use std::sync::Arc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -27,18 +28,6 @@ impl DebugController {
             .unwrap()
             .clear_interval_with_handle(*self.interval_id.read().await);
         self.semphore.reset().await;
-        self.semphore.set_blocking(true).await;
-        *self.display_debug.write().await = false;
-
-        let semaphore = self.semphore.clone();
-        let cb = Closure::wrap(Box::new(move || {
-            semaphore.add_permit();
-        }) as Box<dyn Fn()>);
-        *self.interval_id.write().await = web_sys::window()
-            .unwrap()
-            .set_interval_with_callback_and_timeout_and_arguments_0(&cb.as_ref().unchecked_ref(), 1)
-            .unwrap();
-        cb.forget();
 
         log::info!("continuing");
     }
@@ -87,6 +76,8 @@ impl ControllerSemaphore {
     async fn acquire(&self) {
         if *self.blocking.read().await {
             self.semaphore.acquire().await.forget();
+        } else {
+            TimeoutFuture::new(1).await;
         }
     }
 

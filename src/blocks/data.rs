@@ -3,7 +3,7 @@ use super::*;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
@@ -15,14 +15,14 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct SetVariable {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SetVariable {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -63,11 +63,12 @@ impl Block for SetVariable {
             None => return Next::Err("variable_id is None".into()),
         };
         let value = match &self.value {
-            Some(v) => v.value()?,
+            Some(v) => v.value().await?,
             None => return Next::Err("value is None".into()),
         };
         self.runtime
-            .borrow_mut()
+            .write()
+            .await
             .variables
             .insert(variable_id.clone(), value.clone());
         Next::continue_(self.next.clone())
@@ -77,14 +78,14 @@ impl Block for SetVariable {
 #[derive(Debug)]
 pub struct ChangeVariable {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl ChangeVariable {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -125,7 +126,7 @@ impl Block for ChangeVariable {
             None => return Next::Err("variable_id is None".into()),
         };
 
-        let previous_value = match self.runtime.borrow_mut().variables.remove(variable_id) {
+        let previous_value = match self.runtime.write().await.variables.remove(variable_id) {
             Some(v) => v,
             None => return Next::Err(format!("variable {} does not exist", variable_id).into()),
         };
@@ -133,13 +134,14 @@ impl Block for ChangeVariable {
         let previous_float = value_to_float(&previous_value).unwrap_or(0.0);
 
         let value = match &self.value {
-            Some(b) => b.value()?,
+            Some(b) => b.value().await?,
             None => return Next::Err("value is None".into()),
         };
 
         let new_value = previous_float + value_to_float(&value)?;
         self.runtime
-            .borrow_mut()
+            .write()
+            .await
             .variables
             .insert(variable_id.clone(), new_value.into());
         Next::continue_(self.next.clone())

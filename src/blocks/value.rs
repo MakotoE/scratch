@@ -3,11 +3,11 @@ use super::*;
 #[derive(Debug)]
 pub struct Variable {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 }
 
 impl Variable {
-    pub fn new(id: String, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self { id, runtime }
     }
 }
@@ -24,8 +24,8 @@ impl Block for Variable {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    fn value(&self) -> Result<serde_json::Value> {
-        match self.runtime.borrow().variables.get(&self.id) {
+    async fn value(&self) -> Result<serde_json::Value> {
+        match self.runtime.read().await.variables.get(&self.id) {
             Some(v) => Ok(v.clone()),
             None => Err(format!("{} does not exist", self.id).into()),
         }
@@ -45,7 +45,7 @@ impl Block for Value {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.clone())
     }
 }

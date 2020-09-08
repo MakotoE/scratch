@@ -14,7 +14,7 @@ use runtime::SpriteRuntime;
 
 fn get_block(
     id: &str,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     info: &savefile::Block,
 ) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
@@ -63,7 +63,7 @@ pub trait Block: std::fmt::Debug {
     #[allow(unused_variables)]
     fn set_field(&mut self, key: &str, value_id: String) {}
 
-    fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<serde_json::Value> {
         Err("this block does not return a value".into())
     }
 
@@ -118,7 +118,7 @@ impl Next {
 
 pub fn new_block(
     block_id: &str,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
     let info = infos.get(block_id).unwrap();
