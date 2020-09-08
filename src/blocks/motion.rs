@@ -62,9 +62,9 @@ impl Block for MoveSteps {
         };
 
         let steps = value_to_float(&steps_value)?;
-        self.runtime
-            .borrow_mut()
-            .add_coordinate(&Coordinate::new(steps, 0.0));
+        let mut runtime = self.runtime.borrow_mut();
+        let position = runtime.position().add(&Coordinate::new(steps, 0.0));
+        runtime.set_position(&position);
         Next::continue_(self.next.clone())
     }
 }
@@ -169,9 +169,9 @@ impl Block for ChangeXBy {
             None => return Next::Err("dx is None".into()),
         };
 
-        self.runtime
-            .borrow_mut()
-            .add_coordinate(&Coordinate::new(x, 0.0));
+        let mut runtime = self.runtime.borrow_mut();
+        let position = runtime.position().add(&Coordinate::new(x, 0.0));
+        runtime.set_position(&position);
         Next::continue_(self.next.clone())
     }
 }
@@ -219,9 +219,9 @@ impl Block for ChangeYBy {
             None => return Next::Err("dy is None".into()),
         };
 
-        self.runtime
-            .borrow_mut()
-            .add_coordinate(&Coordinate::new(0.0, y));
+        let mut runtime = self.runtime.borrow_mut();
+        let position = runtime.position().add(&Coordinate::new(0.0, y));
+        runtime.set_position(&position);
         Next::continue_(self.next.clone())
     }
 }

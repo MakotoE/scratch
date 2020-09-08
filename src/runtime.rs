@@ -200,13 +200,6 @@ impl SpriteRuntime {
         self.pen().set_position(position);
     }
 
-    // TODO remove
-    pub fn add_coordinate(&mut self, coordinate: &Coordinate) {
-        self.position = self.position.add(coordinate);
-        let position = self.position;
-        self.pen().set_position(&position);
-    }
-
     pub fn set_costume_index(&mut self, index: usize) {
         self.current_costume = index;
     }
