@@ -8,6 +8,7 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 #[derive(Debug)]
 pub struct SpriteRuntime {
     context: web_sys::CanvasRenderingContext2d,
+    need_redraw: bool,
     position: Coordinate,
     pub variables: HashMap<String, serde_json::Value>,
     costumes: Vec<Costume>,
@@ -25,6 +26,7 @@ impl SpriteRuntime {
     ) -> Self {
         Self {
             context,
+            need_redraw: true,
             position: Coordinate::default(),
             variables,
             costumes: Vec::new(),
@@ -35,19 +37,25 @@ impl SpriteRuntime {
         }
     }
 
-    pub fn redraw(&self) -> Result<()> {
+    pub fn redraw(&mut self) -> Result<()> {
+        if !self.need_redraw {
+            return Ok(());
+        }
+
         self.context.reset_transform().unwrap();
         self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
         self.context.scale(2.0, 2.0).unwrap();
 
         self.pen.draw(&self.context);
 
-        let costume = self.costumes.get(self.current_costume).ok_or_else(|| {
-            Error::from(format!(
-                "current_costume is out of range: {}",
-                self.current_costume
-            ))
-        })?;
+        let costume = match self.costumes.get(self.current_costume) {
+            Some(c) => c,
+            None => {
+                return Err(
+                    format!("current_costume is out of range: {}", self.current_costume).into(),
+                )
+            }
+        };
         SpriteRuntime::draw_costume(&self.context, costume, &self.position)?;
 
         if let Some(text) = &self.text {
@@ -61,6 +69,8 @@ impl SpriteRuntime {
         }
 
         SpriteRuntime::draw_debug_info(&self.context, &self.debug_info)?;
+
+        self.need_redraw = false;
         Ok(())
     }
 
@@ -198,23 +208,28 @@ impl SpriteRuntime {
     }
 
     pub fn set_position(&mut self, position: &Coordinate) {
+        self.need_redraw = true;
         self.position = *position;
         self.pen().set_position(position);
     }
 
     pub fn set_costume_index(&mut self, index: usize) {
+        self.need_redraw = true;
         self.current_costume = index;
     }
 
     pub fn say(&mut self, text: Option<&str>) {
+        self.need_redraw = true;
         self.text = text.map(|s| s.to_string());
     }
 
     pub fn pen(&mut self) -> &mut Pen {
+        self.need_redraw = true;
         &mut self.pen
     }
 
     pub fn set_debug_info(&mut self, debug_info: &DebugInfo) {
+        self.need_redraw = true;
         self.debug_info = debug_info.clone();
     }
 }

@@ -119,8 +119,9 @@ impl Block for SayForSecs {
             None => return Next::Err("secs is None".into()),
         };
 
-        self.runtime.borrow_mut().say(Some(&message));
-        self.runtime.borrow().redraw()?;
+        let mut runtime = self.runtime.borrow_mut();
+        runtime.say(Some(&message));
+        runtime.redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
         Next::continue_(self.next.clone())
     }

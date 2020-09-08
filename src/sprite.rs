@@ -102,8 +102,11 @@ impl Thread {
         } else {
             DebugInfo::default()
         };
-        self.runtime.borrow_mut().set_debug_info(&debug_info);
-        self.runtime.borrow().redraw()?; // Clears screen on restart
+        {
+            let mut runtime = self.runtime.borrow_mut();
+            runtime.set_debug_info(&debug_info);
+            runtime.redraw()?; // Clears screen on restart
+        }
 
         let mut curr_block = self.hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
@@ -121,7 +124,7 @@ impl Thread {
             self.runtime.borrow_mut().set_debug_info(&debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
-            self.runtime.borrow().redraw()?;
+            self.runtime.borrow_mut().redraw()?;
             match execute_result {
                 Next::None => match loop_start.pop() {
                     None => break,
