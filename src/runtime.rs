@@ -52,8 +52,10 @@ impl SpriteRuntime {
 
         if let Some(text) = &self.text {
             self.context.save();
-            self.context
-                .translate(260.0 + self.position.x, 80.0 - self.position.y)?;
+            self.context.translate(
+                240.0 + costume.rotation_center.x / 2.0 + self.position.x,
+                130.0 - costume.rotation_center.y - self.position.y,
+            )?;
             SpriteRuntime::draw_text_bubble(&self.context, text)?;
             self.context.restore();
         }
