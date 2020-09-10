@@ -3,13 +3,10 @@ use async_trait::async_trait;
 use blocks::*;
 use controller::DebugController;
 use runtime::{Coordinate, SpriteRuntime};
-use yew::services::render::RenderTask;
-use yew::services::RenderService;
-use yew::Callback;
 
 #[derive(Debug, Default)]
 pub struct Sprite {
-    controllers: Vec<Arc<DebugController>>,
+    controllers: Vec<Rc<DebugController>>,
     closure: Rc<RefCell<Option<Closure<dyn Fn()>>>>,
 }
 
@@ -22,10 +19,10 @@ impl Sprite {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
         let runtime_ref = Rc::new(RwLock::new(runtime));
-        let mut controllers: Vec<Arc<DebugController>> = Vec::new();
+        let mut controllers: Vec<Rc<DebugController>> = Vec::new();
 
         for hat_id in find_hats(&target.blocks) {
-            let controller = Arc::new(DebugController::new());
+            let controller = Rc::new(DebugController::new());
             controllers.push(controller.clone());
 
             let block = new_block(hat_id, runtime_ref.clone(), &target.blocks)
@@ -46,18 +43,23 @@ impl Sprite {
         let cb_ref: Rc<RefCell<Option<Closure<dyn Fn()>>>> = Rc::new(RefCell::new(None));
         let cb_ref_clone = cb_ref.clone();
         *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            let runtime_arc = Arc::new(runtime_ref.clone());
+            let runtime_arc = runtime_ref.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 runtime_arc.write().await.redraw().unwrap();
             });
 
             let cb = cb_ref_clone.borrow();
             let f = cb.as_ref().unwrap();
-            web_sys::window().unwrap().request_animation_frame(f.as_ref().unchecked_ref());
+            web_sys::window()
+                .unwrap()
+                .request_animation_frame(f.as_ref().unchecked_ref())
+                .unwrap();
         }) as Box<dyn Fn()>));
         let cb = cb_ref.borrow();
         let f = cb.as_ref().unwrap();
-        web_sys::window().unwrap().request_animation_frame(f.as_ref().unchecked_ref());
+        web_sys::window()
+            .unwrap()
+            .request_animation_frame(f.as_ref().unchecked_ref())?;
 
         Ok(Self {
             controllers,
@@ -99,14 +101,14 @@ fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 pub struct Thread {
     hat: Rc<RefCell<Box<dyn Block>>>,
     runtime: Rc<RwLock<SpriteRuntime>>,
-    controller: Arc<DebugController>,
+    controller: Rc<DebugController>,
 }
 
 impl Thread {
     pub fn new(
         hat: Box<dyn Block>,
         runtime: Rc<RwLock<SpriteRuntime>>,
-        controller: Arc<DebugController>,
+        controller: Rc<DebugController>,
     ) -> Self {
         Self {
             hat: Rc::new(RefCell::new(hat)),

@@ -1,7 +1,5 @@
 use gloo_timers::future::TimeoutFuture;
 use std::sync::Arc;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 #[derive(Debug)]
 pub struct DebugController {
@@ -28,6 +26,8 @@ impl DebugController {
             .unwrap()
             .clear_interval_with_handle(*self.interval_id.read().await);
         self.semphore.reset().await;
+        self.semphore.set_blocking(false).await;
+        *self.display_debug.write().await = false;
 
         log::info!("continuing");
     }
