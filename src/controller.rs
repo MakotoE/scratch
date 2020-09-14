@@ -1,6 +1,6 @@
 use gloo_timers::future::TimeoutFuture;
-use std::sync::Arc;
 use std::cell::RefCell;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct DebugController {

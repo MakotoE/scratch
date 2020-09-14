@@ -8,6 +8,7 @@ use runtime::{Coordinate, SpriteRuntime};
 pub struct Sprite {
     controllers: Vec<Rc<DebugController>>,
     closure: Rc<RefCell<Option<Closure<dyn Fn()>>>>,
+    request_animation_frame_id: i32,
 }
 
 impl Sprite {
@@ -57,13 +58,14 @@ impl Sprite {
         }) as Box<dyn Fn()>));
         let cb = cb_ref.borrow();
         let f = cb.as_ref().unwrap();
-        web_sys::window()
+        let request_animation_frame_id = web_sys::window()
             .unwrap()
             .request_animation_frame(f.as_ref().unchecked_ref())?;
 
         Ok(Self {
             controllers,
             closure: cb_ref.clone(),
+            request_animation_frame_id,
         })
     }
 
@@ -83,6 +85,15 @@ impl Sprite {
         for c in &self.controllers {
             c.step();
         }
+    }
+}
+
+impl Drop for Sprite {
+    fn drop(&mut self) {
+        web_sys::window()
+            .unwrap()
+            .cancel_animation_frame(self.request_animation_frame_id)
+            .unwrap();
     }
 }
 
@@ -152,8 +163,13 @@ impl Thread {
                 },
                 Next::Err(e) => {
                     let block = curr_block.borrow();
-                    return Err(ErrorKind::Block(block.block_name(), block.id().to_string(), Box::new(e)).into());
-                },
+                    return Err(ErrorKind::Block(
+                        block.block_name(),
+                        block.id().to_string(),
+                        Box::new(e),
+                    )
+                    .into());
+                }
                 Next::Continue(b) => curr_block = b,
                 Next::Loop(b) => {
                     loop_start.push(curr_block.clone());
