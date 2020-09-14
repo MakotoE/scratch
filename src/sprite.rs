@@ -150,7 +150,10 @@ impl Thread {
                     None => break,
                     Some(b) => curr_block = b,
                 },
-                Next::Err(e) => return Err(e),
+                Next::Err(e) => {
+                    let block = curr_block.borrow();
+                    return Err(ErrorKind::Block(block.block_name(), block.id().to_string(), Box::new(e)).into());
+                },
                 Next::Continue(b) => curr_block = b,
                 Next::Loop(b) => {
                     loop_start.push(curr_block.clone());
