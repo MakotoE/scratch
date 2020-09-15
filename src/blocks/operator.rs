@@ -283,16 +283,28 @@ impl Block for And {
 
     async fn value(&self) -> Result<serde_json::Value> {
         let left = match &self.operand1 {
-            Some(b) => b.value().await?,
+            Some(b) => {
+                let value = b.value().await?;
+                match value {
+                    serde_json::Value::Bool(b) => b,
+                    _ => return Err(format!("operand1 is not a boolean: {:?}", value).into()),
+                }
+            },
             None => return Err("operand1 is None".into()),
         };
 
         let right = match &self.operand2 {
-            Some(b) => b.value().await?,
+            Some(b) => {
+                let value = b.value().await?;
+                match value {
+                    serde_json::Value::Bool(b) => b,
+                    _ => return Err(format!("operand2 is not a boolean: {:?}", value).into()),
+                }
+            },
             None => return Err("operand2 is None".into()),
         };
 
-        Ok((left == right).into())
+        Ok((left && right).into())
     }
 }
 
@@ -334,9 +346,9 @@ impl Block for Not {
             None => return Err("operand is None".into()),
         };
 
-        let operand = match operand_value.as_bool() {
-            Some(b) => b,
-            None => return Err(format!("operand is not boolean: {}", operand_value).into()),
+        let operand = match operand_value {
+            serde_json::Value::Bool(b) => b,
+            _ => return Err(format!("operand is not a boolean: {}", operand_value).into()),
         };
 
         Ok((!operand).into())
