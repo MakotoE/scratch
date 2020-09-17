@@ -34,6 +34,20 @@ impl Equals {
             operand2: None,
         }
     }
+
+    fn equal(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+        match a.as_f64() {
+            Some(a_float) => {
+                match b.as_f64() {
+                    Some(b_float) => return a_float == b_float,
+                    None => {}
+                }
+            }
+            None => {}
+        }
+
+        a == b
+    }
 }
 
 #[async_trait(?Send)]
@@ -63,7 +77,8 @@ impl Block for Equals {
             Some(b) => b.value().await?,
             None => return Err("operand2 is None".into()),
         };
-        Ok((a == b).into())
+
+        Ok(Equals::equal(&a, &b).into())
     }
 }
 
@@ -452,5 +467,50 @@ impl Block for GreaterThan {
         };
 
         Ok((left > right).into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod equals {
+        use super::*;
+
+        #[test]
+        fn test_equal() {
+            struct Test {
+                a: serde_json::Value,
+                b: serde_json::Value,
+                expected: bool,
+            }
+
+            let tests = vec![
+                Test {
+                    a: serde_json::Value::Null,
+                    b: serde_json::Value::Null,
+                    expected: true,
+                },
+                Test {
+                    a: serde_json::Value::Null,
+                    b: false.into(),
+                    expected: false,
+                },
+                Test {
+                    a: 0i64.into(),
+                    b: 0.0f64.into(),
+                    expected: true,
+                },
+                Test {
+                    a: 1.into(),
+                    b: 0.into(),
+                    expected: false,
+                },
+            ];
+
+            for (i, test) in tests.iter().enumerate() {
+                assert_eq!(Equals::equal(&test.a, &test.b), test.expected, "{}", i);
+            }
+        }
     }
 }
