@@ -80,7 +80,7 @@ impl Block for If {
             return Next::loop_(self.substack.clone());
         }
 
-        return Next::continue_(self.next.clone());
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -156,9 +156,8 @@ impl Block for Forever {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "SUBSTACK" {
+            self.substack = Some(Rc::new(RefCell::new(block)))
         }
     }
 

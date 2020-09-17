@@ -7,7 +7,7 @@ use runtime::{Coordinate, SpriteRuntime};
 #[derive(Debug, Default)]
 pub struct Sprite {
     controllers: Vec<Rc<DebugController>>,
-    closure: Rc<RefCell<Option<Closure<dyn Fn()>>>>,
+    closure: ClosureRef,
     request_animation_frame_id: i32,
 }
 
@@ -41,7 +41,7 @@ impl Sprite {
             });
         }
 
-        let cb_ref: Rc<RefCell<Option<Closure<dyn Fn()>>>> = Rc::new(RefCell::new(None));
+        let cb_ref: ClosureRef = Rc::new(RefCell::new(None));
         let cb_ref_clone = cb_ref.clone();
         *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             let runtime_arc = runtime_ref.clone();
@@ -96,6 +96,8 @@ impl Drop for Sprite {
             .unwrap();
     }
 }
+
+type ClosureRef = Rc<RefCell<Option<Closure<dyn Fn()>>>>;
 
 fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
     let mut hats: Vec<&str> = Vec::new();

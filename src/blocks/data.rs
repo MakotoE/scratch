@@ -53,7 +53,7 @@ impl Block for SetVariable {
 
     fn set_field(&mut self, key: &str, value_id: String) {
         if key == "VARIABLE" {
-            self.variable_id = Some(value_id.to_string());
+            self.variable_id = Some(value_id);
         }
     }
 
@@ -116,7 +116,7 @@ impl Block for ChangeVariable {
 
     fn set_field(&mut self, key: &str, value_id: String) {
         if key == "VARIABLE" {
-            self.variable_id = Some(value_id.to_string());
+            self.variable_id = Some(value_id);
         }
     }
 

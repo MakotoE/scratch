@@ -36,14 +36,11 @@ impl Equals {
     }
 
     fn equal(a: &serde_json::Value, b: &serde_json::Value) -> bool {
-        match a.as_f64() {
-            Some(a_float) => {
-                match b.as_f64() {
-                    Some(b_float) => return a_float == b_float,
-                    None => {}
-                }
+        if let Some(a_float) = a.as_f64() {
+            if let Some(b_float) = b.as_f64() {
+                #[allow(clippy::float_cmp)]
+                return a_float == b_float;
             }
-            None => {}
         }
 
         a == b
@@ -349,9 +346,8 @@ impl Block for Not {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "OPERAND" => self.operand = Some(block),
-            _ => {}
+        if key == "OPERAND" {
+            self.operand = Some(block);
         }
     }
 

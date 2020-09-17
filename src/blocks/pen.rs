@@ -47,9 +47,8 @@ impl Block for PenDown {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 
@@ -89,9 +88,8 @@ impl Block for PenUp {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 
@@ -231,9 +229,8 @@ impl Block for Clear {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 
@@ -310,7 +307,7 @@ impl Block for SetPenShadeToNumber {
         let mut runtime = self.runtime.write().await;
         let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
-        runtime.pen().set_color(&new_color.into());
+        runtime.pen().set_color(&new_color);
         Next::continue_(self.next.clone())
     }
 }
