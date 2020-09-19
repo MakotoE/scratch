@@ -301,7 +301,7 @@ impl Block for And {
                     serde_json::Value::Bool(b) => b,
                     _ => return Err(format!("operand1 is not a boolean: {:?}", value).into()),
                 }
-            },
+            }
             None => return Err("operand1 is None".into()),
         };
 
@@ -312,7 +312,7 @@ impl Block for And {
                     serde_json::Value::Bool(b) => b,
                     _ => return Err(format!("operand2 is not a boolean: {:?}", value).into()),
                 }
-            },
+            }
             None => return Err("operand2 is None".into()),
         };
 
