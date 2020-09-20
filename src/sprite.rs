@@ -8,7 +8,7 @@ use runtime::{Coordinate, SpriteRuntime};
 pub struct Sprite {
     controllers: Vec<Rc<DebugController>>,
     closure: ClosureRef,
-    request_animation_frame_id: i32,
+    request_animation_frame_id: Rc<RefCell<i32>>,
 }
 
 impl Sprite {
@@ -43,6 +43,8 @@ impl Sprite {
 
         let cb_ref: ClosureRef = Rc::new(RefCell::new(None));
         let cb_ref_clone = cb_ref.clone();
+        let request_animation_frame_id = Rc::new(RefCell::new(0));
+        let request_animation_frame_id_clone = request_animation_frame_id.clone();
         *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             let runtime_arc = runtime_ref.clone();
             wasm_bindgen_futures::spawn_local(async move {
@@ -51,14 +53,14 @@ impl Sprite {
 
             let cb = cb_ref_clone.borrow();
             let f = cb.as_ref().unwrap();
-            web_sys::window()
+            *request_animation_frame_id_clone.borrow_mut() = web_sys::window()
                 .unwrap()
                 .request_animation_frame(f.as_ref().unchecked_ref())
                 .unwrap();
         }) as Box<dyn Fn()>));
         let cb = cb_ref.borrow();
         let f = cb.as_ref().unwrap();
-        let request_animation_frame_id = web_sys::window()
+        *request_animation_frame_id.borrow_mut() = web_sys::window()
             .unwrap()
             .request_animation_frame(f.as_ref().unchecked_ref())?;
 
@@ -92,7 +94,7 @@ impl Drop for Sprite {
     fn drop(&mut self) {
         web_sys::window()
             .unwrap()
-            .cancel_animation_frame(self.request_animation_frame_id)
+            .cancel_animation_frame(*self.request_animation_frame_id.borrow())
             .unwrap();
     }
 }

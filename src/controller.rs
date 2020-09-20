@@ -81,6 +81,7 @@ impl ControllerSemaphore {
         if *self.blocking.read().await {
             self.semaphore.acquire().await.forget();
         } else if *i % 0x1000 == 0 {
+            // Yield to render loop
             TimeoutFuture::new(0).await;
         }
 
