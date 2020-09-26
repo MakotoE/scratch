@@ -15,7 +15,7 @@ impl Sprite {
     pub fn new(
         mut runtime: SpriteRuntime,
         target: &savefile::Target,
-        start_state: page::VMState,
+        start_state: vm::VMState,
     ) -> Result<Self> {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
@@ -31,8 +31,8 @@ impl Sprite {
             let thread = Thread::new(block, runtime_ref.clone(), controller.clone());
             wasm_bindgen_futures::spawn_local(async move {
                 match start_state {
-                    page::VMState::Paused => controller.pause().await,
-                    page::VMState::Running => controller.continue_(controller::Speed::Normal).await,
+                    vm::VMState::Paused => controller.pause().await,
+                    vm::VMState::Running => controller.continue_(controller::Speed::Normal).await,
                 }
                 match thread.start().await {
                     Ok(_) => {}

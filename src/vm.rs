@@ -5,7 +5,7 @@ use sprite::Sprite;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
 
-pub struct Page {
+pub struct VM {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     task: Option<ReaderTask>,
@@ -30,7 +30,7 @@ pub enum VMState {
     Paused,
 }
 
-impl Page {
+impl VM {
     async fn runtime(
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
@@ -58,7 +58,7 @@ impl Page {
     }
 }
 
-impl Component for Page {
+impl Component for VM {
     type Message = Msg;
     type Properties = ();
 
@@ -95,7 +95,7 @@ impl Component for Page {
                 let start_state = self.vm_state;
                 let set_sprite = self.link.callback(Msg::SetSprite);
                 wasm_bindgen_futures::spawn_local(async move {
-                    match Page::runtime(ctx, &scratch_file).await {
+                    match VM::runtime(ctx, &scratch_file).await {
                         Ok(runtime) => {
                             match Sprite::new(
                                 runtime,

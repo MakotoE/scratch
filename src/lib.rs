@@ -3,13 +3,14 @@
 #![feature(str_split_once)]
 #![recursion_limit = "512"]
 
+mod app;
 mod blocks;
 mod controller;
-mod page;
 mod pen;
 mod runtime;
 mod savefile;
 mod sprite;
+mod vm;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -23,7 +24,7 @@ use wasm_bindgen::JsCast;
 pub fn start() -> Result<()> {
     console_error_panic_hook::set_once();
     wasm_logger::init(wasm_logger::Config::default());
-    yew::App::<page::Page>::new().mount_to_body();
+    yew::App::<app::App>::new().mount_to_body();
     Ok(())
 }
 
