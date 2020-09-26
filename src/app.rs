@@ -1,10 +1,13 @@
 use super::*;
+use fileviewer::FileViewer;
 use vm::VM;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
 #[derive(Switch, Debug, Clone)]
 pub enum Route {
+    #[to = "/fileviewer"]
+    FileViewer,
     #[to = "/"]
     Index,
 }
@@ -30,6 +33,7 @@ impl Component for App {
     fn view(&self) -> Html {
         let render = Router::render(|switch: Route| match switch {
             Route::Index => html! {<VM />},
+            Route::FileViewer => html! {<FileViewer />},
         });
         let redirect = Router::redirect(|route: yew_router::route::Route| {
             log::warn!("page not found: {}", route);

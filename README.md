@@ -7,6 +7,6 @@
 # Dev build
 ```none
 wasm-pack build --dev --target web
-python3 -m http.server
+simple-http-server --index --try-file index.html # cargo install simple-http-server
 # Go to http://localhost:8000/
 ```

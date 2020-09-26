@@ -6,6 +6,7 @@
 mod app;
 mod blocks;
 mod controller;
+mod fileviewer;
 mod pen;
 mod runtime;
 mod savefile;
