@@ -68,15 +68,6 @@ pub enum Image {
     PNG(Vec<u8>),
 }
 
-impl std::convert::Into<js_sys::Uint8Array> for &Image {
-    fn into(self) -> js_sys::Uint8Array {
-        match self {
-            Image::SVG(b) => b.as_slice().into(),
-            Image::PNG(b) => b.as_slice().into(),
-        }
-    }
-}
-
 impl ScratchFile {
     pub fn parse<R>(file: R) -> Result<ScratchFile>
     where

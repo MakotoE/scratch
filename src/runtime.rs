@@ -1,6 +1,7 @@
 use super::*;
 use palette::IntoColor;
 use pen::Pen;
+use savefile::Image;
 use sprite::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
@@ -171,19 +172,18 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    pub async fn load_costume(
-        &mut self,
-        file: &savefile::Image,
-        rotation_center: Coordinate,
-    ) -> Result<()> {
+    pub async fn load_costume(&mut self, file: &Image, rotation_center: Coordinate) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
-        let arr: js_sys::Uint8Array = file.into();
+        let arr: js_sys::Uint8Array = match file {
+            Image::SVG(b) => b.as_slice().into(),
+            Image::PNG(b) => b.as_slice().into(),
+        };
         parts.set(0, arr.unchecked_into());
 
         let mut properties = BlobPropertyBag::new();
         let image_type = match file {
-            savefile::Image::SVG(_) => "image/svg+xml",
-            savefile::Image::PNG(_) => "image/png",
+            Image::SVG(_) => "image/svg+xml",
+            Image::PNG(_) => "image/png",
         };
         properties.type_(image_type);
 
