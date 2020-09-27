@@ -1,25 +1,24 @@
 use super::*;
+use fileinput::FileInput;
 use runtime::SpriteRuntime;
 use savefile::ScratchFile;
 use sprite::Sprite;
 use yew::prelude::*;
-use yew::services::reader::{FileData, ReaderService, ReaderTask};
 
 pub struct VM {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
-    task: Option<ReaderTask>,
     vm_state: VMState,
     file: Option<ScratchFile>,
     sprite: Option<Arc<RwLock<Sprite>>>,
 }
 
 pub enum Msg {
+    #[allow(dead_code)]
     Noop,
-    ImportFile(web_sys::File),
-    Load(FileData),
-    Run,
+    SetFile(ScratchFile),
     SetSprite(Sprite),
+    Run,
     ContinuePause,
     Step,
 }
@@ -62,28 +61,21 @@ impl Component for VM {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(_: (), link: ComponentLink<Self>) -> Self {
         Self {
             link,
             canvas_ref: NodeRef::default(),
-            task: None,
             vm_state: VMState::Running,
             file: None,
             sprite: None,
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> bool {
+    fn update(&mut self, msg: Msg) -> bool {
         match msg {
             Msg::Noop => return false,
-            Msg::ImportFile(file) => {
-                let mut reader = ReaderService::new();
-                let cb = self.link.callback(Msg::Load);
-                self.task = Some(reader.read_file(file, cb).unwrap());
-            }
-            Msg::Load(file_data) => {
-                let reader = std::io::Cursor::new(file_data.content);
-                self.file = Some(ScratchFile::parse(reader).unwrap());
+            Msg::SetFile(file) => {
+                self.file = Some(file);
                 self.link.send_message(Msg::Run);
             }
             Msg::Run => {
@@ -146,20 +138,11 @@ impl Component for VM {
         true
     }
 
-    fn change(&mut self, _props: Self::Properties) -> bool {
-        false
+    fn change(&mut self, _: ()) -> bool {
+        unreachable!()
     }
 
     fn view(&self) -> Html {
-        let import_cb: fn(yew::events::ChangeData) -> Msg = |event| {
-            if let ChangeData::Files(files) = event {
-                if let Some(file) = files.get(0) {
-                    return Msg::ImportFile(file);
-                }
-            }
-            Msg::Noop
-        };
-
         html! {
             <div>
                 <canvas
@@ -168,7 +151,7 @@ impl Component for VM {
                     height="720"
                     style="height: 360px; width: 480px; border: 1px solid black;"
                 /><br />
-                <input type="file" accept=".sb3" onchange={self.link.callback(import_cb)} /><br />
+                <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                 <br />
                 <button onclick={self.link.callback(|_| Msg::ContinuePause)} style="width: 120px;">
                     {
