@@ -38,12 +38,11 @@ impl PenDown {
 
 #[async_trait(?Send)]
 impl Block for PenDown {
-    fn block_name(&self) -> &'static str {
-        "PenDown"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "PenDown",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -79,12 +78,11 @@ impl PenUp {
 
 #[async_trait(?Send)]
 impl Block for PenUp {
-    fn block_name(&self) -> &'static str {
-        "PenUp"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "PenUp",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -120,12 +118,11 @@ impl SetPenColorToColor {
 
 #[async_trait(?Send)]
 impl Block for SetPenColorToColor {
-    fn block_name(&self) -> &'static str {
-        "SetPenColorToColor"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetPenColorToColor",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -174,12 +171,11 @@ impl SetPenSizeTo {
 
 #[async_trait(?Send)]
 impl Block for SetPenSizeTo {
-    fn block_name(&self) -> &'static str {
-        "SetPenSizeTo"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetPenSizeTo",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -220,12 +216,11 @@ impl Clear {
 
 #[async_trait(?Send)]
 impl Block for Clear {
-    fn block_name(&self) -> &'static str {
-        "Clear"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Clear",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -283,12 +278,11 @@ impl SetPenShadeToNumber {
 
 #[async_trait(?Send)]
 impl Block for SetPenShadeToNumber {
-    fn block_name(&self) -> &'static str {
-        "SetPenShadeToNumber"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetPenShadeToNumber",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -337,12 +331,11 @@ impl SetPenHueToNumber {
 
 #[async_trait(?Send)]
 impl Block for SetPenHueToNumber {
-    fn block_name(&self) -> &'static str {
-        "SetPenHueToNumber"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetPenHueToNumber",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

@@ -40,12 +40,11 @@ impl If {
 
 #[async_trait(?Send)]
 impl Block for If {
-    fn block_name(&self) -> &'static str {
-        "If"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "If",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -103,12 +102,11 @@ impl Wait {
 
 #[async_trait(?Send)]
 impl Block for Wait {
-    fn block_name(&self) -> &'static str {
-        "Wait"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Wait",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -147,12 +145,11 @@ impl Forever {
 
 #[async_trait(?Send)]
 impl Block for Forever {
-    fn block_name(&self) -> &'static str {
-        "Forever"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Forever",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -192,12 +189,11 @@ impl Repeat {
 
 #[async_trait(?Send)]
 impl Block for Repeat {
-    fn block_name(&self) -> &'static str {
-        "Repeat"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Repeat",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -247,12 +243,11 @@ impl RepeatUntil {
 
 #[async_trait(?Send)]
 impl Block for RepeatUntil {
-    fn block_name(&self) -> &'static str {
-        "RepeatUntil"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "RepeatUntil",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -310,12 +305,11 @@ impl IfElse {
 
 #[async_trait(?Send)]
 impl Block for IfElse {
-    fn block_name(&self) -> &'static str {
-        "IfElse"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "IfElse",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

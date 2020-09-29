@@ -30,12 +30,11 @@ impl WhenFlagClicked {
 
 #[async_trait(?Send)]
 impl Block for WhenFlagClicked {
-    fn block_name(&self) -> &'static str {
-        "WhenFlagClicked"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "WhenFlagClicked",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

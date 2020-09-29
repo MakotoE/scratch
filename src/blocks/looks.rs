@@ -42,12 +42,11 @@ impl Say {
 
 #[async_trait(?Send)]
 impl Block for Say {
-    fn block_name(&self) -> &'static str {
-        "Say"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Say",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -91,12 +90,11 @@ impl SayForSecs {
 
 #[async_trait(?Send)]
 impl Block for SayForSecs {
-    fn block_name(&self) -> &'static str {
-        "SayForSecs"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SayForSecs",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

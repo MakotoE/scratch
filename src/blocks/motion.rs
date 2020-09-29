@@ -39,12 +39,11 @@ impl MoveSteps {
 
 #[async_trait(?Send)]
 impl Block for MoveSteps {
-    fn block_name(&self) -> &'static str {
-        "MoveSteps"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "MoveSteps",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -92,12 +91,11 @@ impl GoToXY {
 
 #[async_trait(?Send)]
 impl Block for GoToXY {
-    fn block_name(&self) -> &'static str {
-        "GoToXY"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "GoToXY",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -148,12 +146,11 @@ impl ChangeXBy {
 
 #[async_trait(?Send)]
 impl Block for ChangeXBy {
-    fn block_name(&self) -> &'static str {
-        "ChangeXBy"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "ChangeXBy",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -198,12 +195,11 @@ impl ChangeYBy {
 
 #[async_trait(?Send)]
 impl Block for ChangeYBy {
-    fn block_name(&self) -> &'static str {
-        "ChangeYBy"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "ChangeYBy",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -248,12 +244,11 @@ impl SetX {
 
 #[async_trait(?Send)]
 impl Block for SetX {
-    fn block_name(&self) -> &'static str {
-        "SetX"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetX",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -301,12 +296,11 @@ impl SetY {
 
 #[async_trait(?Send)]
 impl Block for SetY {
-    fn block_name(&self) -> &'static str {
-        "SetY"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetY",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -348,12 +342,11 @@ impl XPosition {
 
 #[async_trait(?Send)]
 impl Block for XPosition {
-    fn block_name(&self) -> &'static str {
-        "XPosition"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "XPosition",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -380,12 +373,11 @@ impl YPosition {
 
 #[async_trait(?Send)]
 impl Block for YPosition {
-    fn block_name(&self) -> &'static str {
-        "YPosition"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "YPosition",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}

@@ -134,10 +134,11 @@ impl Thread {
 
     pub async fn start(&self) -> Result<()> {
         let debug_info = if self.controller.display_debug().await {
+            let block = self.hat.borrow();
             DebugInfo {
                 show: true,
-                block_name: self.hat.borrow().block_name().to_string(),
-                block_id: self.hat.borrow().id().to_string(),
+                block_name: block.block_info().name.to_string(),
+                block_id: block.block_info().id.to_string(),
             }
         } else {
             DebugInfo::default()
@@ -149,10 +150,11 @@ impl Thread {
 
         loop {
             let debug_info = if self.controller.display_debug().await {
+                let block = self.hat.borrow();
                 DebugInfo {
                     show: true,
-                    block_name: curr_block.borrow().block_name().to_string(),
-                    block_id: curr_block.borrow().id().to_string(),
+                    block_name: block.block_info().name.to_string(),
+                    block_id: block.block_info().id.to_string(),
                 }
             } else {
                 DebugInfo::default()
@@ -168,8 +170,8 @@ impl Thread {
                 Next::Err(e) => {
                     let block = curr_block.borrow();
                     return Err(ErrorKind::Block(
-                        block.block_name(),
-                        block.id().to_string(),
+                        block.block_info().name,
+                        block.block_info().id.to_string(),
                         Box::new(e),
                     )
                     .into());
@@ -201,40 +203,16 @@ pub struct DummyBlock {
 
 #[async_trait(?Send)]
 impl Block for DummyBlock {
-    fn block_name(&self) -> &'static str {
-        "DummyBlock"
-    }
-
-    fn id(&self) -> &str {
-        ""
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "DummyBlock",
+            id: "",
+        }
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn execute(&mut self) -> Next {
         Next::Continue(self.next.clone())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    mod thread_iterator {
-        use super::*;
-
-        #[derive(Debug)]
-        struct LastBlock {}
-
-        impl Block for LastBlock {
-            fn block_name(&self) -> &'static str {
-                "LastBlock"
-            }
-
-            fn id(&self) -> &str {
-                ""
-            }
-
-            fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-        }
     }
 }

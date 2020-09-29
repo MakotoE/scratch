@@ -14,12 +14,11 @@ impl Variable {
 
 #[async_trait(?Send)]
 impl Block for Variable {
-    fn block_name(&self) -> &'static str {
-        "Variable"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Variable",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -39,8 +38,11 @@ pub struct Value {
 
 #[async_trait(?Send)]
 impl Block for Value {
-    fn block_name(&self) -> &'static str {
-        "Value"
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Value",
+            id: "",
+        }
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}

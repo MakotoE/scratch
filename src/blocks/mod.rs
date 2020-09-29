@@ -52,11 +52,7 @@ fn add_error_context(id: &str, category: &str, err: Error) -> Error {
 
 #[async_trait(?Send)]
 pub trait Block: std::fmt::Debug {
-    fn block_name(&self) -> &'static str;
-
-    fn id(&self) -> &str {
-        unreachable!()
-    }
+    fn block_info(&self) -> BlockInfo;
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
 
@@ -114,6 +110,12 @@ impl Next {
             None => Next::None,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct BlockInfo<'a> {
+    pub name: &'static str,
+    pub id: &'a str,
 }
 
 pub fn new_block(

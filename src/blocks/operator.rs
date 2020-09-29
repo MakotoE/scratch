@@ -49,12 +49,11 @@ impl Equals {
 
 #[async_trait(?Send)]
 impl Block for Equals {
-    fn block_name(&self) -> &'static str {
-        "Equals"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Equals",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -113,12 +112,11 @@ impl Add {
 
 #[async_trait(?Send)]
 impl Block for Add {
-    fn block_name(&self) -> &'static str {
-        "Add"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Add",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -154,12 +152,11 @@ impl Subtract {
 
 #[async_trait(?Send)]
 impl Block for Subtract {
-    fn block_name(&self) -> &'static str {
-        "Add"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Subtract",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -195,12 +192,11 @@ impl Multiply {
 
 #[async_trait(?Send)]
 impl Block for Multiply {
-    fn block_name(&self) -> &'static str {
-        "Multiply"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Multiply",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -236,12 +232,11 @@ impl Divide {
 
 #[async_trait(?Send)]
 impl Block for Divide {
-    fn block_name(&self) -> &'static str {
-        "Divide"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Divide",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -277,12 +272,11 @@ impl And {
 
 #[async_trait(?Send)]
 impl Block for And {
-    fn block_name(&self) -> &'static str {
-        "And"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "And",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -337,12 +331,11 @@ impl Not {
 
 #[async_trait(?Send)]
 impl Block for Not {
-    fn block_name(&self) -> &'static str {
-        "Not"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Not",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -385,12 +378,11 @@ impl LessThan {
 
 #[async_trait(?Send)]
 impl Block for LessThan {
-    fn block_name(&self) -> &'static str {
-        "LessThan"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "LessThan",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -435,12 +427,11 @@ impl GreaterThan {
 
 #[async_trait(?Send)]
 impl Block for GreaterThan {
-    fn block_name(&self) -> &'static str {
-        "LessThan"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "GreaterThan",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

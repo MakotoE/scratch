@@ -35,12 +35,11 @@ impl SetVariable {
 
 #[async_trait(?Send)]
 impl Block for SetVariable {
-    fn block_name(&self) -> &'static str {
-        "SetVariable"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetVariable",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -98,12 +97,11 @@ impl ChangeVariable {
 
 #[async_trait(?Send)]
 impl Block for ChangeVariable {
-    fn block_name(&self) -> &'static str {
-        "ChangeVariable"
-    }
-
-    fn id(&self) -> &str {
-        &self.id
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "ChangeVariable",
+            id: &self.id,
+        }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
