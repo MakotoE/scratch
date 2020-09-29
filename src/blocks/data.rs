@@ -38,7 +38,16 @@ impl Block for SetVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetVariable",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: vec![("variable_id", self.variable_id.clone().unwrap())],
+            inputs: Inputs::inputs(vec![("value", &self.value)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -100,7 +109,16 @@ impl Block for ChangeVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeVariable",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: vec![("variable_id", self.variable_id.clone().unwrap())],
+            inputs: Inputs::inputs(vec![("value", &self.value)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 

@@ -45,7 +45,16 @@ impl Block for Say {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Say",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("message", &self.message)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -93,7 +102,16 @@ impl Block for SayForSecs {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SayForSecs",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("message", &self.message), ("secs", &self.secs)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 

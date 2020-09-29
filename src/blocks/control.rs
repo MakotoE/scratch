@@ -43,7 +43,16 @@ impl Block for If {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "If",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("condition", &self.condition)]),
+            stacks: Inputs::stacks(vec![("next", &self.next), ("substack", &self.substack)]),
         }
     }
 
@@ -105,7 +114,16 @@ impl Block for Wait {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Wait",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("duration", &self.duration)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -148,7 +166,16 @@ impl Block for Forever {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Forever",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Inputs::stacks(vec![("substack", &self.substack)]),
         }
     }
 
@@ -192,7 +219,16 @@ impl Block for Repeat {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Repeat",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("times", &self.times)]),
+            stacks: Inputs::stacks(vec![("next", &self.next), ("substack", &self.substack)]),
         }
     }
 
@@ -246,7 +282,16 @@ impl Block for RepeatUntil {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "RepeatUntil",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("condition", &self.condition)]),
+            stacks: Inputs::stacks(vec![("next", &self.next), ("substack", &self.substack)]),
         }
     }
 
@@ -308,7 +353,20 @@ impl Block for IfElse {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "IfElse",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("condition", &self.condition)]),
+            stacks: Inputs::stacks(vec![
+                ("next", &self.next),
+                ("substack_true", &self.substack_true),
+                ("substack_false", &self.substack_false),
+            ]),
         }
     }
 

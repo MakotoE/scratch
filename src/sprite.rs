@@ -206,7 +206,16 @@ impl Block for DummyBlock {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "DummyBlock",
-            id: "",
+            id: String::new(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: vec![("next", self.next.borrow().inputs())],
         }
     }
 

@@ -17,7 +17,16 @@ impl Block for Variable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Variable",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Vec::new(),
         }
     }
 
@@ -41,7 +50,16 @@ impl Block for Value {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Value",
-            id: "",
+            id: String::new(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Vec::new(),
         }
     }
 

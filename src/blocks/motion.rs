@@ -42,7 +42,16 @@ impl Block for MoveSteps {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "MoveSteps",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("steps", &self.steps)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -94,7 +103,16 @@ impl Block for GoToXY {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "GoToXY",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("x", &self.x), ("y", &self.y)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -149,7 +167,16 @@ impl Block for ChangeXBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeXBy",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("dx", &self.dx)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -198,7 +225,16 @@ impl Block for ChangeYBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeYBy",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("dy", &self.dy)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -247,7 +283,16 @@ impl Block for SetX {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetX",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("x", &self.x)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -299,7 +344,16 @@ impl Block for SetY {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetY",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("y", &self.y)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -345,7 +399,16 @@ impl Block for XPosition {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "XPosition",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Vec::new(),
         }
     }
 
@@ -376,7 +439,16 @@ impl Block for YPosition {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "YPosition",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Vec::new(),
         }
     }
 

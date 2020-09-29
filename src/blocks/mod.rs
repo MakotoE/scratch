@@ -54,6 +54,8 @@ fn add_error_context(id: &str, category: &str, err: Error) -> Error {
 pub trait Block: std::fmt::Debug {
     fn block_info(&self) -> BlockInfo;
 
+    fn inputs(&self) -> Inputs;
+
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
 
     #[allow(unused_variables)]
@@ -113,9 +115,43 @@ impl Next {
 }
 
 #[derive(Debug)]
-pub struct BlockInfo<'a> {
+pub struct BlockInfo {
     pub name: &'static str,
-    pub id: &'a str,
+    pub id: String,
+}
+
+#[derive(Debug)]
+pub struct Inputs {
+    pub info: BlockInfo,
+    pub fields: Vec<(&'static str, String)>,
+    pub inputs: Vec<(&'static str, Inputs)>,
+    pub stacks: Vec<(&'static str, Inputs)>,
+}
+
+impl Inputs {
+    fn inputs<'a>(
+        inputs: Vec<(&'static str, &'a Option<Box<dyn Block>>)>,
+    ) -> Vec<(&'static str, Inputs)> {
+        let mut result: Vec<(&'static str, Inputs)> = Vec::new();
+        for (id, b) in inputs {
+            if let Some(block) = b {
+                result.push((id, block.inputs()));
+            }
+        }
+        result
+    }
+
+    fn stacks<'a>(
+        stacks: Vec<(&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>)>,
+    ) -> Vec<(&'static str, Inputs)> {
+        let mut result: Vec<(&'static str, Inputs)> = Vec::new();
+        for (id, b) in stacks {
+            if let Some(block) = b {
+                result.push((id, block.borrow().inputs()));
+            }
+        }
+        result
+    }
 }
 
 pub fn new_block(

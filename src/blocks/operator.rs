@@ -52,7 +52,19 @@ impl Block for Equals {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Equals",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![
+                ("operand1", &self.operand1),
+                ("operand2", &self.operand2),
+            ]),
+            stacks: Vec::new(),
         }
     }
 
@@ -115,7 +127,16 @@ impl Block for Add {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Add",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
+            stacks: Vec::new(),
         }
     }
 
@@ -155,7 +176,16 @@ impl Block for Subtract {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Subtract",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
+            stacks: Vec::new(),
         }
     }
 
@@ -195,7 +225,16 @@ impl Block for Multiply {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Multiply",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
+            stacks: Vec::new(),
         }
     }
 
@@ -235,7 +274,16 @@ impl Block for Divide {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Divide",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
+            stacks: Vec::new(),
         }
     }
 
@@ -275,7 +323,19 @@ impl Block for And {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "And",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![
+                ("operand1", &self.operand1),
+                ("operand2", &self.operand2),
+            ]),
+            stacks: Vec::new(),
         }
     }
 
@@ -334,7 +394,16 @@ impl Block for Not {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Not",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("operand", &self.operand)]),
+            stacks: Vec::new(),
         }
     }
 
@@ -381,7 +450,19 @@ impl Block for LessThan {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "LessThan",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![
+                ("operand1", &self.operand1),
+                ("operand2", &self.operand2),
+            ]),
+            stacks: Vec::new(),
         }
     }
 
@@ -430,7 +511,19 @@ impl Block for GreaterThan {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "GreaterThan",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![
+                ("operand1", &self.operand1),
+                ("operand2", &self.operand2),
+            ]),
+            stacks: Vec::new(),
         }
     }
 

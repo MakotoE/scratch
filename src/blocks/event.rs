@@ -33,7 +33,16 @@ impl Block for WhenFlagClicked {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "WhenFlagClicked",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 

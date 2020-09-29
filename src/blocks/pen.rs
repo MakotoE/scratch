@@ -41,7 +41,16 @@ impl Block for PenDown {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PenDown",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -81,7 +90,16 @@ impl Block for PenUp {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PenUp",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -121,7 +139,16 @@ impl Block for SetPenColorToColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenColorToColor",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("color", &self.color)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -174,7 +201,16 @@ impl Block for SetPenSizeTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenSizeTo",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("size", &self.size)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -219,7 +255,16 @@ impl Block for Clear {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Clear",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Vec::new(),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -281,7 +326,16 @@ impl Block for SetPenShadeToNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenShadeToNumber",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("shade", &self.shade)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
@@ -334,7 +388,16 @@ impl Block for SetPenHueToNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenHueToNumber",
-            id: &self.id,
+            id: self.id.to_string(),
+        }
+    }
+
+    fn inputs(&self) -> Inputs {
+        Inputs {
+            info: self.block_info(),
+            fields: Vec::new(),
+            inputs: Inputs::inputs(vec![("hue", &self.hue)]),
+            stacks: Inputs::stacks(vec![("next", &self.next)]),
         }
     }
 
