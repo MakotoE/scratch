@@ -101,7 +101,7 @@ impl Drop for Sprite {
 
 type ClosureRef = Rc<RefCell<Option<Closure<dyn Fn()>>>>;
 
-fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
+pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
     let mut hats: Vec<&str> = Vec::new();
     for (id, block_info) in block_infos {
         if block_info.top_level {
