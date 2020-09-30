@@ -1,4 +1,5 @@
 use super::*;
+use blocks::Inputs;
 use fileinput::FileInput;
 use savefile::ScratchFile;
 use yew::prelude::*;
@@ -6,6 +7,7 @@ use yew::prelude::*;
 pub struct FileViewer {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
+    inputs: Inputs,
 }
 
 pub enum Msg {
@@ -20,6 +22,7 @@ impl Component for FileViewer {
         Self {
             link,
             canvas_ref: NodeRef::default(),
+            inputs: Inputs::default(),
         }
     }
 
@@ -37,7 +40,7 @@ impl Component for FileViewer {
                 let block =
                     blocks::new_block(hats[0], runtime_ref, &file.project.targets[1].blocks)
                         .unwrap();
-                log::info!("{:?}", block.inputs());
+                self.inputs = block.inputs();
             }
         }
         true
@@ -49,14 +52,82 @@ impl Component for FileViewer {
 
     fn view(&self) -> Html {
         html! {
-            <p>
+            <>
                 <FileInput onchange={self.link.callback(Msg::LoadFile)} />
                 <canvas // Dummy canvas
                     ref={self.canvas_ref.clone()}
                     width="0"
                     height="0"
                 />
-            </p>
+                <span style="font-family: monospace;">
+                    <Diagram inputs={self.inputs.clone()} />
+                </span>
+            </>
+        }
+    }
+}
+
+#[derive(Clone, Properties, PartialEq)]
+struct Diagram {
+    inputs: Inputs,
+}
+
+impl Component for Diagram {
+    type Message = ();
+    type Properties = Self;
+
+    fn create(props: Self, _: ComponentLink<Self>) -> Self {
+        props
+    }
+
+    fn update(&mut self, _: ()) -> bool {
+        false
+    }
+
+    fn change(&mut self, props: Self) -> bool {
+        if *self != props {
+            *self = props;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn view(&self) -> Html {
+        html! {
+            <div>
+                <p>{self.inputs.info.name.to_string() + " " + &self.inputs.info.id}</p>
+                {
+                    for self.inputs.fields.iter().map(|field| {
+                        html! {
+                            <>
+                                <p>{field.0}</p>
+                                <p>{field.1.clone()}</p>
+                            </>
+                        }
+                    })
+                }
+                {
+                    for self.inputs.inputs.iter().map(|input_row| {
+                        html! {
+                            <>
+                                <p>{input_row.0}</p>
+                                <Diagram inputs={input_row.1.clone()} />
+                            </>
+                        }
+                    })
+                }
+                {
+                    for self.inputs.stacks.iter().map(|stack_row| {
+                        html! {
+                            <>
+                                <p>{stack_row.0}</p>
+                                <Diagram inputs={stack_row.1.clone()} />
+                            </>
+                        }
+                    })
+                }
+            </div>
         }
     }
 }

@@ -14,8 +14,6 @@ pub struct VM {
 }
 
 pub enum Msg {
-    #[allow(dead_code)]
-    Noop,
     SetFile(ScratchFile),
     SetSprite(Sprite),
     Run,
@@ -73,7 +71,6 @@ impl Component for VM {
 
     fn update(&mut self, msg: Msg) -> bool {
         match msg {
-            Msg::Noop => return false,
             Msg::SetFile(file) => {
                 self.file = Some(file);
                 self.link.send_message(Msg::Run);
@@ -144,7 +141,7 @@ impl Component for VM {
 
     fn view(&self) -> Html {
         html! {
-            <div>
+            <div style="font-family: sans-serif;">
                 <canvas
                     ref={self.canvas_ref.clone()}
                     width="960"

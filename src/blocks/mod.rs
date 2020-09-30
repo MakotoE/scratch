@@ -114,13 +114,14 @@ impl Next {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Default, PartialOrd, PartialEq)]
+// TODO implement Display
 pub struct BlockInfo {
     pub name: &'static str,
     pub id: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Default, PartialOrd, PartialEq)]
 pub struct Inputs {
     pub info: BlockInfo,
     pub fields: Vec<(&'static str, String)>,
