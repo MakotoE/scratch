@@ -96,37 +96,42 @@ impl Component for Diagram {
     fn view(&self) -> Html {
         html! {
             <div>
-                <p>{self.inputs.info.name.to_string() + " " + &self.inputs.info.id}</p>
-                {
-                    for self.inputs.fields.iter().map(|field| {
-                        html! {
-                            <>
-                                <p>{field.0}</p>
-                                <p>{field.1.clone()}</p>
-                            </>
-                        }
-                    })
-                }
-                {
-                    for self.inputs.inputs.iter().map(|input_row| {
-                        html! {
-                            <>
-                                <p>{input_row.0}</p>
-                                <Diagram inputs={input_row.1.clone()} />
-                            </>
-                        }
-                    })
-                }
-                {
-                    for self.inputs.stacks.iter().map(|stack_row| {
-                        html! {
-                            <>
-                                <p>{stack_row.0}</p>
-                                <Diagram inputs={stack_row.1.clone()} />
-                            </>
-                        }
-                    })
-                }
+                <p>
+                    <strong>{self.inputs.info.name.to_string()}</strong>
+                    {String::from(" ") + &self.inputs.info.id}
+                </p>
+                <div style="margin-left: 20px;">
+                    {
+                        for self.inputs.fields.iter().map(|field| {
+                            html! {
+                                <>
+                                    <p>{field.0}</p>
+                                    <p>{field.1.clone()}</p>
+                                </>
+                            }
+                        })
+                    }
+                    {
+                        for self.inputs.inputs.iter().map(|input_row| {
+                            html! {
+                                <>
+                                    <p>{input_row.0}</p>
+                                    <Diagram inputs={input_row.1.clone()} />
+                                </>
+                            }
+                        })
+                    }
+                    {
+                        for self.inputs.stacks.iter().map(|stack_row| {
+                            html! {
+                                <>
+                                    <p>{stack_row.0}</p>
+                                    <Diagram inputs={stack_row.1.clone()} />
+                                </>
+                            }
+                        })
+                    }
+                </div>
             </div>
         }
     }
