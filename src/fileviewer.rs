@@ -67,7 +67,7 @@ impl Component for FileViewer {
                         for self.block_inputs.iter().enumerate().map(|(i, block)| {
                             html! {
                                 <>
-                                    <p><strong>{String::from("Thread ") + &i.to_string()}</strong></p>
+                                    <h1><strong>{String::from("Thread ") + &i.to_string()}</strong></h1>
                                     <Diagram block_inputs={block} />
                                 </>
                             }
@@ -98,19 +98,16 @@ impl Diagram {
         let mut list = yew::virtual_dom::VList::new();
         for block in blocks_vec {
             list.add_child(html! {
-                <>
-                    <p>{block.0}</p>
+                <div style="margin-left: 20px;">
+                    {block.0}<br />
                     <Diagram block_inputs={block.1} />
-                </>
+                </div>
             });
         }
 
         if let Some(next) = next_option {
             list.add_child(html! {
-                <>
-                    <p>{"next"}</p>
-                    <Diagram block_inputs={next} />
-                </>
+                <Diagram block_inputs={next} />
             });
         }
 
@@ -144,16 +141,19 @@ impl Component for Diagram {
     fn view(&self) -> Html {
         let mut block_inputs = self.block_inputs.borrow_mut();
         html! {
-            <div>
-                <p>
+            <>
+                <>
                     <strong>{block_inputs.info.name.to_string()}</strong>
                     {String::from(" ") + &block_inputs.info.id}
-                </p>
+                </>
                 <div style="margin-left: 20px;">
                     {
                         for block_inputs.fields.iter().map(|field| {
                             html! {
-                                <p>{field.0.to_string() + " " + &field.1}</p>
+                                <>
+                                    {field.0.to_string() + ": " + &field.1}
+                                    <br />
+                                </>
                             }
                         })
                     }
@@ -161,7 +161,7 @@ impl Component for Diagram {
                         for block_inputs.inputs.drain().map(|input_row| {
                             html! {
                                 <>
-                                    <p>{input_row.0}</p>
+                                    {input_row.0.to_string() + ": "}
                                     <Diagram block_inputs={input_row.1} />
                                 </>
                             }
@@ -171,7 +171,7 @@ impl Component for Diagram {
                 {
                     Diagram::stacks_html(&mut block_inputs.stacks)
                 }
-            </div>
+            </>
         }
     }
 }
