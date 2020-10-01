@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Compile" type="WasmPackCommandRunConfiguration" factoryName="wasm-pack">
+  <configuration default="false" name="Build" type="WasmPackCommandRunConfiguration" factoryName="wasm-pack">
     <option name="command" value="build --dev --target web" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <method v="2" />
