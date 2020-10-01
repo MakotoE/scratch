@@ -84,6 +84,36 @@ struct Diagram {
     inputs: Inputs,
 }
 
+impl Diagram {
+    fn stacks_html(mut inputs: HashMap<&'static str, Inputs>) -> Html {
+        let mut list = yew::virtual_dom::VList::new();
+        let next_option = inputs.remove("next");
+
+        let mut inputs_vec: Vec<(&'static str, Inputs)> = inputs.drain().collect();
+        inputs_vec.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
+
+        for input in inputs_vec {
+            list.add_child(html! {
+                <>
+                    <p>{input.0}</p>
+                    <Diagram inputs={input.1} />
+                </>
+            });
+        }
+
+        if let Some(next) = next_option {
+            list.add_child(html! {
+                <>
+                    <p>{"next"}</p>
+                    <Diagram inputs={next} />
+                </>
+            });
+        }
+
+        yew::virtual_dom::VNode::VList(list)
+    }
+}
+
 impl Component for Diagram {
     type Message = ();
     type Properties = Self;
@@ -134,14 +164,7 @@ impl Component for Diagram {
                     }
                 </div>
                 {
-                    for self.inputs.stacks.iter().map(|stack_row| {
-                        html! {
-                            <>
-                                <p>{stack_row.0}</p>
-                                <Diagram inputs={stack_row.1.clone()} />
-                            </>
-                        }
-                    })
+                    Diagram::stacks_html(self.inputs.stacks.clone())
                 }
             </div>
         }
