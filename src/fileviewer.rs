@@ -7,7 +7,7 @@ use yew::prelude::*;
 pub struct FileViewer {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
-    inputs: Inputs,
+    inputs: Vec<Inputs>,
 }
 
 pub enum Msg {
@@ -22,14 +22,15 @@ impl Component for FileViewer {
         Self {
             link,
             canvas_ref: NodeRef::default(),
-            inputs: Inputs::default(),
+            inputs: Vec::new(),
         }
     }
 
     fn update(&mut self, msg: Msg) -> bool {
         match msg {
             Msg::LoadFile(file) => {
-                let hats = sprite::find_hats(&file.project.targets[1].blocks);
+                let target = &file.project.targets[1];
+                let hats = sprite::find_hats(&target.blocks);
 
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx: web_sys::CanvasRenderingContext2d =
@@ -37,10 +38,12 @@ impl Component for FileViewer {
                 let runtime = runtime::SpriteRuntime::new(ctx, HashMap::new());
                 let runtime_ref: Rc<RwLock<runtime::SpriteRuntime>> = Rc::new(RwLock::new(runtime));
 
-                let block =
-                    blocks::new_block(hats[0], runtime_ref, &file.project.targets[1].blocks)
-                        .unwrap();
-                self.inputs = block.inputs();
+                self.inputs.clear();
+                for hat in hats {
+                    let block =
+                        blocks::new_block(hat, runtime_ref.clone(), &target.blocks).unwrap();
+                    self.inputs.push(block.inputs());
+                }
             }
         }
         true
@@ -60,7 +63,16 @@ impl Component for FileViewer {
                     height="0"
                 />
                 <span style="font-family: monospace;">
-                    <Diagram inputs={self.inputs.clone()} />
+                    {
+                        for self.inputs.iter().enumerate().map(|(i, inputs)| {
+                            html! {
+                                <>
+                                    <p><strong>{String::from("Thread ") + &i.to_string()}</strong></p>
+                                    <Diagram inputs={inputs} />
+                                </>
+                            }
+                        })
+                    }
                 </span>
             </>
         }
