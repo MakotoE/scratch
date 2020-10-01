@@ -48,9 +48,9 @@ impl Block for PenDown {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Vec::new(),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -97,9 +97,9 @@ impl Block for PenUp {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Vec::new(),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -146,9 +146,9 @@ impl Block for SetPenColorToColor {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("color", &self.color)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"color" => &self.color}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -208,9 +208,9 @@ impl Block for SetPenSizeTo {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("size", &self.size)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"size" => &self.size}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -262,9 +262,9 @@ impl Block for Clear {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Vec::new(),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -333,9 +333,9 @@ impl Block for SetPenShadeToNumber {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("shade", &self.shade)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"shade" => &self.shade}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -395,9 +395,9 @@ impl Block for SetPenHueToNumber {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("hue", &self.hue)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"hue" => &self.hue}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 

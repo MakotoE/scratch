@@ -9,6 +9,7 @@ mod value;
 
 use super::*;
 use async_trait::async_trait;
+use maplit::hashmap;
 use runtime::Coordinate;
 use runtime::SpriteRuntime;
 
@@ -114,40 +115,40 @@ impl Next {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialOrd, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct BlockInfo {
     pub name: &'static str,
     pub id: String,
 }
 
-#[derive(Debug, Clone, Default, PartialOrd, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Inputs {
     pub info: BlockInfo,
-    pub fields: Vec<(&'static str, String)>,
-    pub inputs: Vec<(&'static str, Inputs)>,
-    pub stacks: Vec<(&'static str, Inputs)>,
+    pub fields: HashMap<&'static str, String>,
+    pub inputs: HashMap<&'static str, Inputs>,
+    pub stacks: HashMap<&'static str, Inputs>,
 }
 
 impl Inputs {
     fn inputs<'a>(
-        inputs: Vec<(&'static str, &'a Option<Box<dyn Block>>)>,
-    ) -> Vec<(&'static str, Inputs)> {
-        let mut result: Vec<(&'static str, Inputs)> = Vec::new();
+        inputs: HashMap<&'static str, &'a Option<Box<dyn Block>>>,
+    ) -> HashMap<&'static str, Inputs> {
+        let mut result: HashMap<&'static str, Inputs> = HashMap::new();
         for (id, b) in inputs {
             if let Some(block) = b {
-                result.push((id, block.inputs()));
+                result.insert(id, block.inputs());
             }
         }
         result
     }
 
     fn stacks<'a>(
-        stacks: Vec<(&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>)>,
-    ) -> Vec<(&'static str, Inputs)> {
-        let mut result: Vec<(&'static str, Inputs)> = Vec::new();
+        stacks: HashMap<&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>>,
+    ) -> HashMap<&'static str, Inputs> {
+        let mut result: HashMap<&'static str, Inputs> = HashMap::new();
         for (id, b) in stacks {
             if let Some(block) = b {
-                result.push((id, block.borrow().inputs()));
+                result.insert(id, block.borrow().inputs());
             }
         }
         result

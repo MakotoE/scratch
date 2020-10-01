@@ -117,8 +117,7 @@ impl Component for Diagram {
                         for self.inputs.fields.iter().map(|field| {
                             html! {
                                 <>
-                                    <p>{field.0}</p>
-                                    <p>{field.1.clone()}</p>
+                                    <p>{field.0.to_string() + " " + &field.1}</p>
                                 </>
                             }
                         })
@@ -133,17 +132,17 @@ impl Component for Diagram {
                             }
                         })
                     }
-                    {
-                        for self.inputs.stacks.iter().map(|stack_row| {
-                            html! {
-                                <>
-                                    <p>{stack_row.0}</p>
-                                    <Diagram inputs={stack_row.1.clone()} />
-                                </>
-                            }
-                        })
-                    }
                 </div>
+                {
+                    for self.inputs.stacks.iter().map(|stack_row| {
+                        html! {
+                            <>
+                                <p>{stack_row.0}</p>
+                                <Diagram inputs={stack_row.1.clone()} />
+                            </>
+                        }
+                    })
+                }
             </div>
         }
     }

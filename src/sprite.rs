@@ -2,6 +2,7 @@ use super::*;
 use async_trait::async_trait;
 use blocks::*;
 use controller::DebugController;
+use maplit::hashmap;
 use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug, Default)]
@@ -213,9 +214,9 @@ impl Block for DummyBlock {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Vec::new(),
-            stacks: vec![("next", self.next.borrow().inputs())],
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: hashmap! {"next" => self.next.borrow().inputs()},
         }
     }
 

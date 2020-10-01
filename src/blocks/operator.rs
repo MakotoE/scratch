@@ -59,12 +59,12 @@ impl Block for Equals {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![
-                ("operand1", &self.operand1),
-                ("operand2", &self.operand2),
-            ]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {
+                "operand1" => &self.operand1,
+                "operand2" => &self.operand2,
+            }),
+            stacks: HashMap::new(),
         }
     }
 
@@ -134,9 +134,9 @@ impl Block for Add {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            stacks: HashMap::new(),
         }
     }
 
@@ -183,9 +183,9 @@ impl Block for Subtract {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            stacks: HashMap::new(),
         }
     }
 
@@ -232,9 +232,9 @@ impl Block for Multiply {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            stacks: HashMap::new(),
         }
     }
 
@@ -281,9 +281,9 @@ impl Block for Divide {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("num1", &self.num1), ("num2", &self.num2)]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            stacks: HashMap::new(),
         }
     }
 
@@ -330,12 +330,12 @@ impl Block for And {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![
-                ("operand1", &self.operand1),
-                ("operand2", &self.operand2),
-            ]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {
+                "operand1" => &self.operand1,
+                "operand2" => &self.operand2,
+            }),
+            stacks: HashMap::new(),
         }
     }
 
@@ -401,9 +401,9 @@ impl Block for Not {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("operand", &self.operand)]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"operand1" => &self.operand}),
+            stacks: HashMap::new(),
         }
     }
 
@@ -457,12 +457,12 @@ impl Block for LessThan {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![
-                ("operand1", &self.operand1),
-                ("operand2", &self.operand2),
-            ]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {
+                "operand1" => &self.operand1,
+                "operand2" => &self.operand2,
+            }),
+            stacks: HashMap::new(),
         }
     }
 
@@ -518,12 +518,12 @@ impl Block for GreaterThan {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![
-                ("operand1", &self.operand1),
-                ("operand2", &self.operand2),
-            ]),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {
+                "operand1" => &self.operand1,
+                "operand2" => &self.operand2,
+            }),
+            stacks: HashMap::new(),
         }
     }
 

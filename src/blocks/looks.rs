@@ -52,9 +52,9 @@ impl Block for Say {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("message", &self.message)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"message" => &self.message}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -109,9 +109,9 @@ impl Block for SayForSecs {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Inputs::inputs(vec![("message", &self.message), ("secs", &self.secs)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: Inputs::inputs(hashmap! {"message" => &self.message, "secs" => &self.secs}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 

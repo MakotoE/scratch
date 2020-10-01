@@ -1,4 +1,5 @@
 use super::*;
+use maplit::hashmap;
 
 pub fn get_block(
     name: &str,
@@ -45,9 +46,9 @@ impl Block for SetVariable {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: vec![("variable_id", self.variable_id.clone().unwrap())],
-            inputs: Inputs::inputs(vec![("value", &self.value)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: hashmap! {"variable_id" => self.variable_id.clone().unwrap()},
+            inputs: Inputs::inputs(hashmap! {"value" => &self.value}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -116,9 +117,9 @@ impl Block for ChangeVariable {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: vec![("variable_id", self.variable_id.clone().unwrap())],
-            inputs: Inputs::inputs(vec![("value", &self.value)]),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: hashmap! {"variable_id" => self.variable_id.clone().unwrap()},
+            inputs: Inputs::inputs(hashmap! {"value" => &self.value}),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 

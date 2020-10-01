@@ -25,6 +25,7 @@ palette = "0.5"
 lazy_static = "1.4"
 tokio =  { version = "0.2", features = ["sync", "rt-threaded", "macros"] }
 yew-router = "0.14"
+maplit = "1.0"
 
 [dependencies.web-sys]
 version = "0.3"

@@ -24,9 +24,9 @@ impl Block for Variable {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Vec::new(),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
         }
     }
 
@@ -57,9 +57,9 @@ impl Block for Value {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Vec::new(),
-            stacks: Vec::new(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
         }
     }
 

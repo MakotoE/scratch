@@ -1,4 +1,5 @@
 use super::*;
+use maplit::hashmap;
 
 pub fn get_block(
     name: &str,
@@ -40,9 +41,9 @@ impl Block for WhenFlagClicked {
     fn inputs(&self) -> Inputs {
         Inputs {
             info: self.block_info(),
-            fields: Vec::new(),
-            inputs: Vec::new(),
-            stacks: Inputs::stacks(vec![("next", &self.next)]),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
