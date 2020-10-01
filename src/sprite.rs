@@ -139,7 +139,7 @@ impl Thread {
             DebugInfo {
                 show: true,
                 block_name: block.block_info().name.to_string(),
-                block_id: block.block_info().id.to_string(),
+                block_id: block.block_info().id,
             }
         } else {
             DebugInfo::default()
@@ -172,7 +172,7 @@ impl Thread {
                     let block = curr_block.borrow();
                     return Err(ErrorKind::Block(
                         block.block_info().name,
-                        block.block_info().id.to_string(),
+                        block.block_info().id,
                         Box::new(e),
                     )
                     .into());
