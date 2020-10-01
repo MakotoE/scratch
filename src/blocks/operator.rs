@@ -56,11 +56,11 @@ impl Block for Equals {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {
+            inputs: BlockInputs::inputs(hashmap! {
                 "operand1" => &self.operand1,
                 "operand2" => &self.operand2,
             }),
@@ -131,11 +131,11 @@ impl Block for Add {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
             stacks: HashMap::new(),
         }
     }
@@ -180,11 +180,11 @@ impl Block for Subtract {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
             stacks: HashMap::new(),
         }
     }
@@ -229,11 +229,11 @@ impl Block for Multiply {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
             stacks: HashMap::new(),
         }
     }
@@ -278,11 +278,11 @@ impl Block for Divide {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
+            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
             stacks: HashMap::new(),
         }
     }
@@ -327,11 +327,11 @@ impl Block for And {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {
+            inputs: BlockInputs::inputs(hashmap! {
                 "operand1" => &self.operand1,
                 "operand2" => &self.operand2,
             }),
@@ -398,11 +398,11 @@ impl Block for Not {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"operand1" => &self.operand}),
+            inputs: BlockInputs::inputs(hashmap! {"operand1" => &self.operand}),
             stacks: HashMap::new(),
         }
     }
@@ -454,11 +454,11 @@ impl Block for LessThan {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {
+            inputs: BlockInputs::inputs(hashmap! {
                 "operand1" => &self.operand1,
                 "operand2" => &self.operand2,
             }),
@@ -515,11 +515,11 @@ impl Block for GreaterThan {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {
+            inputs: BlockInputs::inputs(hashmap! {
                 "operand1" => &self.operand1,
                 "operand2" => &self.operand2,
             }),

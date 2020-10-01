@@ -1,5 +1,5 @@
 use super::*;
-use blocks::Inputs;
+use blocks::BlockInputs;
 use fileinput::FileInput;
 use savefile::ScratchFile;
 use yew::prelude::*;
@@ -7,7 +7,7 @@ use yew::prelude::*;
 pub struct FileViewer {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
-    inputs: Vec<Inputs>,
+    block_inputs: Vec<BlockInputs>,
 }
 
 pub enum Msg {
@@ -22,7 +22,7 @@ impl Component for FileViewer {
         Self {
             link,
             canvas_ref: NodeRef::default(),
-            inputs: Vec::new(),
+            block_inputs: Vec::new(),
         }
     }
 
@@ -38,11 +38,11 @@ impl Component for FileViewer {
                 let runtime = runtime::SpriteRuntime::new(ctx, HashMap::new());
                 let runtime_ref: Rc<RwLock<runtime::SpriteRuntime>> = Rc::new(RwLock::new(runtime));
 
-                self.inputs.clear();
+                self.block_inputs.clear();
                 for hat in hats {
                     let block =
                         blocks::new_block(hat, runtime_ref.clone(), &target.blocks).unwrap();
-                    self.inputs.push(block.inputs());
+                    self.block_inputs.push(block.block_inputs());
                 }
             }
         }
@@ -64,11 +64,11 @@ impl Component for FileViewer {
                 />
                 <span style="font-family: monospace;">
                     {
-                        for self.inputs.iter().enumerate().map(|(i, inputs)| {
+                        for self.block_inputs.iter().enumerate().map(|(i, block)| {
                             html! {
                                 <>
                                     <p><strong>{String::from("Thread ") + &i.to_string()}</strong></p>
-                                    <Diagram inputs={inputs} />
+                                    <Diagram block_inputs={block} />
                                 </>
                             }
                         })
@@ -81,22 +81,22 @@ impl Component for FileViewer {
 
 #[derive(Clone, Properties, PartialEq)]
 struct Diagram {
-    inputs: Inputs,
+    block_inputs: BlockInputs,
 }
 
 impl Diagram {
-    fn stacks_html(mut inputs: HashMap<&'static str, Inputs>) -> Html {
+    fn stacks_html(mut block_inputs: HashMap<&'static str, BlockInputs>) -> Html {
+        let next_option = block_inputs.remove("next");
+
+        let mut blocks_vec: Vec<(&'static str, BlockInputs)> = block_inputs.drain().collect();
+        blocks_vec.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
+
         let mut list = yew::virtual_dom::VList::new();
-        let next_option = inputs.remove("next");
-
-        let mut inputs_vec: Vec<(&'static str, Inputs)> = inputs.drain().collect();
-        inputs_vec.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
-
-        for input in inputs_vec {
+        for block in blocks_vec {
             list.add_child(html! {
                 <>
-                    <p>{input.0}</p>
-                    <Diagram inputs={input.1} />
+                    <p>{block.0}</p>
+                    <Diagram block_inputs={block.1} />
                 </>
             });
         }
@@ -105,7 +105,7 @@ impl Diagram {
             list.add_child(html! {
                 <>
                     <p>{"next"}</p>
-                    <Diagram inputs={next} />
+                    <Diagram block_inputs={next} />
                 </>
             });
         }
@@ -139,12 +139,12 @@ impl Component for Diagram {
         html! {
             <div>
                 <p>
-                    <strong>{self.inputs.info.name.to_string()}</strong>
-                    {String::from(" ") + &self.inputs.info.id}
+                    <strong>{self.block_inputs.info.name.to_string()}</strong>
+                    {String::from(" ") + &self.block_inputs.info.id}
                 </p>
                 <div style="margin-left: 20px;">
                     {
-                        for self.inputs.fields.iter().map(|field| {
+                        for self.block_inputs.fields.iter().map(|field| {
                             html! {
                                 <>
                                     <p>{field.0.to_string() + " " + &field.1}</p>
@@ -153,18 +153,18 @@ impl Component for Diagram {
                         })
                     }
                     {
-                        for self.inputs.inputs.iter().map(|input_row| {
+                        for self.block_inputs.inputs.iter().map(|input_row| {
                             html! {
                                 <>
                                     <p>{input_row.0}</p>
-                                    <Diagram inputs={input_row.1.clone()} />
+                                    <Diagram block_inputs={input_row.1.clone()} />
                                 </>
                             }
                         })
                     }
                 </div>
                 {
-                    Diagram::stacks_html(self.inputs.stacks.clone())
+                    Diagram::stacks_html(self.block_inputs.stacks.clone())
                 }
             </div>
         }

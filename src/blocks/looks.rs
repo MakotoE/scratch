@@ -49,12 +49,12 @@ impl Block for Say {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"message" => &self.message}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"message" => &self.message}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -106,12 +106,14 @@ impl Block for SayForSecs {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"message" => &self.message, "secs" => &self.secs}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(
+                hashmap! {"message" => &self.message, "secs" => &self.secs},
+            ),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 

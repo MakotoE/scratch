@@ -38,12 +38,12 @@ impl Block for WhenFlagClicked {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
             inputs: HashMap::new(),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 

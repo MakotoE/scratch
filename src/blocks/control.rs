@@ -48,12 +48,14 @@ impl Block for If {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"condition" => &self.condition}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next, "substack" => &self.substack}),
+            inputs: BlockInputs::inputs(hashmap! {"condition" => &self.condition}),
+            stacks: BlockInputs::stacks(
+                hashmap! {"next" => &self.next, "substack" => &self.substack},
+            ),
         }
     }
 
@@ -119,12 +121,12 @@ impl Block for Wait {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"duration" => &self.duration}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"duration" => &self.duration}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -171,12 +173,12 @@ impl Block for Forever {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
             inputs: HashMap::new(),
-            stacks: Inputs::stacks(hashmap! {"substack" => &self.substack}),
+            stacks: BlockInputs::stacks(hashmap! {"substack" => &self.substack}),
         }
     }
 
@@ -224,12 +226,14 @@ impl Block for Repeat {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"times" => &self.times}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next, "substack" => &self.substack}),
+            inputs: BlockInputs::inputs(hashmap! {"times" => &self.times}),
+            stacks: BlockInputs::stacks(
+                hashmap! {"next" => &self.next, "substack" => &self.substack},
+            ),
         }
     }
 
@@ -287,12 +291,14 @@ impl Block for RepeatUntil {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"condition" => &self.condition}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next, "substack" => &self.substack}),
+            inputs: BlockInputs::inputs(hashmap! {"condition" => &self.condition}),
+            stacks: BlockInputs::stacks(
+                hashmap! {"next" => &self.next, "substack" => &self.substack},
+            ),
         }
     }
 
@@ -358,12 +364,12 @@ impl Block for IfElse {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"condition" => &self.condition}),
-            stacks: Inputs::stacks(hashmap! {
+            inputs: BlockInputs::inputs(hashmap! {"condition" => &self.condition}),
+            stacks: BlockInputs::stacks(hashmap! {
                 "next" => &self.next,
                 "substack_true" => &self.substack_true,
                 "substack_false" => &self.substack_false,

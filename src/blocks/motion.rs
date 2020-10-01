@@ -47,12 +47,12 @@ impl Block for MoveSteps {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"steps" => &self.steps}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"steps" => &self.steps}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -108,12 +108,12 @@ impl Block for GoToXY {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"x" => &self.x, "y" => &self.y}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"x" => &self.x, "y" => &self.y}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -172,12 +172,12 @@ impl Block for ChangeXBy {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"dx" => &self.dx}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"dx" => &self.dx}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -230,12 +230,12 @@ impl Block for ChangeYBy {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"dy" => &self.dy}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"dy" => &self.dy}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -288,12 +288,12 @@ impl Block for SetX {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"x" => &self.x}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"x" => &self.x}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -349,12 +349,12 @@ impl Block for SetY {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: Inputs::inputs(hashmap! {"y" => &self.y}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"y" => &self.y}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -404,8 +404,8 @@ impl Block for XPosition {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
             inputs: HashMap::new(),
@@ -444,8 +444,8 @@ impl Block for YPosition {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
             inputs: HashMap::new(),

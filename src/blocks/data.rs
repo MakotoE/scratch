@@ -43,12 +43,12 @@ impl Block for SetVariable {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: hashmap! {"variable_id" => self.variable_id.clone().unwrap()},
-            inputs: Inputs::inputs(hashmap! {"value" => &self.value}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"value" => &self.value}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
@@ -114,12 +114,12 @@ impl Block for ChangeVariable {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: hashmap! {"variable_id" => self.variable_id.clone().unwrap()},
-            inputs: Inputs::inputs(hashmap! {"value" => &self.value}),
-            stacks: Inputs::stacks(hashmap! {"next" => &self.next}),
+            inputs: BlockInputs::inputs(hashmap! {"value" => &self.value}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 

@@ -55,7 +55,7 @@ fn add_error_context(id: &str, category: &str, err: Error) -> Error {
 pub trait Block: std::fmt::Debug {
     fn block_info(&self) -> BlockInfo;
 
-    fn inputs(&self) -> Inputs;
+    fn block_inputs(&self) -> BlockInputs;
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
 
@@ -122,21 +122,21 @@ pub struct BlockInfo {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct Inputs {
+pub struct BlockInputs {
     pub info: BlockInfo,
     pub fields: HashMap<&'static str, String>,
-    pub inputs: HashMap<&'static str, Inputs>,
-    pub stacks: HashMap<&'static str, Inputs>,
+    pub inputs: HashMap<&'static str, BlockInputs>,
+    pub stacks: HashMap<&'static str, BlockInputs>,
 }
 
-impl Inputs {
+impl BlockInputs {
     fn inputs<'a>(
         inputs: HashMap<&'static str, &'a Option<Box<dyn Block>>>,
-    ) -> HashMap<&'static str, Inputs> {
-        let mut result: HashMap<&'static str, Inputs> = HashMap::new();
+    ) -> HashMap<&'static str, BlockInputs> {
+        let mut result: HashMap<&'static str, BlockInputs> = HashMap::new();
         for (id, b) in inputs {
             if let Some(block) = b {
-                result.insert(id, block.inputs());
+                result.insert(id, block.block_inputs());
             }
         }
         result
@@ -144,11 +144,11 @@ impl Inputs {
 
     fn stacks<'a>(
         stacks: HashMap<&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>>,
-    ) -> HashMap<&'static str, Inputs> {
-        let mut result: HashMap<&'static str, Inputs> = HashMap::new();
+    ) -> HashMap<&'static str, BlockInputs> {
+        let mut result: HashMap<&'static str, BlockInputs> = HashMap::new();
         for (id, b) in stacks {
             if let Some(block) = b {
-                result.insert(id, block.borrow().inputs());
+                result.insert(id, block.borrow().block_inputs());
             }
         }
         result

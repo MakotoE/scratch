@@ -211,12 +211,12 @@ impl Block for DummyBlock {
         }
     }
 
-    fn inputs(&self) -> Inputs {
-        Inputs {
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
             inputs: HashMap::new(),
-            stacks: hashmap! {"next" => self.next.borrow().inputs()},
+            stacks: hashmap! {"next" => self.next.borrow().block_inputs()},
         }
     }
 
