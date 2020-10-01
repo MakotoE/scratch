@@ -79,13 +79,17 @@ impl Component for FileViewer {
     }
 }
 
-#[derive(Clone, Properties, PartialEq)]
 struct Diagram {
+    block_inputs: RefCell<BlockInputs>,
+}
+
+#[derive(Clone, Properties, PartialEq)]
+struct DiagramProps {
     block_inputs: BlockInputs,
 }
 
 impl Diagram {
-    fn stacks_html(mut block_inputs: HashMap<&'static str, BlockInputs>) -> Html {
+    fn stacks_html(block_inputs: &mut HashMap<&'static str, BlockInputs>) -> Html {
         let next_option = block_inputs.remove("next");
 
         let mut blocks_vec: Vec<(&'static str, BlockInputs)> = block_inputs.drain().collect();
@@ -116,19 +120,21 @@ impl Diagram {
 
 impl Component for Diagram {
     type Message = ();
-    type Properties = Self;
+    type Properties = DiagramProps;
 
-    fn create(props: Self, _: ComponentLink<Self>) -> Self {
-        props
+    fn create(props: DiagramProps, _: ComponentLink<Self>) -> Self {
+        Self {
+            block_inputs: RefCell::new(props.block_inputs),
+        }
     }
 
     fn update(&mut self, _: ()) -> bool {
         false
     }
 
-    fn change(&mut self, props: Self) -> bool {
-        if *self != props {
-            *self = props;
+    fn change(&mut self, props: DiagramProps) -> bool {
+        if *self.block_inputs.borrow() != props.block_inputs {
+            self.block_inputs = RefCell::new(props.block_inputs);
             true
         } else {
             false
@@ -136,35 +142,34 @@ impl Component for Diagram {
     }
 
     fn view(&self) -> Html {
+        let mut block_inputs = self.block_inputs.borrow_mut();
         html! {
             <div>
                 <p>
-                    <strong>{self.block_inputs.info.name.to_string()}</strong>
-                    {String::from(" ") + &self.block_inputs.info.id}
+                    <strong>{block_inputs.info.name.to_string()}</strong>
+                    {String::from(" ") + &block_inputs.info.id}
                 </p>
                 <div style="margin-left: 20px;">
                     {
-                        for self.block_inputs.fields.iter().map(|field| {
+                        for block_inputs.fields.iter().map(|field| {
                             html! {
-                                <>
-                                    <p>{field.0.to_string() + " " + &field.1}</p>
-                                </>
+                                <p>{field.0.to_string() + " " + &field.1}</p>
                             }
                         })
                     }
                     {
-                        for self.block_inputs.inputs.iter().map(|input_row| {
+                        for block_inputs.inputs.drain().map(|input_row| {
                             html! {
                                 <>
                                     <p>{input_row.0}</p>
-                                    <Diagram block_inputs={input_row.1.clone()} />
+                                    <Diagram block_inputs={input_row.1} />
                                 </>
                             }
                         })
                     }
                 </div>
                 {
-                    Diagram::stacks_html(self.block_inputs.stacks.clone())
+                    Diagram::stacks_html(&mut block_inputs.stacks)
                 }
             </div>
         }
