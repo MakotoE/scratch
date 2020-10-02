@@ -103,13 +103,13 @@ impl Drop for Sprite {
 type ClosureRef = Rc<RefCell<Option<Closure<dyn Fn()>>>>;
 
 pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
-    // TODO make result sort stable
     let mut hats: Vec<&str> = Vec::new();
     for (id, block_info) in block_infos {
         if block_info.top_level {
             hats.push(id);
         }
     }
+    hats.sort_unstable();
 
     hats
 }
