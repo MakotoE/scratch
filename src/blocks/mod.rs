@@ -155,19 +155,27 @@ impl BlockInputs {
     }
 }
 
-pub fn new_block(
-    block_id: &str,
+pub fn block_tree(
+    top_block_id: &str,
     runtime: Rc<RwLock<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
-    let info = infos.get(block_id).unwrap();
-    let mut block = get_block(block_id, runtime.clone(), &info)?;
+    let info = match infos.get(top_block_id) {
+        Some(b) => b,
+        None => return Err(format!("could not find block: {}", top_block_id).into()),
+    };
+    let mut block = get_block(top_block_id, runtime.clone(), &info)?;
     if let Some(next_id) = &info.next {
-        block.set_input("next", new_block(next_id, runtime.clone(), infos)?);
+        block.set_input("next", block_tree(next_id, runtime.clone(), infos)?);
     }
     for (k, input) in &info.inputs {
-        let input_err_cb =
-            || Error::from(format!("block \"{}\": invalid {}", block_id, k.as_str()));
+        let input_err_cb = || {
+            Error::from(format!(
+                "block \"{}\": invalid {}",
+                top_block_id,
+                k.as_str()
+            ))
+        };
         let input_arr = input.as_array().ok_or_else(input_err_cb)?;
         let input_type = input_arr
             .get(0)
@@ -188,7 +196,7 @@ pub fn new_block(
                 let input_info = input_arr.get(1).ok_or_else(input_err_cb)?;
                 match input_info {
                     serde_json::Value::String(id) => {
-                        let new_block = new_block(id, runtime.clone(), infos)?;
+                        let new_block = block_tree(id, runtime.clone(), infos)?;
                         block.set_input(k, new_block);
                     }
                     serde_json::Value::Array(arr) => {
@@ -204,9 +212,11 @@ pub fn new_block(
                 }
             }
             _ => {
-                return Err(
-                    format!("block \"{}\": invalid input_type {}", block_id, input_type).into(),
+                return Err(format!(
+                    "block \"{}\": invalid input_type {}",
+                    top_block_id, input_type
                 )
+                .into())
             }
         };
     }
@@ -215,7 +225,7 @@ pub fn new_block(
             Some(value_id) => {
                 block.set_field(k, value_id.clone());
             }
-            None => return Err(format!("block \"{}\": invalid field {}", block_id, k).into()),
+            None => return Err(format!("block \"{}\": invalid field {}", top_block_id, k).into()),
         }
     }
     Ok(block)

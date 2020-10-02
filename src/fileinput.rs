@@ -47,15 +47,17 @@ impl Component for FileInput {
         match msg {
             Msg::Noop => {}
             Msg::ImportFile(file) => {
-                let mut reader = ReaderService::new();
                 let cb = self.link.callback(Msg::ParseFile);
-                self.task = Some(reader.read_file(file, cb).unwrap());
+                match ReaderService::new().read_file(file, cb) {
+                    Ok(task) => self.task = Some(task),
+                    Err(e) => log::error!("error occurred while reading file: {}", e),
+                };
             }
             Msg::ParseFile(file) => {
-                let reader = std::io::Cursor::new(file.content);
-                self.props
-                    .onchange
-                    .emit(ScratchFile::parse(reader).unwrap());
+                match ScratchFile::parse(std::io::Cursor::new(file.content)) {
+                    Ok(f) => self.props.onchange.emit(f),
+                    Err(e) => log::error!("error occurred while parsing Scratch file: {}", e),
+                };
             }
         }
         false

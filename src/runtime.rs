@@ -268,7 +268,7 @@ pub struct Costume {
 }
 
 pub fn hex_to_color(s: &str) -> Result<palette::Hsv> {
-    if s.len() != 7 || s.bytes().next().unwrap() != b'#' {
+    if s.len() != 7 || s.bytes().next() != Some(b'#') {
         return Err(format!("s is invalid: {}", s).into());
     }
 

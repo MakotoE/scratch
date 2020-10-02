@@ -27,7 +27,7 @@ impl Sprite {
             let controller = Rc::new(DebugController::new());
             controllers.push(controller.clone());
 
-            let block = new_block(hat_id, runtime_ref.clone(), &target.blocks)
+            let block = block_tree(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
             let thread = Thread::new(block, runtime_ref.clone(), controller.clone());
             wasm_bindgen_futures::spawn_local(async move {
@@ -49,7 +49,13 @@ impl Sprite {
         *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             let runtime_arc = runtime_ref.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                runtime_arc.write().await.redraw().unwrap();
+                match runtime_arc.write().await.redraw() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log::error!("error occurred on redraw: {}", e);
+                        return;
+                    }
+                };
             });
 
             let cb = cb_ref_clone.borrow();
