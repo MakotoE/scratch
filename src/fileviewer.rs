@@ -62,6 +62,9 @@ impl Component for FileViewer {
                     width="0"
                     height="0"
                 />
+                <style>
+                    {"br { margin-bottom: 2px; }"}
+                </style>
                 <span style="font-family: monospace;">
                     {
                         for self.block_inputs.iter().enumerate().map(|(i, block)| {
@@ -86,33 +89,6 @@ struct Diagram {
 #[derive(Clone, Properties, PartialEq)]
 struct DiagramProps {
     block_inputs: BlockInputs,
-}
-
-impl Diagram {
-    fn stacks_html(block_inputs: &mut HashMap<&'static str, BlockInputs>) -> Html {
-        let next_option = block_inputs.remove("next");
-
-        let mut blocks_vec: Vec<(&'static str, BlockInputs)> = block_inputs.drain().collect();
-        blocks_vec.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
-
-        let mut list = yew::virtual_dom::VList::new();
-        for block in blocks_vec {
-            list.add_child(html! {
-                <div style="margin-left: 20px;">
-                    {block.0}<br />
-                    <Diagram block_inputs={block.1} />
-                </div>
-            });
-        }
-
-        if let Some(next) = next_option {
-            list.add_child(html! {
-                <Diagram block_inputs={next} />
-            });
-        }
-
-        yew::virtual_dom::VNode::VList(list)
-    }
 }
 
 impl Component for Diagram {
@@ -140,13 +116,21 @@ impl Component for Diagram {
 
     fn view(&self) -> Html {
         let mut block_inputs = self.block_inputs.borrow_mut();
+        let next_html = if let Some(next) = block_inputs.stacks.remove("next") {
+            html! {<><Diagram block_inputs={next} /></>}
+        } else {
+            html! {}
+        };
+
+        let mut substacks: Vec<(&'static str, BlockInputs)> = block_inputs.stacks.drain().collect();
+        substacks.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
+
         html! {
             <>
-                <>
-                    <strong>{block_inputs.info.name.to_string()}</strong>
-                    {String::from(" ") + &block_inputs.info.id}
-                </>
-                <div style="margin-left: 20px;">
+                <strong>{block_inputs.info.name.to_string()}</strong>
+                {String::from(" ") + &block_inputs.info.id}<br />
+
+                <div style="padding-left: 10px; border-left: 1px solid #B3B3B3; margin-bottom: 1px;">
                     {
                         for block_inputs.fields.iter().map(|field| {
                             html! {
@@ -158,19 +142,27 @@ impl Component for Diagram {
                         })
                     }
                     {
-                        for block_inputs.inputs.drain().map(|input_row| {
+                        for block_inputs.inputs.drain().map(|input| {
                             html! {
                                 <>
-                                    {input_row.0.to_string() + ": "}
-                                    <Diagram block_inputs={input_row.1} />
+                                    {input.0.to_string() + ": "}
+                                    <Diagram block_inputs={input.1} />
+                                </>
+                            }
+                        })
+                    }
+                    {
+                        for substacks.drain(..).map(|substack| {
+                            html! {
+                                <>
+                                    {substack.0}<br />
+                                    <Diagram block_inputs={substack.1} />
                                 </>
                             }
                         })
                     }
                 </div>
-                {
-                    Diagram::stacks_html(&mut block_inputs.stacks)
-                }
+                {next_html}
             </>
         }
     }
