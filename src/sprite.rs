@@ -152,7 +152,7 @@ impl Thread {
 
         loop {
             let debug_info = if self.controller.display_debug().await {
-                let block = self.hat.borrow();
+                let block = curr_block.borrow();
                 DebugInfo {
                     show: true,
                     block_name: block.block_info().name.to_string(),
