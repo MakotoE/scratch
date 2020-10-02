@@ -60,6 +60,12 @@ impl Component for VM {
     type Properties = ();
 
     fn create(_: (), link: ComponentLink<Self>) -> Self {
+        web_sys::window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .set_title("Scratch VM");
+
         Self {
             link,
             canvas_ref: NodeRef::default(),
