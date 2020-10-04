@@ -169,56 +169,33 @@ pub fn block_tree(
         block.set_input("next", block_tree(next_id, runtime.clone(), infos)?);
     }
     for (k, input) in &info.inputs {
-        let input_err_cb = || {
-            Error::from(format!(
-                "block \"{}\": invalid {}",
+        let input_err = |msg: &str| {
+            Err(Error::from(format!(
+                "block \"{}\", input {}: {}",
                 top_block_id,
-                k.as_str()
-            ))
+                k.as_str(),
+                msg,
+            )))
         };
-        let input_arr = input.as_array().ok_or_else(input_err_cb)?;
-        let input_type = input_arr
-            .get(0)
-            .and_then(|v| v.as_i64())
-            .ok_or_else(input_err_cb)?;
-        match input_type {
-            1 => {
-                // value
-                let value_info = input_arr
-                    .get(1)
-                    .and_then(|v| v.as_array())
-                    .ok_or_else(input_err_cb)?;
-                let js_value = value_info.get(1).ok_or_else(input_err_cb)?;
-                let value = Box::new(value::Value::from(js_value.clone()));
-                block.set_input(k, value);
-            }
-            2 | 3 => {
-                let input_info = input_arr.get(1).ok_or_else(input_err_cb)?;
-                match input_info {
-                    serde_json::Value::String(id) => {
-                        let new_block = block_tree(id, runtime.clone(), infos)?;
-                        block.set_input(k, new_block);
-                    }
-                    serde_json::Value::Array(arr) => {
-                        let id = arr
-                            .get(2)
-                            .and_then(|v| v.as_str())
-                            .ok_or_else(input_err_cb)?;
-                        let variable =
-                            Box::new(value::Variable::new(id.to_string(), runtime.clone()));
-                        block.set_input(k, variable);
-                    }
-                    _ => return Err(input_err_cb()),
-                }
-            }
-            _ => {
-                return Err(format!(
-                    "block \"{}\": invalid input_type {}",
-                    top_block_id, input_type
-                )
-                .into())
-            }
+        let input_arr = match input.as_array() {
+            Some(a) => a,
+            None => return input_err("invalid type"),
         };
+        let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
+            Some(n) => n,
+            None => return input_err("invalid type"),
+        };
+        let input_block = match input_type {
+            // Value
+            1 => match value_from_input_arr(input_arr) {
+                Some(b) => b,
+                None => return input_err("invalid type"),
+            },
+            // Block or variable
+            2 | 3 => block_from_input_arr(input_arr, runtime.clone(), infos)?,
+            _ => return input_err("invalid type"),
+        };
+        block.set_input(k, input_block);
     }
     for (k, field) in &info.fields {
         match field.get(1) {
@@ -229,6 +206,32 @@ pub fn block_tree(
         }
     }
     Ok(block)
+}
+
+fn value_from_input_arr(input_arr: &[serde_json::Value]) -> Option<Box<value::Value>> {
+    input_arr
+        .get(1)
+        .and_then(|v| v.as_array())
+        .and_then(|v| v.get(1))
+        .map(|v| Box::new(value::Value::from(v.clone())))
+}
+
+fn block_from_input_arr(
+    input_arr: &[serde_json::Value],
+    runtime: Rc<RwLock<SpriteRuntime>>,
+    infos: &HashMap<String, savefile::Block>,
+) -> Result<Box<dyn Block>> {
+    match input_arr.get(1) {
+        Some(a) => match a {
+            serde_json::Value::String(id) => block_tree(&id, runtime, infos),
+            serde_json::Value::Array(arr) => match arr.get(2).and_then(|v| v.as_str()) {
+                Some(id) => Ok(Box::new(value::Variable::new(id.to_string(), runtime))),
+                None => Err("invalid input type".into()),
+            },
+            _ => Err("invalid input type".into()),
+        },
+        None => Err("invalid input type".into()),
+    }
 }
 
 const MILLIS_PER_SECOND: f64 = 1000.0;
