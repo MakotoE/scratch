@@ -15,7 +15,7 @@ pub fn get_block(
         "clear" => Box::new(Clear::new(id, runtime)),
         "setPenShadeToNumber" => Box::new(SetPenShadeToNumber::new(id, runtime)),
         "setPenHueToNumber" => Box::new(SetPenHueToNumber::new(id, runtime)),
-        _ => return Err(format!("{} does not exist", name).into()),
+        _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
 
@@ -163,7 +163,7 @@ impl Block for SetPenColorToColor {
     async fn execute(&mut self) -> Next {
         let color_value = match &self.color {
             Some(b) => b.value().await?,
-            None => return Next::Err("color is None".into()),
+            None => return Next::Err(wrap_err!("color is None")),
         };
         let color = color_value
             .as_str()
@@ -225,7 +225,7 @@ impl Block for SetPenSizeTo {
     async fn execute(&mut self) -> Next {
         let size = match &self.size {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("color is None".into()),
+            None => return Next::Err(wrap_err!("color is None")),
         };
 
         self.runtime.write().await.pen().set_size(size);
@@ -350,7 +350,7 @@ impl Block for SetPenShadeToNumber {
     async fn execute(&mut self) -> Next {
         let shade = match &self.shade {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("shade is None".into()),
+            None => return Next::Err(wrap_err!("shade is None")),
         };
         let mut runtime = self.runtime.write().await;
         let color = runtime.pen().color().into_hsv();
@@ -412,7 +412,7 @@ impl Block for SetPenHueToNumber {
     async fn execute(&mut self) -> Next {
         let hue = match &self.hue {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("hue is None".into()),
+            None => return Next::Err(wrap_err!("hue is None")),
         };
 
         let mut runtime = self.runtime.write().await;

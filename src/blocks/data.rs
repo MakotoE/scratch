@@ -9,7 +9,7 @@ pub fn get_block(
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
-        _ => return Err(format!("{} does not exist", name).into()),
+        _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
 
@@ -72,11 +72,11 @@ impl Block for SetVariable {
     async fn execute(&mut self) -> Next {
         let variable_id = match &self.variable_id {
             Some(id) => id,
-            None => return Next::Err("variable_id is None".into()),
+            None => return Next::Err(wrap_err!("variable_id is None")),
         };
         let value = match &self.value {
             Some(v) => v.value().await?,
-            None => return Next::Err("value is None".into()),
+            None => return Next::Err(wrap_err!("value is None")),
         };
         self.runtime
             .write()
@@ -146,19 +146,24 @@ impl Block for ChangeVariable {
     async fn execute(&mut self) -> Next {
         let variable_id = match &self.variable_id {
             Some(id) => id,
-            None => return Next::Err("variable_id is None".into()),
+            None => return Next::Err(wrap_err!("variable_id is None")),
         };
 
         let previous_value = match self.runtime.write().await.variables.remove(variable_id) {
             Some(v) => v,
-            None => return Next::Err(format!("variable {} does not exist", variable_id).into()),
+            None => {
+                return Next::Err(wrap_err!(format!(
+                    "variable {} does not exist",
+                    variable_id
+                )))
+            }
         };
 
         let previous_float = value_to_float(&previous_value).unwrap_or(0.0);
 
         let value = match &self.value {
             Some(b) => b.value().await?,
-            None => return Next::Err("value is None".into()),
+            None => return Next::Err(wrap_err!("value is None")),
         };
 
         let new_value = previous_float + value_to_float(&value)?;

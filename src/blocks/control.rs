@@ -14,7 +14,7 @@ pub fn get_block(
         "wait" => Box::new(Wait::new(id)),
         "repeat_until" => Box::new(RepeatUntil::new(id)),
         "if_else" => Box::new(IfElse::new(id)),
-        _ => return Err(format!("{} does not exist", name).into()),
+        _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
 
@@ -82,7 +82,12 @@ impl Block for If {
         let value = condition.value().await?;
         let value_bool = match value.as_bool() {
             Some(b) => b,
-            None => return Next::Err(format!("expected boolean type but got {}", value).into()),
+            None => {
+                return Next::Err(wrap_err!(format!(
+                    "expected boolean type but got {}",
+                    value
+                )))
+            }
         };
 
         self.done = true;
@@ -141,7 +146,7 @@ impl Block for Wait {
     async fn execute(&mut self) -> Next {
         let duration = match &self.duration {
             Some(block) => value_to_float(&block.value().await?)?,
-            None => return Next::Err("duration is None".into()),
+            None => return Next::Err(wrap_err!("duration is None")),
         };
 
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
@@ -249,7 +254,7 @@ impl Block for Repeat {
     async fn execute(&mut self) -> Next {
         let times = match &self.times {
             Some(v) => value_to_float(&v.value().await?)?,
-            None => return Next::Err("times is None".into()),
+            None => return Next::Err(wrap_err!("times is None")),
         };
 
         if self.count < times as usize {
@@ -314,13 +319,16 @@ impl Block for RepeatUntil {
     async fn execute(&mut self) -> Next {
         let condition_value = match &self.condition {
             Some(block) => block.value().await?,
-            None => return Next::Err("condition is None".into()),
+            None => return Next::Err(wrap_err!("condition is None")),
         };
 
         let condition = match condition_value.as_bool() {
             Some(b) => b,
             None => {
-                return Next::Err(format!("condition is not boolean: {}", condition_value).into())
+                return Next::Err(wrap_err!(format!(
+                    "condition is not boolean: {}",
+                    condition_value
+                )));
             }
         };
 
@@ -395,13 +403,16 @@ impl Block for IfElse {
 
         let condition_value = match &self.condition {
             Some(block) => block.value().await?,
-            None => return Next::Err("condition is None".into()),
+            None => return Next::Err(wrap_err!("condition is None")),
         };
 
         let condition = match condition_value.as_bool() {
             Some(b) => b,
             None => {
-                return Next::Err(format!("condition is not boolean: {}", condition_value).into())
+                return Next::Err(wrap_err!(format!(
+                    "condition is not boolean: {}",
+                    condition_value
+                )))
             }
         };
 

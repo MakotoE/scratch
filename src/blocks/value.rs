@@ -35,7 +35,7 @@ impl Block for Variable {
     async fn value(&self) -> Result<serde_json::Value> {
         match self.runtime.read().await.variables.get(&self.id) {
             Some(v) => Ok(v.clone()),
-            None => Err(format!("{} does not exist", self.id).into()),
+            None => Err(wrap_err!(format!("{} does not exist", self.id))),
         }
     }
 }

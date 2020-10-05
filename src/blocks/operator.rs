@@ -15,7 +15,7 @@ pub fn get_block(
         "and" => Box::new(And::new(id)),
         "lt" => Box::new(LessThan::new(id)),
         "gt" => Box::new(GreaterThan::new(id)),
-        _ => return Err(format!("{} does not exist", name).into()),
+        _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
 
@@ -79,11 +79,11 @@ impl Block for Equals {
     async fn value(&self) -> Result<serde_json::Value> {
         let a = match &self.operand1 {
             Some(a) => a.value().await?,
-            None => return Err("operand1 is None".into()),
+            None => return Err(wrap_err!("operand1 is None")),
         };
         let b = match &self.operand2 {
             Some(b) => b.value().await?,
-            None => return Err("operand2 is None".into()),
+            None => return Err(wrap_err!("operand2 is None")),
         };
 
         Ok(Equals::equal(&a, &b).into())
@@ -96,11 +96,11 @@ async fn get_num1_and_num2(
 ) -> Result<(f64, f64)> {
     let a = match num1 {
         Some(a) => value_to_float(&a.value().await?)?,
-        None => return Err("num1 is None".into()),
+        None => return Err(wrap_err!("num1 is None")),
     };
     let b = match num2 {
         Some(b) => value_to_float(&b.value().await?)?,
-        None => return Err("num2 is None".into()),
+        None => return Err(wrap_err!("num2 is None")),
     };
     Ok((a, b))
 }
@@ -353,10 +353,10 @@ impl Block for And {
                 let value = b.value().await?;
                 match value {
                     serde_json::Value::Bool(b) => b,
-                    _ => return Err(format!("operand1 is not a boolean: {:?}", value).into()),
+                    _ => return Err(wrap_err!(format!("operand1 is not a boolean: {:?}", value))),
                 }
             }
-            None => return Err("operand1 is None".into()),
+            None => return Err(wrap_err!("operand1 is None")),
         };
 
         let right = match &self.operand2 {
@@ -364,10 +364,10 @@ impl Block for And {
                 let value = b.value().await?;
                 match value {
                     serde_json::Value::Bool(b) => b,
-                    _ => return Err(format!("operand2 is not a boolean: {:?}", value).into()),
+                    _ => return Err(wrap_err!(format!("operand2 is not a boolean: {:?}", value))),
                 }
             }
-            None => return Err("operand2 is None".into()),
+            None => return Err(wrap_err!("operand2 is None")),
         };
 
         Ok((left && right).into())
@@ -416,12 +416,17 @@ impl Block for Not {
     async fn value(&self) -> Result<serde_json::Value> {
         let operand_value = match &self.operand {
             Some(b) => b.value().await?,
-            None => return Err("operand is None".into()),
+            None => return Err(wrap_err!("operand is None")),
         };
 
         let operand = match operand_value {
             serde_json::Value::Bool(b) => b,
-            _ => return Err(format!("operand is not a boolean: {}", operand_value).into()),
+            _ => {
+                return Err(wrap_err!(format!(
+                    "operand is not a boolean: {}",
+                    operand_value
+                )));
+            }
         };
 
         Ok((!operand).into())
@@ -477,12 +482,12 @@ impl Block for LessThan {
     async fn value(&self) -> Result<serde_json::Value> {
         let left = match &self.operand1 {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err("operand1 is None".into()),
+            None => return Err(wrap_err!("operand1 is None")),
         };
 
         let right = match &self.operand2 {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err("operand2 is None".into()),
+            None => return Err(wrap_err!("operand2 is None")),
         };
 
         Ok((left < right).into())
@@ -538,12 +543,12 @@ impl Block for GreaterThan {
     async fn value(&self) -> Result<serde_json::Value> {
         let left = match &self.operand1 {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err("operand1 is None".into()),
+            None => return Err(wrap_err!("operand1 is None")),
         };
 
         let right = match &self.operand2 {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err("operand2 is None".into()),
+            None => return Err(wrap_err!("operand2 is None")),
         };
 
         Ok((left > right).into())

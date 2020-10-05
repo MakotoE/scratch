@@ -52,9 +52,10 @@ impl SpriteRuntime {
         let costume = match self.costumes.get(self.current_costume) {
             Some(c) => c,
             None => {
-                return Err(
-                    format!("current_costume is out of range: {}", self.current_costume).into(),
-                )
+                return Err(wrap_err!(format!(
+                    "current_costume is out of range: {}",
+                    self.current_costume
+                )));
             }
         };
         SpriteRuntime::draw_costume(&self.context, costume, &self.position)?;
@@ -269,7 +270,7 @@ pub struct Costume {
 
 pub fn hex_to_color(s: &str) -> Result<palette::Hsv> {
     if s.len() != 7 || s.bytes().next() != Some(b'#') {
-        return Err(format!("s is invalid: {}", s).into());
+        return Err(wrap_err!(format!("s is invalid: {}", s)));
     }
 
     let rgb = palette::Srgb::new(

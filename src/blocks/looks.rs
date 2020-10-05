@@ -9,7 +9,7 @@ pub fn get_block(
     Ok(match name {
         "say" => Box::new(looks::Say::new(id, runtime)),
         "sayforsecs" => Box::new(looks::SayForSecs::new(id, runtime)),
-        _ => return Err(format!("{} does not exist", name).into()),
+        _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
 
@@ -69,7 +69,7 @@ impl Block for Say {
     async fn execute(&mut self) -> Next {
         let message = match &self.message {
             Some(b) => Say::value_to_string(&b.value().await?),
-            None => return Next::Err("message is None".into()),
+            None => return Next::Err(wrap_err!("message is None")),
         };
         self.runtime.write().await.say(Some(&message));
         Next::continue_(self.next.clone())
@@ -129,12 +129,12 @@ impl Block for SayForSecs {
     async fn execute(&mut self) -> Next {
         let message = match &self.message {
             Some(b) => Say::value_to_string(&b.value().await?),
-            None => return Next::Err("message is None".into()),
+            None => return Next::Err(wrap_err!("message is None")),
         };
 
         let seconds = match &self.secs {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("secs is None".into()),
+            None => return Next::Err(wrap_err!("secs is None")),
         };
 
         let mut runtime = self.runtime.write().await;

@@ -21,7 +21,10 @@ fn get_block(
     let (category, name) = match info.opcode.split_once('_') {
         Some(s) => s,
         None => {
-            return Err(format!("block \"{}\": opcode {} does not exist", id, info.opcode).into())
+            return Err(wrap_err!(format!(
+                "block \"{}\": opcode {} does not exist",
+                id, info.opcode
+            )));
         }
     };
 
@@ -43,7 +46,10 @@ fn get_block(
             operator::get_block(name, id, runtime).map_err(|e| add_error_context(id, "operator", e))
         }
         "pen" => pen::get_block(name, id, runtime).map_err(|e| add_error_context(id, "pen", e)),
-        _ => Err(format!("block id \"{}\": opcode {} does not exist", id, info.opcode).into()),
+        _ => Err(wrap_err!(format!(
+            "block id \"{}\": opcode {} does not exist",
+            id, info.opcode
+        ))),
     }
 }
 
@@ -63,11 +69,11 @@ pub trait Block: std::fmt::Debug {
     fn set_field(&mut self, key: &str, value_id: String) {}
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Err("this block does not return a value".into())
+        Err(wrap_err!("this block does not return a value"))
     }
 
     async fn execute(&mut self) -> Next {
-        Next::Err("this block cannot be executed".into())
+        Next::Err(wrap_err!("this block cannot be executed"))
     }
 }
 
@@ -162,7 +168,7 @@ pub fn block_tree(
 ) -> Result<Box<dyn Block>> {
     let info = match infos.get(top_block_id) {
         Some(b) => b,
-        None => return Err(format!("could not find block: {}", top_block_id).into()),
+        None => return Err(wrap_err!(format!("could not find block: {}", top_block_id))),
     };
     let mut block = get_block(top_block_id, runtime.clone(), &info)?;
     if let Some(next_id) = &info.next {
@@ -170,7 +176,7 @@ pub fn block_tree(
     }
     for (k, input) in &info.inputs {
         let input_err = |msg: &str| {
-            Err(Error::from(format!(
+            Err(wrap_err!(format!(
                 "block \"{}\", input {}: {}",
                 top_block_id,
                 k.as_str(),
@@ -202,7 +208,12 @@ pub fn block_tree(
             Some(value_id) => {
                 block.set_field(k, value_id.clone());
             }
-            None => return Err(format!("block \"{}\": invalid field {}", top_block_id, k).into()),
+            None => {
+                return Err(wrap_err!(format!(
+                    "block \"{}\": invalid field {}",
+                    top_block_id, k
+                )))
+            }
         }
     }
     Ok(block)
@@ -226,11 +237,11 @@ fn block_from_input_arr(
             serde_json::Value::String(id) => block_tree(&id, runtime, infos),
             serde_json::Value::Array(arr) => match arr.get(2).and_then(|v| v.as_str()) {
                 Some(id) => Ok(Box::new(value::Variable::new(id.to_string(), runtime))),
-                None => Err("invalid input type".into()),
+                None => Err(wrap_err!("invalid input type")),
             },
-            _ => Err("invalid input type".into()),
+            _ => Err(wrap_err!("invalid input type")),
         },
-        None => Err("invalid input type".into()),
+        None => Err(wrap_err!("invalid input type")),
     }
 }
 
@@ -249,6 +260,11 @@ fn value_to_float(value: &serde_json::Value) -> Result<f64> {
             }
             None => unreachable!(),
         },
-        _ => return Err(format!("expected String or Number but got: {:?}", value).into()),
+        _ => {
+            return Err(wrap_err!(format!(
+                "expected String or Number but got: {:?}",
+                value
+            )))
+        }
     })
 }

@@ -47,7 +47,7 @@ impl VM {
                     );
                     runtime.load_costume(file, rotation_center).await?
                 }
-                None => return Err(format!("image not found: {}", costume.md5ext).into()),
+                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
             }
         }
 

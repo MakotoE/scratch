@@ -15,7 +15,7 @@ pub fn get_block(
         "sety" => Box::new(SetY::new(id, runtime)),
         "xposition" => Box::new(XPosition::new(id, runtime)),
         "yposition" => Box::new(YPosition::new(id, runtime)),
-        _ => return Err(format!("{} does not exist", name).into()),
+        _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
 
@@ -67,7 +67,7 @@ impl Block for MoveSteps {
     async fn execute(&mut self) -> Next {
         let steps_value = match &self.steps {
             Some(block) => block.value().await?,
-            None => return Next::Err("steps is None".into()),
+            None => return Next::Err(wrap_err!("steps is None")),
         };
 
         let steps = value_to_float(&steps_value)?;
@@ -129,11 +129,11 @@ impl Block for GoToXY {
     async fn execute(&mut self) -> Next {
         let x = match &self.x {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("x is None".into()),
+            None => return Next::Err(wrap_err!("x is None")),
         };
         let y = match &self.y {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("y is None".into()),
+            None => return Next::Err(wrap_err!("y is None")),
         };
 
         self.runtime
@@ -192,7 +192,7 @@ impl Block for ChangeXBy {
     async fn execute(&mut self) -> Next {
         let x = match &self.dx {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("dx is None".into()),
+            None => return Next::Err(wrap_err!("dx is None")),
         };
 
         let mut runtime = self.runtime.write().await;
@@ -250,7 +250,7 @@ impl Block for ChangeYBy {
     async fn execute(&mut self) -> Next {
         let y = match &self.dy {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("dy is None".into()),
+            None => return Next::Err(wrap_err!("dy is None")),
         };
 
         let mut runtime = self.runtime.write().await;
@@ -308,7 +308,7 @@ impl Block for SetX {
     async fn execute(&mut self) -> Next {
         let x = match &self.x {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("x is None".into()),
+            None => return Next::Err(wrap_err!("x is None")),
         };
 
         let curr_y = self.runtime.write().await.position().y();
@@ -369,7 +369,7 @@ impl Block for SetY {
     async fn execute(&mut self) -> Next {
         let y = match &self.y {
             Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err("y is None".into()),
+            None => return Next::Err(wrap_err!("y is None")),
         };
 
         let mut runtime = self.runtime.write().await;
