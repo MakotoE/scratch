@@ -1,4 +1,3 @@
-use gloo_timers::future::TimeoutFuture;
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -64,7 +63,6 @@ pub enum Speed {
 struct ControllerSemaphore {
     semaphore: tokio::sync::Semaphore,
     blocking: tokio::sync::RwLock<bool>,
-    i: RefCell<u64>,
 }
 
 impl ControllerSemaphore {
@@ -72,20 +70,13 @@ impl ControllerSemaphore {
         Self {
             semaphore: tokio::sync::Semaphore::new(0),
             blocking: tokio::sync::RwLock::new(false),
-            i: RefCell::new(0),
         }
     }
 
     async fn acquire(&self) {
-        let mut i = self.i.borrow_mut();
         if *self.blocking.read().await {
             self.semaphore.acquire().await.forget();
-        } else if *i % 0x1000 == 0 {
-            // Yield to render loop
-            TimeoutFuture::new(0).await;
         }
-
-        *i += 1;
     }
 
     fn add_permit(&self) {
