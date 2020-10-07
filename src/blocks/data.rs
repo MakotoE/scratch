@@ -4,7 +4,7 @@ use maplit::hashmap;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
@@ -16,14 +16,14 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct SetVariable {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SetVariable {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -79,8 +79,7 @@ impl Block for SetVariable {
             None => return Next::Err(wrap_err!("value is None")),
         };
         self.runtime
-            .write()
-            .await
+            .borrow_mut()
             .variables
             .insert(variable_id.clone(), value.clone());
         Next::continue_(self.next.clone())
@@ -90,14 +89,14 @@ impl Block for SetVariable {
 #[derive(Debug)]
 pub struct ChangeVariable {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl ChangeVariable {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -149,7 +148,7 @@ impl Block for ChangeVariable {
             None => return Next::Err(wrap_err!("variable_id is None")),
         };
 
-        let previous_value = match self.runtime.write().await.variables.remove(variable_id) {
+        let previous_value = match self.runtime.borrow_mut().variables.remove(variable_id) {
             Some(v) => v,
             None => {
                 return Next::Err(wrap_err!(format!(
@@ -168,8 +167,7 @@ impl Block for ChangeVariable {
 
         let new_value = previous_float + value_to_float(&value)?;
         self.runtime
-            .write()
-            .await
+            .borrow_mut()
             .variables
             .insert(variable_id.clone(), new_value.into());
         Next::continue_(self.next.clone())

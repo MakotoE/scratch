@@ -5,7 +5,7 @@ use maplit::hashmap;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "if" => Box::new(If::new(id)),
@@ -105,11 +105,11 @@ pub struct Wait {
     id: String,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     duration: Option<Box<dyn Block>>,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 }
 
 impl Wait {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             next: None,
@@ -151,7 +151,7 @@ impl Block for Wait {
             None => return Next::Err(wrap_err!("duration is None")),
         };
 
-        self.runtime.write().await.redraw()?;
+        self.runtime.borrow_mut().redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
         Next::continue_(self.next.clone())
     }

@@ -4,7 +4,7 @@ use maplit::hashmap;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "movesteps" => Box::new(MoveSteps::new(id, runtime)),
@@ -22,13 +22,13 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct MoveSteps {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     steps: Option<Box<dyn Block>>,
 }
 
 impl MoveSteps {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -71,7 +71,7 @@ impl Block for MoveSteps {
         };
 
         let steps = value_to_float(&steps_value)?;
-        let mut runtime = self.runtime.write().await;
+        let mut runtime = self.runtime.borrow_mut();
         let position = runtime.position().add(&Coordinate::new(steps, 0.0));
         runtime.set_position(&position);
         Next::continue_(self.next.clone())
@@ -81,14 +81,14 @@ impl Block for MoveSteps {
 #[derive(Debug)]
 pub struct GoToXY {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     x: Option<Box<dyn Block>>,
     y: Option<Box<dyn Block>>,
 }
 
 impl GoToXY {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -137,8 +137,7 @@ impl Block for GoToXY {
         };
 
         self.runtime
-            .write()
-            .await
+            .borrow_mut()
             .set_position(&Coordinate::new(x, y));
         Next::continue_(self.next.clone())
     }
@@ -147,13 +146,13 @@ impl Block for GoToXY {
 #[derive(Debug)]
 pub struct ChangeXBy {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     dx: Option<Box<dyn Block>>,
 }
 
 impl ChangeXBy {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -195,7 +194,7 @@ impl Block for ChangeXBy {
             None => return Next::Err(wrap_err!("dx is None")),
         };
 
-        let mut runtime = self.runtime.write().await;
+        let mut runtime = self.runtime.borrow_mut();
         let position = runtime.position().add(&Coordinate::new(x, 0.0));
         runtime.set_position(&position);
         Next::continue_(self.next.clone())
@@ -205,13 +204,13 @@ impl Block for ChangeXBy {
 #[derive(Debug)]
 pub struct ChangeYBy {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     dy: Option<Box<dyn Block>>,
 }
 
 impl ChangeYBy {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -253,7 +252,7 @@ impl Block for ChangeYBy {
             None => return Next::Err(wrap_err!("dy is None")),
         };
 
-        let mut runtime = self.runtime.write().await;
+        let mut runtime = self.runtime.borrow_mut();
         let position = runtime.position().add(&Coordinate::new(0.0, y));
         runtime.set_position(&position);
         Next::continue_(self.next.clone())
@@ -263,13 +262,13 @@ impl Block for ChangeYBy {
 #[derive(Debug)]
 pub struct SetX {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     x: Option<Box<dyn Block>>,
 }
 
 impl SetX {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -311,11 +310,10 @@ impl Block for SetX {
             None => return Next::Err(wrap_err!("x is None")),
         };
 
-        let curr_y = self.runtime.write().await.position().y();
+        let curr_y = self.runtime.borrow_mut().position().y();
 
         self.runtime
-            .write()
-            .await
+            .borrow_mut()
             .set_position(&Coordinate::new(x, curr_y));
         Next::continue_(self.next.clone())
     }
@@ -324,13 +322,13 @@ impl Block for SetX {
 #[derive(Debug)]
 pub struct SetY {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     y: Option<Box<dyn Block>>,
 }
 
 impl SetY {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -372,7 +370,7 @@ impl Block for SetY {
             None => return Next::Err(wrap_err!("y is None")),
         };
 
-        let mut runtime = self.runtime.write().await;
+        let mut runtime = self.runtime.borrow_mut();
         let curr_x = runtime.position().x();
 
         runtime.set_position(&Coordinate::new(curr_x, y));
@@ -383,11 +381,11 @@ impl Block for SetY {
 #[derive(Debug)]
 pub struct XPosition {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 }
 
 impl XPosition {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -416,18 +414,18 @@ impl Block for XPosition {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.read().await.position().x().into())
+        Ok(self.runtime.borrow().position().x().into())
     }
 }
 
 #[derive(Debug)]
 pub struct YPosition {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 }
 
 impl YPosition {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -456,6 +454,6 @@ impl Block for YPosition {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.read().await.position().y().into())
+        Ok(self.runtime.borrow().position().y().into())
     }
 }

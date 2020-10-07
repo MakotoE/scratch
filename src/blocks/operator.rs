@@ -3,7 +3,7 @@ use super::*;
 pub fn get_block(
     name: &str,
     id: &str,
-    _runtime: Rc<RwLock<SpriteRuntime>>,
+    _runtime: Rc<RefCell<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "equals" => Box::new(Equals::new(id)),

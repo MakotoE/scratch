@@ -19,7 +19,7 @@ impl Sprite {
     ) -> Result<Self> {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
-        let runtime_ref = Rc::new(RwLock::new(runtime));
+        let runtime_ref = Rc::new(RefCell::new(runtime));
         let mut controllers: Vec<Rc<DebugController>> = Vec::new();
 
         for hat_id in find_hats(&target.blocks) {
@@ -78,14 +78,14 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 #[derive(Debug)]
 pub struct Thread {
     hat: Rc<RefCell<Box<dyn Block>>>,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     controller: Rc<DebugController>,
 }
 
 impl Thread {
     pub fn new(
         hat: Box<dyn Block>,
-        runtime: Rc<RwLock<SpriteRuntime>>,
+        runtime: Rc<RefCell<SpriteRuntime>>,
         controller: Rc<DebugController>,
     ) -> Self {
         Self {
@@ -106,7 +106,7 @@ impl Thread {
         } else {
             DebugInfo::default()
         };
-        self.runtime.write().await.set_debug_info(&debug_info);
+        self.runtime.borrow_mut().set_debug_info(&debug_info);
 
         let mut curr_block = self.hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
@@ -125,7 +125,7 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            self.runtime.write().await.set_debug_info(&debug_info);
+            self.runtime.borrow_mut().set_debug_info(&debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
             match execute_result {
@@ -150,14 +150,14 @@ impl Thread {
             }
 
             if performance.now() - redraw_time >= 1000.0 / 60.0 {
-                self.runtime.write().await.redraw()?;
+                self.runtime.borrow_mut().redraw()?;
                 TimeoutFuture::new(0).await; // Yield to rendering thread
                 redraw_time = performance.now();
             }
             self.controller.wait().await;
         }
 
-        self.runtime.write().await.redraw()?;
+        self.runtime.borrow_mut().redraw()?;
 
         Ok(())
     }

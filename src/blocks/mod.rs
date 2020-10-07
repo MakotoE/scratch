@@ -15,7 +15,7 @@ use runtime::SpriteRuntime;
 
 fn get_block(
     id: &str,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     info: &savefile::Block,
 ) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
@@ -163,7 +163,7 @@ impl BlockInputs {
 
 pub fn block_tree(
     top_block_id: &str,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
     let info = match infos.get(top_block_id) {
@@ -229,7 +229,7 @@ fn value_from_input_arr(input_arr: &[serde_json::Value]) -> Option<Box<value::Va
 
 fn block_from_input_arr(
     input_arr: &[serde_json::Value],
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
     match input_arr.get(1) {
