@@ -230,6 +230,7 @@ impl SpriteRuntime {
     }
 
     pub fn set_debug_info(&mut self, debug_info: &DebugInfo) {
+        // TODO thread id parameter
         self.need_redraw = true;
         self.debug_info = debug_info.clone();
     }

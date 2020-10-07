@@ -6,9 +6,10 @@ use gloo_timers::future::TimeoutFuture;
 use maplit::hashmap;
 use runtime::{Coordinate, SpriteRuntime};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Sprite {
     controllers: Vec<Rc<DebugController>>,
+    runtime: Rc<RefCell<SpriteRuntime>>,
 }
 
 impl Sprite {
@@ -34,14 +35,17 @@ impl Sprite {
                     vm::VMState::Paused => controller.pause().await,
                     vm::VMState::Running => controller.continue_(controller::Speed::Normal).await,
                 }
-                match thread.start().await {
-                    Ok(_) => {}
-                    Err(e) => log::error!("{}", e),
-                }
+                thread
+                    .start()
+                    .await
+                    .unwrap_or_else(|e| log::error!("{}", e));
             });
         }
 
-        Ok(Self { controllers })
+        Ok(Self {
+            controllers,
+            runtime: runtime_ref,
+        })
     }
 
     pub async fn continue_(&mut self, speed: controller::Speed) {
@@ -54,6 +58,10 @@ impl Sprite {
         for c in &self.controllers {
             c.pause().await;
         }
+        self.runtime
+            .borrow_mut()
+            .redraw()
+            .unwrap_or_else(|e| log::error!("{}", e));
     }
 
     pub fn step(&self) {

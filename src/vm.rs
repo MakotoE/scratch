@@ -124,11 +124,9 @@ impl Component for VM {
                                 sprite
                                     .borrow_mut()
                                     .continue_(controller::Speed::Normal)
-                                    .await;
+                                    .await
                             }
-                            VMState::Running => {
-                                sprite.borrow_mut().pause().await;
-                            }
+                            VMState::Running => sprite.borrow_mut().pause().await,
                         }
                     }
                 });

@@ -1,16 +1,17 @@
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 #[derive(Debug)]
 pub struct DebugController {
     semphore: Arc<ControllerSemaphore>,
-    display_debug: tokio::sync::RwLock<bool>,
+    display_debug: RwLock<bool>,
 }
 
 impl DebugController {
     pub fn new() -> Self {
         Self {
             semphore: Arc::new(ControllerSemaphore::new()),
-            display_debug: tokio::sync::RwLock::new(false),
+            display_debug: RwLock::new(false), // TODO Move to Sprite
         }
     }
 
@@ -22,7 +23,6 @@ impl DebugController {
         self.semphore.reset().await;
         self.semphore.set_blocking(false).await;
         *self.display_debug.write().await = false;
-
         log::info!("continuing");
     }
 
@@ -30,17 +30,16 @@ impl DebugController {
         self.semphore.reset().await;
         self.semphore.set_blocking(true).await;
         *self.display_debug.write().await = true;
-
         log::info!("paused");
     }
 
     pub fn step(&self) {
         self.semphore.add_permit();
-
         log::info!("step");
     }
 
     pub async fn display_debug(&self) -> bool {
+        // TODO thread id parameter
         *self.display_debug.read().await
     }
 }
