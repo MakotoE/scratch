@@ -21,7 +21,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 

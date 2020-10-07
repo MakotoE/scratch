@@ -28,7 +28,7 @@ impl Sprite {
 
             let block = block_tree(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            let thread = Thread::new(block, runtime_ref.clone(), controller.clone());
+            let mut thread = Thread::new(block, runtime_ref.clone(), controller.clone());
             wasm_bindgen_futures::spawn_local(async move {
                 match start_state {
                     vm::VMState::Paused => controller.pause().await,
@@ -95,7 +95,7 @@ impl Thread {
         }
     }
 
-    pub async fn start(&self) -> Result<()> {
+    pub async fn start(&mut self) -> Result<()> {
         let debug_info = if self.controller.display_debug().await {
             let block = self.hat.borrow();
             DebugInfo {

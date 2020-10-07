@@ -4,7 +4,6 @@ use std::sync::Arc;
 pub struct DebugController {
     semphore: Arc<ControllerSemaphore>,
     display_debug: tokio::sync::RwLock<bool>,
-    interval_id: tokio::sync::RwLock<i32>,
 }
 
 impl DebugController {
@@ -12,7 +11,6 @@ impl DebugController {
         Self {
             semphore: Arc::new(ControllerSemaphore::new()),
             display_debug: tokio::sync::RwLock::new(false),
-            interval_id: tokio::sync::RwLock::new(0),
         }
     }
 
@@ -21,9 +19,6 @@ impl DebugController {
     }
 
     pub async fn continue_(&self, _speed: Speed) {
-        web_sys::window()
-            .unwrap()
-            .clear_interval_with_handle(*self.interval_id.read().await);
         self.semphore.reset().await;
         self.semphore.set_blocking(false).await;
         *self.display_debug.write().await = false;
@@ -32,9 +27,6 @@ impl DebugController {
     }
 
     pub async fn pause(&self) {
-        web_sys::window()
-            .unwrap()
-            .clear_interval_with_handle(*self.interval_id.read().await);
         self.semphore.reset().await;
         self.semphore.set_blocking(true).await;
         *self.display_debug.write().await = true;

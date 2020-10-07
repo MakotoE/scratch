@@ -81,7 +81,7 @@ impl Block for SetVariable {
         self.runtime
             .borrow_mut()
             .variables
-            .insert(variable_id.clone(), value.clone());
+            .insert(variable_id.clone(), value);
         Next::continue_(self.next.clone())
     }
 }

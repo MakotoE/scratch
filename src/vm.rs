@@ -10,7 +10,7 @@ pub struct VM {
     canvas_ref: NodeRef,
     vm_state: VMState,
     file: Option<ScratchFile>,
-    sprite: Option<Arc<RwLock<Sprite>>>,
+    sprite: Option<Arc<RefCell<Sprite>>>,
 }
 
 pub enum Msg {
@@ -106,7 +106,7 @@ impl Component for VM {
                 });
             }
             Msg::SetSprite(sprite) => {
-                self.sprite = Some(Arc::new(RwLock::new(sprite)));
+                self.sprite = Some(Arc::new(RefCell::new(sprite)));
             }
             Msg::ContinuePause => {
                 let state = self.vm_state;
@@ -115,26 +115,27 @@ impl Component for VM {
                     VMState::Running => self.vm_state = VMState::Paused,
                 }
 
-                if let Some(sprite) = self.sprite.clone() {
-                    wasm_bindgen_futures::spawn_local(async move {
+                let sprite = self.sprite.clone();
+
+                wasm_bindgen_futures::spawn_local(async move {
+                    if let Some(sprite) = sprite {
                         match state {
                             VMState::Paused => {
                                 sprite
-                                    .write()
-                                    .await
+                                    .borrow_mut()
                                     .continue_(controller::Speed::Normal)
-                                    .await
+                                    .await;
                             }
-                            VMState::Running => sprite.write().await.pause().await,
+                            VMState::Running => {
+                                sprite.borrow_mut().pause().await;
+                            }
                         }
-                    });
-                }
+                    }
+                });
             }
             Msg::Step => {
                 if let Some(sprite) = self.sprite.clone() {
-                    wasm_bindgen_futures::spawn_local(async move {
-                        sprite.read().await.step();
-                    });
+                    sprite.borrow_mut().step();
                 }
             }
         }
