@@ -5,13 +5,13 @@ use maplit::hashmap;
 pub fn get_block(
     name: &str,
     id: &str,
-    _runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
         "repeat" => Box::new(Repeat::new(id)),
-        "wait" => Box::new(Wait::new(id)),
+        "wait" => Box::new(Wait::new(id, runtime)),
         "repeat_until" => Box::new(RepeatUntil::new(id)),
         "if_else" => Box::new(IfElse::new(id)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
@@ -105,14 +105,16 @@ pub struct Wait {
     id: String,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     duration: Option<Box<dyn Block>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 }
 
 impl Wait {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             next: None,
             duration: None,
+            runtime,
         }
     }
 }
@@ -149,6 +151,7 @@ impl Block for Wait {
             None => return Next::Err(wrap_err!("duration is None")),
         };
 
+        self.runtime.write().await.redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
         Next::continue_(self.next.clone())
     }
