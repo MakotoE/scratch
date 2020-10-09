@@ -4,7 +4,7 @@ use maplit::hashmap;
 pub fn get_block(
     name: &str,
     id: &str,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
@@ -15,12 +15,12 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct WhenFlagClicked {
     id: String,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl WhenFlagClicked {
-    pub fn new(id: &str, runtime: Rc<RefCell<SpriteRuntime>>) -> Self {
+    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,

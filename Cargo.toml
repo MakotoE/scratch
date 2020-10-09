@@ -43,5 +43,4 @@ features = [
     "Url",
     "TextMetrics",
     "Path2d",
-    "Performance",
 ]

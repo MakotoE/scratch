@@ -2,14 +2,15 @@ use super::*;
 use async_trait::async_trait;
 use blocks::*;
 use controller::DebugController;
-use gloo_timers::future::TimeoutFuture;
 use maplit::hashmap;
 use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug)]
 pub struct Sprite {
     controllers: Vec<Rc<DebugController>>,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    closure: ClosureRef,
+    request_animation_frame_id: Rc<RefCell<i32>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
 }
 
 impl Sprite {
@@ -20,7 +21,7 @@ impl Sprite {
     ) -> Result<Self> {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
-        let runtime_ref = Rc::new(RefCell::new(runtime));
+        let runtime_ref = Rc::new(RwLock::new(runtime));
         let mut controllers: Vec<Rc<DebugController>> = Vec::new();
 
         for hat_id in find_hats(&target.blocks) {
@@ -42,8 +43,40 @@ impl Sprite {
             });
         }
 
+        let cb_ref: ClosureRef = Rc::new(RefCell::new(None));
+        let cb_ref_clone = cb_ref.clone();
+        let request_animation_frame_id = Rc::new(RefCell::new(0));
+        let request_animation_frame_id_clone = request_animation_frame_id.clone();
+        let runtime_clone = runtime_ref.clone();
+        *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+            let runtime_clone = runtime_clone.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                match runtime_clone.write().await.redraw() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log::error!("error occurred on redraw: {}", e);
+                        return;
+                    }
+                };
+            });
+
+            let cb = cb_ref_clone.borrow();
+            let f = cb.as_ref().unwrap();
+            *request_animation_frame_id_clone.borrow_mut() = web_sys::window()
+                .unwrap()
+                .request_animation_frame(f.as_ref().unchecked_ref())
+                .unwrap();
+        }) as Box<dyn Fn()>));
+        let cb = cb_ref.borrow();
+        let f = cb.as_ref().unwrap();
+        *request_animation_frame_id.borrow_mut() = web_sys::window()
+            .unwrap()
+            .request_animation_frame(f.as_ref().unchecked_ref())?;
+
         Ok(Self {
             controllers,
+            closure: cb_ref.clone(),
+            request_animation_frame_id,
             runtime: runtime_ref,
         })
     }
@@ -59,7 +92,8 @@ impl Sprite {
             c.pause().await;
         }
         self.runtime
-            .borrow_mut()
+            .write()
+            .await
             .redraw()
             .unwrap_or_else(|e| log::error!("{}", e));
     }
@@ -70,6 +104,17 @@ impl Sprite {
         }
     }
 }
+
+impl Drop for Sprite {
+    fn drop(&mut self) {
+        web_sys::window()
+            .unwrap()
+            .cancel_animation_frame(*self.request_animation_frame_id.borrow())
+            .unwrap();
+    }
+}
+
+type ClosureRef = Rc<RefCell<Option<Closure<dyn Fn()>>>>;
 
 pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
     let mut hats: Vec<&str> = Vec::new();
@@ -86,14 +131,14 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 #[derive(Debug)]
 pub struct Thread {
     hat: Rc<RefCell<Box<dyn Block>>>,
-    runtime: Rc<RefCell<SpriteRuntime>>,
+    runtime: Rc<RwLock<SpriteRuntime>>,
     controller: Rc<DebugController>,
 }
 
 impl Thread {
     pub fn new(
         hat: Box<dyn Block>,
-        runtime: Rc<RefCell<SpriteRuntime>>,
+        runtime: Rc<RwLock<SpriteRuntime>>,
         controller: Rc<DebugController>,
     ) -> Self {
         Self {
@@ -114,13 +159,10 @@ impl Thread {
         } else {
             DebugInfo::default()
         };
-        self.runtime.borrow_mut().set_debug_info(&debug_info);
+        self.runtime.write().await.set_debug_info(&debug_info);
 
         let mut curr_block = self.hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
-
-        let performance = web_sys::window().unwrap().performance().unwrap();
-        let mut redraw_time = f64::MIN;
 
         loop {
             let debug_info = if self.controller.display_debug().await {
@@ -133,7 +175,7 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            self.runtime.borrow_mut().set_debug_info(&debug_info);
+            self.runtime.write().await.set_debug_info(&debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
             match execute_result {
@@ -156,16 +198,8 @@ impl Thread {
                     curr_block = b;
                 }
             }
-
-            if performance.now() - redraw_time >= 1000.0 / 60.0 {
-                self.runtime.borrow_mut().redraw()?;
-                TimeoutFuture::new(0).await; // Yield to rendering thread
-                redraw_time = performance.now();
-            }
             self.controller.wait().await;
         }
-
-        self.runtime.borrow_mut().redraw()?;
 
         Ok(())
     }

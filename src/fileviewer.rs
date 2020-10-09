@@ -42,8 +42,7 @@ impl Component for FileViewer {
                 let ctx: web_sys::CanvasRenderingContext2d =
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
                 let runtime = runtime::SpriteRuntime::new(ctx, HashMap::new());
-                let runtime_ref: Rc<RefCell<runtime::SpriteRuntime>> =
-                    Rc::new(RefCell::new(runtime));
+                let runtime_ref: Rc<RwLock<runtime::SpriteRuntime>> = Rc::new(RwLock::new(runtime));
 
                 self.block_inputs.clear();
                 for hat in hats {
