@@ -50,22 +50,21 @@ impl Sprite {
         let runtime_clone = runtime_ref.clone();
         *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             let runtime_clone = runtime_clone.clone();
+            let cb_ref_clone = cb_ref_clone.clone();
+            let request_animation_frame_id_clone = request_animation_frame_id_clone.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                match runtime_clone.write().await.redraw() {
-                    Ok(_) => {}
-                    Err(e) => {
-                        log::error!("error occurred on redraw: {}", e);
-                        return;
-                    }
-                };
-            });
+                if let Err(e) = runtime_clone.write().await.redraw() {
+                    log::error!("error occurred on redraw: {}", e);
+                    return;
+                }
 
-            let cb = cb_ref_clone.borrow();
-            let f = cb.as_ref().unwrap();
-            *request_animation_frame_id_clone.borrow_mut() = web_sys::window()
-                .unwrap()
-                .request_animation_frame(f.as_ref().unchecked_ref())
-                .unwrap();
+                let cb = cb_ref_clone.borrow();
+                let f = cb.as_ref().unwrap();
+                *request_animation_frame_id_clone.borrow_mut() = web_sys::window()
+                    .unwrap()
+                    .request_animation_frame(f.as_ref().unchecked_ref())
+                    .unwrap();
+            });
         }) as Box<dyn Fn()>));
         let cb = cb_ref.borrow();
         let f = cb.as_ref().unwrap();
