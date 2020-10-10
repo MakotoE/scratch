@@ -12,6 +12,7 @@ pub struct Sprite {
     closure: ClosureRef,
     request_animation_frame_id: Rc<RefCell<i32>>,
     runtime: Rc<RwLock<SpriteRuntime>>,
+    display_debug: Rc<RwLock<bool>>,
 }
 
 impl Sprite {
@@ -24,6 +25,7 @@ impl Sprite {
 
         let runtime_ref = Rc::new(RwLock::new(runtime));
         let mut controllers: Vec<Rc<DebugController>> = Vec::new();
+        let display_debug = Rc::new(RwLock::new(false));
 
         for hat_id in find_hats(&target.blocks) {
             let controller = Rc::new(DebugController::new());
@@ -31,7 +33,12 @@ impl Sprite {
 
             let block = block_tree(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            let mut thread = Thread::new(block, runtime_ref.clone(), controller.clone());
+            let mut thread = Thread::new(
+                block,
+                runtime_ref.clone(),
+                controller.clone(),
+                display_debug.clone(),
+            );
             wasm_bindgen_futures::spawn_local(async move {
                 match start_state {
                     vm::VMState::Paused => controller.pause().await,
@@ -79,10 +86,12 @@ impl Sprite {
             closure: cb_ref.clone(),
             request_animation_frame_id,
             runtime: runtime_ref,
+            display_debug,
         })
     }
 
     pub async fn continue_(&mut self, speed: controller::Speed) {
+        *self.display_debug.write().await = false;
         for c in &self.controllers {
             c.continue_(speed).await;
         }
@@ -92,6 +101,7 @@ impl Sprite {
         for c in &self.controllers {
             c.pause().await;
         }
+        *self.display_debug.write().await = true;
         self.runtime
             .write()
             .await
@@ -134,6 +144,7 @@ pub struct Thread {
     hat: Rc<RefCell<Box<dyn Block>>>,
     runtime: Rc<RwLock<SpriteRuntime>>,
     controller: Rc<DebugController>,
+    display_debug: Rc<RwLock<bool>>,
 }
 
 impl Thread {
@@ -141,16 +152,18 @@ impl Thread {
         hat: Box<dyn Block>,
         runtime: Rc<RwLock<SpriteRuntime>>,
         controller: Rc<DebugController>,
+        display_debug: Rc<RwLock<bool>>,
     ) -> Self {
         Self {
             hat: Rc::new(RefCell::new(hat)),
             runtime,
             controller,
+            display_debug,
         }
     }
 
     pub async fn start(&mut self) -> Result<()> {
-        let debug_info = if self.controller.display_debug().await {
+        let debug_info = if *self.display_debug.read().await {
             let block = self.hat.borrow();
             DebugInfo {
                 show: true,
@@ -166,7 +179,7 @@ impl Thread {
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
 
         for i in 0usize.. {
-            let debug_info = if self.controller.display_debug().await {
+            let debug_info = if *self.display_debug.read().await {
                 let block = curr_block.borrow();
                 DebugInfo {
                     show: true,
@@ -203,6 +216,7 @@ impl Thread {
             self.controller.wait().await;
 
             if i % 0x1000 == 0 {
+                // TODO record time for variable fps
                 // Yield to render loop
                 TimeoutFuture::new(0).await;
             }
