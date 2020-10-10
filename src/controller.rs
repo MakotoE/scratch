@@ -17,7 +17,7 @@ impl DebugController {
         self.semphore.acquire().await;
     }
 
-    pub async fn continue_(&self, _speed: Speed) {
+    pub async fn continue_(&self) {
         self.semphore.reset().await;
         self.semphore.set_blocking(false).await;
         log::info!("continuing");
@@ -33,11 +33,6 @@ impl DebugController {
         self.semphore.add_permit();
         log::info!("step");
     }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum Speed {
-    Normal,
 }
 
 #[derive(Debug)]

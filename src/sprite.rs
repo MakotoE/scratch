@@ -1,9 +1,7 @@
 use super::*;
-use async_trait::async_trait;
 use blocks::*;
 use controller::DebugController;
 use gloo_timers::future::TimeoutFuture;
-use maplit::hashmap;
 use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug)]
@@ -33,7 +31,7 @@ impl Sprite {
 
             let block = block_tree(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            let mut thread = Thread::new(
+            Thread::start(
                 block,
                 runtime_ref.clone(),
                 controller.clone(),
@@ -42,12 +40,8 @@ impl Sprite {
             wasm_bindgen_futures::spawn_local(async move {
                 match start_state {
                     vm::VMState::Paused => controller.pause().await,
-                    vm::VMState::Running => controller.continue_(controller::Speed::Normal).await,
+                    vm::VMState::Running => controller.continue_().await,
                 }
-                thread
-                    .start()
-                    .await
-                    .unwrap_or_else(|e| log::error!("{}", e));
             });
         }
 
@@ -90,10 +84,10 @@ impl Sprite {
         })
     }
 
-    pub async fn continue_(&mut self, speed: controller::Speed) {
+    pub async fn continue_(&mut self) {
         *self.display_debug.write().await = false;
         for c in &self.controllers {
-            c.continue_(speed).await;
+            c.continue_().await;
         }
     }
 
@@ -141,6 +135,11 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 
 #[derive(Debug)]
 pub struct Thread {
+    inner: Rc<RwLock<Inner>>,
+}
+
+#[derive(Debug)]
+struct Inner {
     hat: Rc<RefCell<Box<dyn Block>>>,
     runtime: Rc<RwLock<SpriteRuntime>>,
     controller: Rc<DebugController>,
@@ -148,38 +147,51 @@ pub struct Thread {
 }
 
 impl Thread {
-    pub fn new(
+    pub fn start(
         hat: Box<dyn Block>,
         runtime: Rc<RwLock<SpriteRuntime>>,
         controller: Rc<DebugController>,
         display_debug: Rc<RwLock<bool>>,
     ) -> Self {
-        Self {
+        let inner = Inner {
             hat: Rc::new(RefCell::new(hat)),
             runtime,
             controller,
             display_debug,
-        }
+        };
+        let thread = Thread {
+            inner: Rc::new(RwLock::new(inner)),
+        };
+
+        let inner_clone = thread.inner.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            Thread::run(inner_clone).await.unwrap();
+        });
+        thread
     }
 
-    pub async fn start(&mut self) -> Result<()> {
-        let debug_info = if *self.display_debug.read().await {
-            let block = self.hat.borrow();
-            DebugInfo {
-                show: true,
-                block_name: block.block_info().name.to_string(),
-                block_id: block.block_info().id,
-            }
-        } else {
-            DebugInfo::default()
-        };
-        self.runtime.write().await.set_debug_info(&debug_info);
+    async fn run(inner: Rc<RwLock<Inner>>) -> Result<()> {
+        {
+            let thread = inner.write().await;
+            let debug_info = if *thread.display_debug.read().await {
+                let block = thread.hat.borrow();
+                DebugInfo {
+                    show: true,
+                    block_name: block.block_info().name.to_string(),
+                    block_id: block.block_info().id,
+                }
+            } else {
+                DebugInfo::default()
+            };
+            thread.runtime.write().await.set_debug_info(&debug_info);
+        }
 
-        let mut curr_block = self.hat.clone();
+        let mut curr_block = inner.read().await.hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
 
         for i in 0usize.. {
-            let debug_info = if *self.display_debug.read().await {
+            let thread = inner.write().await;
+            let debug_info = if *thread.display_debug.read().await {
                 let block = curr_block.borrow();
                 DebugInfo {
                     show: true,
@@ -189,7 +201,7 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            self.runtime.write().await.set_debug_info(&debug_info);
+            thread.runtime.write().await.set_debug_info(&debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
             match execute_result {
@@ -213,7 +225,7 @@ impl Thread {
                 }
             }
 
-            self.controller.wait().await;
+            thread.controller.wait().await;
 
             if i % 0x1000 == 0 {
                 // TODO record time for variable fps
@@ -231,34 +243,4 @@ pub struct DebugInfo {
     pub show: bool,
     pub block_id: String,
     pub block_name: String,
-}
-
-#[derive(Debug)]
-pub struct DummyBlock {
-    next: Rc<RefCell<Box<dyn Block>>>,
-}
-
-#[async_trait(?Send)]
-impl Block for DummyBlock {
-    fn block_info(&self) -> BlockInfo {
-        BlockInfo {
-            name: "DummyBlock",
-            id: String::new(),
-        }
-    }
-
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: hashmap! {"next" => self.next.borrow().block_inputs()},
-        }
-    }
-
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-
-    async fn execute(&mut self) -> Next {
-        Next::Continue(self.next.clone())
-    }
 }

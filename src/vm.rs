@@ -120,12 +120,7 @@ impl Component for VM {
                 wasm_bindgen_futures::spawn_local(async move {
                     if let Some(sprite) = sprite {
                         match state {
-                            VMState::Paused => {
-                                sprite
-                                    .borrow_mut()
-                                    .continue_(controller::Speed::Normal)
-                                    .await
-                            }
+                            VMState::Paused => sprite.borrow_mut().continue_().await,
                             VMState::Running => sprite.borrow_mut().pause().await,
                         }
                     }
