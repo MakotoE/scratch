@@ -2,6 +2,7 @@ use super::*;
 use async_trait::async_trait;
 use blocks::*;
 use controller::DebugController;
+use gloo_timers::future::TimeoutFuture;
 use maplit::hashmap;
 use runtime::{Coordinate, SpriteRuntime};
 
@@ -48,10 +49,12 @@ impl Sprite {
         let request_animation_frame_id = Rc::new(RefCell::new(0));
         let request_animation_frame_id_clone = request_animation_frame_id.clone();
         let runtime_clone = runtime_ref.clone();
+        let window = web_sys::window().unwrap();
         *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
             let runtime_clone = runtime_clone.clone();
             let cb_ref_clone = cb_ref_clone.clone();
             let request_animation_frame_id_clone = request_animation_frame_id_clone.clone();
+            let window = window.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 if let Err(e) = runtime_clone.write().await.redraw() {
                     log::error!("error occurred on redraw: {}", e);
@@ -60,8 +63,7 @@ impl Sprite {
 
                 let cb = cb_ref_clone.borrow();
                 let f = cb.as_ref().unwrap();
-                *request_animation_frame_id_clone.borrow_mut() = web_sys::window()
-                    .unwrap()
+                *request_animation_frame_id_clone.borrow_mut() = window
                     .request_animation_frame(f.as_ref().unchecked_ref())
                     .unwrap();
             });
@@ -163,7 +165,7 @@ impl Thread {
         let mut curr_block = self.hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
 
-        loop {
+        for i in 0usize.. {
             let debug_info = if self.controller.display_debug().await {
                 let block = curr_block.borrow();
                 DebugInfo {
@@ -197,7 +199,13 @@ impl Thread {
                     curr_block = b;
                 }
             }
+
             self.controller.wait().await;
+
+            if i % 0x1000 == 0 {
+                // Yield to render loop
+                TimeoutFuture::new(0).await;
+            }
         }
 
         Ok(())
