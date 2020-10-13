@@ -1,87 +1,51 @@
-#[allow(unused_imports)]
 use super::*;
-use std::sync::Arc;
+use tokio::sync::Notify;
 
 #[derive(Debug)]
 pub struct ThreadController {
-    semphore: Arc<ControllerSemaphore>,
+    semphore: Notify,
+    state: RwLock<PauseState>,
 }
 
 impl ThreadController {
     pub fn new() -> Self {
         Self {
-            semphore: Arc::new(ControllerSemaphore::new()),
+            semphore: Notify::new(),
+            state: RwLock::new(PauseState::Continue),
         }
     }
 
     pub async fn wait(&self) {
-        self.semphore.acquire().await;
+        if *self.state.read().await == PauseState::Paused {
+            self.semphore.notified().await;
+        }
     }
 
     pub async fn continue_(&self) {
-        self.semphore.reset().await;
-        self.semphore.set_blocking(false).await;
+        *self.state.write().await = PauseState::Continue;
+        self.semphore.notify();
         log::info!("continuing");
     }
 
     pub async fn pause(&self) {
-        self.semphore.reset().await;
-        self.semphore.set_blocking(true).await;
+        *self.state.write().await = PauseState::Paused;
         log::info!("paused");
     }
 
     pub fn step(&self) {
-        self.semphore.add_permit();
+        self.semphore.notify();
         log::info!("step");
     }
+
+    pub async fn state(&self) -> PauseState {
+        *self.state.read().await
+    }
 }
 
-#[derive(Debug)]
-struct ControllerSemaphore {
-    semaphore: tokio::sync::Semaphore,
-    blocking: tokio::sync::RwLock<bool>,
-}
-
-impl ControllerSemaphore {
-    fn new() -> Self {
-        Self {
-            semaphore: tokio::sync::Semaphore::new(0),
-            blocking: tokio::sync::RwLock::new(false),
-        }
-    }
-
-    async fn acquire(&self) {
-        if *self.blocking.read().await {
-            self.semaphore.acquire().await.forget();
-        }
-    }
-
-    fn add_permit(&self) {
-        self.semaphore.add_permits(1);
-    }
-
-    async fn set_blocking(&self, blocking: bool) {
-        *self.blocking.write().await = blocking;
-
-        if !blocking {
-            self.add_permit();
-        }
-    }
-
-    async fn reset(&self) {
-        while self.semaphore.available_permits() > 0 {
-            match self.semaphore.try_acquire() {
-                Ok(p) => p.forget(),
-                Err(_) => break,
-            }
-        }
-        *self.blocking.write().await = false;
-    }
-
-    #[allow(dead_code)]
-    async fn available(&self) -> bool {
-        self.semaphore.available_permits() > 0 || !*self.blocking.read().await
-    }
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
+pub enum PauseState {
+    Continue,
+    Paused,
 }
 
 #[cfg(test)]
@@ -89,16 +53,16 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn controller_semaphore() {
-        let semaphore = ControllerSemaphore::new();
-        assert!(semaphore.available().await);
-        semaphore.set_blocking(true).await;
-        assert!(!semaphore.available().await);
-        semaphore.add_permit();
-        assert!(semaphore.available().await);
-        semaphore.acquire().await;
-        assert!(!semaphore.available().await);
-        semaphore.reset().await;
-        assert!(semaphore.available().await);
+    async fn thread_controller() {
+        let controller = ThreadController::new();
+        assert_eq!(controller.state().await, PauseState::Continue);
+        controller.wait().await;
+        controller.pause().await;
+        assert_eq!(controller.state().await, PauseState::Paused);
+        controller.step();
+        controller.wait().await;
+        controller.continue_().await;
+        assert_eq!(controller.state().await, PauseState::Continue);
+        controller.wait().await;
     }
 }

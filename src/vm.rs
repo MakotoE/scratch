@@ -128,7 +128,7 @@ impl Component for VM {
             Msg::Step => {
                 if let Some(sprite) = self.sprite.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
-                        sprite.write().await.step().await;
+                        sprite.write().await.step();
                     })
                 }
             }

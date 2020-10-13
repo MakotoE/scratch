@@ -1,6 +1,6 @@
 use super::*;
 use blocks::*;
-use controller::ThreadController;
+use controller::{PauseState, ThreadController};
 use gloo_timers::future::TimeoutFuture;
 use runtime::{Coordinate, SpriteRuntime};
 
@@ -84,9 +84,9 @@ impl Sprite {
             .unwrap_or_else(|e| log::error!("{}", e));
     }
 
-    pub async fn step(&self) {
+    pub fn step(&self) {
         for thread in &self.threads {
-            thread.step().await;
+            thread.step();
         }
     }
 }
@@ -116,15 +116,7 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 
 #[derive(Debug)]
 pub struct Thread {
-    inner: Rc<RwLock<Inner>>,
     controller: Rc<ThreadController>,
-}
-
-#[derive(Debug)]
-struct Inner {
-    hat: Rc<RefCell<Box<dyn Block>>>,
-    runtime: Rc<RwLock<SpriteRuntime>>,
-    display_debug: Rc<RwLock<bool>>,
 }
 
 impl Thread {
@@ -133,33 +125,31 @@ impl Thread {
         runtime: Rc<RwLock<SpriteRuntime>>,
         start_state: vm::VMState,
     ) -> Self {
-        let inner = Inner {
-            hat: Rc::new(RefCell::new(hat)),
-            runtime,
-            display_debug: Rc::new(RwLock::new(false)),
-        };
         let thread = Thread {
-            inner: Rc::new(RwLock::new(inner)),
             controller: Rc::new(ThreadController::new()),
         };
 
-        let inner_clone = thread.inner.clone();
         let controller_clone = thread.controller.clone();
         wasm_bindgen_futures::spawn_local(async move {
             match start_state {
                 vm::VMState::Paused => controller_clone.pause().await,
                 vm::VMState::Running => controller_clone.continue_().await,
             }
-            Thread::run(inner_clone, controller_clone).await.unwrap();
+            Thread::run(Rc::new(RefCell::new(hat)), runtime, controller_clone)
+                .await
+                .unwrap_or_else(|e| log::error!("{}", e));
         });
         thread
     }
 
-    async fn run(inner: Rc<RwLock<Inner>>, controller: Rc<ThreadController>) -> Result<()> {
+    async fn run(
+        hat: Rc<RefCell<Box<dyn Block>>>,
+        runtime: Rc<RwLock<SpriteRuntime>>,
+        controller: Rc<ThreadController>,
+    ) -> Result<()> {
         {
-            let thread = inner.write().await;
-            let debug_info = if *thread.display_debug.read().await {
-                let block = thread.hat.borrow();
+            let debug_info = if controller.state().await == PauseState::Paused {
+                let block = hat.borrow();
                 DebugInfo {
                     show: true,
                     block_name: block.block_info().name.to_string(),
@@ -168,15 +158,14 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            thread.runtime.write().await.set_debug_info(&debug_info);
+            runtime.write().await.set_debug_info(&debug_info);
         }
 
-        let mut curr_block = inner.read().await.hat.clone();
+        let mut curr_block = hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
 
         for i in 0usize.. {
-            let thread = inner.write().await;
-            let debug_info = if *thread.display_debug.read().await {
+            let debug_info = if controller.state().await == PauseState::Paused {
                 let block = curr_block.borrow();
                 DebugInfo {
                     show: true,
@@ -186,7 +175,7 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            thread.runtime.write().await.set_debug_info(&debug_info);
+            runtime.write().await.set_debug_info(&debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
             match execute_result {
@@ -223,18 +212,14 @@ impl Thread {
     }
 
     pub async fn continue_(&mut self) {
-        // let inner = self.inner.write().await;
-        // *inner.display_debug.write().await = false;
         self.controller.continue_().await;
     }
 
     pub async fn pause(&mut self) {
-        // let inner = self.inner.write().await;
         self.controller.pause().await;
-        // *inner.display_debug.write().await = true;
     }
 
-    pub async fn step(&self) {
+    pub fn step(&self) {
         self.controller.step();
     }
 }
