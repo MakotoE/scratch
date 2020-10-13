@@ -1,6 +1,6 @@
 use super::*;
 use blocks::*;
-use controller::DebugController;
+use controller::ThreadController;
 use gloo_timers::future::TimeoutFuture;
 use runtime::{Coordinate, SpriteRuntime};
 
@@ -117,7 +117,7 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 #[derive(Debug)]
 pub struct Thread {
     inner: Rc<RwLock<Inner>>,
-    controller: Rc<DebugController>,
+    controller: Rc<ThreadController>,
 }
 
 #[derive(Debug)]
@@ -140,7 +140,7 @@ impl Thread {
         };
         let thread = Thread {
             inner: Rc::new(RwLock::new(inner)),
-            controller: Rc::new(DebugController::new()),
+            controller: Rc::new(ThreadController::new()),
         };
 
         let inner_clone = thread.inner.clone();
@@ -155,7 +155,7 @@ impl Thread {
         thread
     }
 
-    async fn run(inner: Rc<RwLock<Inner>>, controller: Rc<DebugController>) -> Result<()> {
+    async fn run(inner: Rc<RwLock<Inner>>, controller: Rc<ThreadController>) -> Result<()> {
         {
             let thread = inner.write().await;
             let debug_info = if *thread.display_debug.read().await {

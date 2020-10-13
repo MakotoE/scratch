@@ -3,11 +3,11 @@ use super::*;
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct DebugController {
+pub struct ThreadController {
     semphore: Arc<ControllerSemaphore>,
 }
 
-impl DebugController {
+impl ThreadController {
     pub fn new() -> Self {
         Self {
             semphore: Arc::new(ControllerSemaphore::new()),
