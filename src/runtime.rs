@@ -2,7 +2,7 @@ use super::*;
 use palette::IntoColor;
 use pen::Pen;
 use savefile::Image;
-use sprite::DebugInfo;
+use thread::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 

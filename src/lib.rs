@@ -14,6 +14,7 @@ mod pen;
 mod runtime;
 mod savefile;
 mod sprite;
+mod thread;
 mod vm;
 
 use error::*;
