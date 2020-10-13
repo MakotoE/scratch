@@ -53,6 +53,8 @@ impl Thread {
 
         let mut curr_block = hat.clone();
         let mut loop_start: Vec<Rc<RefCell<Box<dyn Block>>>> = Vec::new();
+        let performance = web_sys::window().unwrap().performance().unwrap();
+        let mut last_redraw = performance.now();
 
         for i in 0usize.. {
             let debug_info = if controller.state().await == PauseState::Paused {
@@ -91,10 +93,10 @@ impl Thread {
 
             controller.wait().await;
 
-            if i % 0x1000 == 0 {
-                // TODO record time for variable fps
+            if i % 0x1000 == 0 && performance.now() - last_redraw > 100.0 {
                 // Yield to render loop
                 TimeoutFuture::new(0).await;
+                last_redraw = performance.now();
             }
         }
 
