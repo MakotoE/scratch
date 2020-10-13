@@ -28,15 +28,33 @@ impl Sprite {
             threads.push(Thread::start(block, runtime_ref.clone(), start_state));
         }
 
-        let cb_ref: ClosureRef = Rc::new(RefCell::new(None));
-        let cb_ref_clone = cb_ref.clone();
+        let closure: ClosureRef = Rc::new(RefCell::new(None));
         let request_animation_frame_id = Rc::new(RefCell::new(0));
-        let request_animation_frame_id_clone = request_animation_frame_id.clone();
-        let runtime_clone = runtime_ref.clone();
+        Sprite::start_redraw_loop(
+            closure.clone(),
+            request_animation_frame_id.clone(),
+            runtime_ref.clone(),
+        )?;
+
+        Ok(Self {
+            threads,
+            closure,
+            request_animation_frame_id,
+            runtime: runtime_ref,
+        })
+    }
+
+    fn start_redraw_loop(
+        closure: ClosureRef,
+        request_animation_frame_id: Rc<RefCell<i32>>,
+        runtime: Rc<RwLock<SpriteRuntime>>,
+    ) -> Result<()> {
         let window = web_sys::window().unwrap();
-        *cb_ref.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            let runtime_clone = runtime_clone.clone();
-            let cb_ref_clone = cb_ref_clone.clone();
+        let closure_clone = closure.clone();
+        let request_animation_frame_id_clone = request_animation_frame_id.clone();
+        *closure.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+            let runtime_clone = runtime.clone();
+            let closure_clone = closure_clone.clone();
             let request_animation_frame_id_clone = request_animation_frame_id_clone.clone();
             let window = window.clone();
             wasm_bindgen_futures::spawn_local(async move {
@@ -45,25 +63,21 @@ impl Sprite {
                     return;
                 }
 
-                let cb = cb_ref_clone.borrow();
+                let cb = closure_clone.borrow();
                 let f = cb.as_ref().unwrap();
                 *request_animation_frame_id_clone.borrow_mut() = window
                     .request_animation_frame(f.as_ref().unchecked_ref())
                     .unwrap();
             });
         }) as Box<dyn Fn()>));
-        let cb = cb_ref.borrow();
+
+        let closure_clone = closure.clone();
+        let cb = closure_clone.borrow();
         let f = cb.as_ref().unwrap();
         *request_animation_frame_id.borrow_mut() = web_sys::window()
             .unwrap()
             .request_animation_frame(f.as_ref().unchecked_ref())?;
-
-        Ok(Self {
-            threads,
-            closure: cb_ref.clone(),
-            request_animation_frame_id,
-            runtime: runtime_ref,
-        })
+        Ok(())
     }
 
     pub async fn continue_(&mut self) {
