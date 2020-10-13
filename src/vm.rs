@@ -10,7 +10,7 @@ pub struct VM {
     canvas_ref: NodeRef,
     vm_state: VMState,
     file: Option<ScratchFile>,
-    sprite: Option<Arc<RefCell<Sprite>>>,
+    sprite: Option<Arc<RwLock<Sprite>>>,
 }
 
 pub enum Msg {
@@ -106,7 +106,7 @@ impl Component for VM {
                 });
             }
             Msg::SetSprite(sprite) => {
-                self.sprite = Some(Arc::new(RefCell::new(sprite)));
+                self.sprite = Some(Arc::new(RwLock::new(sprite)));
             }
             Msg::ContinuePause => {
                 let state = self.vm_state;
@@ -116,19 +116,20 @@ impl Component for VM {
                 }
 
                 let sprite = self.sprite.clone();
-
                 wasm_bindgen_futures::spawn_local(async move {
                     if let Some(sprite) = sprite {
                         match state {
-                            VMState::Paused => sprite.borrow_mut().continue_().await,
-                            VMState::Running => sprite.borrow_mut().pause().await,
+                            VMState::Paused => sprite.write().await.continue_().await,
+                            VMState::Running => sprite.write().await.pause().await,
                         }
                     }
                 });
             }
             Msg::Step => {
                 if let Some(sprite) = self.sprite.clone() {
-                    sprite.borrow_mut().step();
+                    wasm_bindgen_futures::spawn_local(async move {
+                        sprite.write().await.step().await;
+                    })
                 }
             }
         }

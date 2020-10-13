@@ -6,11 +6,10 @@ use runtime::{Coordinate, SpriteRuntime};
 
 #[derive(Debug)]
 pub struct Sprite {
-    controllers: Vec<Rc<DebugController>>,
+    threads: Vec<Thread>,
     closure: ClosureRef,
     request_animation_frame_id: Rc<RefCell<i32>>,
     runtime: Rc<RwLock<SpriteRuntime>>,
-    display_debug: Rc<RwLock<bool>>,
 }
 
 impl Sprite {
@@ -22,27 +21,12 @@ impl Sprite {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 
         let runtime_ref = Rc::new(RwLock::new(runtime));
-        let mut controllers: Vec<Rc<DebugController>> = Vec::new();
-        let display_debug = Rc::new(RwLock::new(false));
+        let mut threads: Vec<Thread> = Vec::new();
 
         for hat_id in find_hats(&target.blocks) {
-            let controller = Rc::new(DebugController::new());
-            controllers.push(controller.clone());
-
             let block = block_tree(hat_id, runtime_ref.clone(), &target.blocks)
                 .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            Thread::start(
-                block,
-                runtime_ref.clone(),
-                controller.clone(),
-                display_debug.clone(),
-            );
-            wasm_bindgen_futures::spawn_local(async move {
-                match start_state {
-                    vm::VMState::Paused => controller.pause().await,
-                    vm::VMState::Running => controller.continue_().await,
-                }
-            });
+            threads.push(Thread::start(block, runtime_ref.clone(), start_state));
         }
 
         let cb_ref: ClosureRef = Rc::new(RefCell::new(None));
@@ -76,26 +60,23 @@ impl Sprite {
             .request_animation_frame(f.as_ref().unchecked_ref())?;
 
         Ok(Self {
-            controllers,
+            threads,
             closure: cb_ref.clone(),
             request_animation_frame_id,
             runtime: runtime_ref,
-            display_debug,
         })
     }
 
     pub async fn continue_(&mut self) {
-        *self.display_debug.write().await = false;
-        for c in &self.controllers {
-            c.continue_().await;
+        for thread in &mut self.threads {
+            thread.continue_().await;
         }
     }
 
     pub async fn pause(&mut self) {
-        for c in &self.controllers {
-            c.pause().await;
+        for thread in &mut self.threads {
+            thread.pause().await;
         }
-        *self.display_debug.write().await = true;
         self.runtime
             .write()
             .await
@@ -103,9 +84,9 @@ impl Sprite {
             .unwrap_or_else(|e| log::error!("{}", e));
     }
 
-    pub fn step(&self) {
-        for c in &self.controllers {
-            c.step();
+    pub async fn step(&self) {
+        for thread in &self.threads {
+            thread.step().await;
         }
     }
 }
@@ -136,13 +117,13 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
 #[derive(Debug)]
 pub struct Thread {
     inner: Rc<RwLock<Inner>>,
+    controller: Rc<DebugController>,
 }
 
 #[derive(Debug)]
 struct Inner {
     hat: Rc<RefCell<Box<dyn Block>>>,
     runtime: Rc<RwLock<SpriteRuntime>>,
-    controller: Rc<DebugController>,
     display_debug: Rc<RwLock<bool>>,
 }
 
@@ -150,27 +131,31 @@ impl Thread {
     pub fn start(
         hat: Box<dyn Block>,
         runtime: Rc<RwLock<SpriteRuntime>>,
-        controller: Rc<DebugController>,
-        display_debug: Rc<RwLock<bool>>,
+        start_state: vm::VMState,
     ) -> Self {
         let inner = Inner {
             hat: Rc::new(RefCell::new(hat)),
             runtime,
-            controller,
-            display_debug,
+            display_debug: Rc::new(RwLock::new(false)),
         };
         let thread = Thread {
             inner: Rc::new(RwLock::new(inner)),
+            controller: Rc::new(DebugController::new()),
         };
 
         let inner_clone = thread.inner.clone();
+        let controller_clone = thread.controller.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            Thread::run(inner_clone).await.unwrap();
+            match start_state {
+                vm::VMState::Paused => controller_clone.pause().await,
+                vm::VMState::Running => controller_clone.continue_().await,
+            }
+            Thread::run(inner_clone, controller_clone).await.unwrap();
         });
         thread
     }
 
-    async fn run(inner: Rc<RwLock<Inner>>) -> Result<()> {
+    async fn run(inner: Rc<RwLock<Inner>>, controller: Rc<DebugController>) -> Result<()> {
         {
             let thread = inner.write().await;
             let debug_info = if *thread.display_debug.read().await {
@@ -225,7 +210,7 @@ impl Thread {
                 }
             }
 
-            thread.controller.wait().await;
+            controller.wait().await;
 
             if i % 0x1000 == 0 {
                 // TODO record time for variable fps
@@ -235,6 +220,22 @@ impl Thread {
         }
 
         Ok(())
+    }
+
+    pub async fn continue_(&mut self) {
+        // let inner = self.inner.write().await;
+        // *inner.display_debug.write().await = false;
+        self.controller.continue_().await;
+    }
+
+    pub async fn pause(&mut self) {
+        // let inner = self.inner.write().await;
+        self.controller.pause().await;
+        // *inner.display_debug.write().await = true;
+    }
+
+    pub async fn step(&self) {
+        self.controller.step();
     }
 }
 
