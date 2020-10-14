@@ -25,7 +25,7 @@ pub struct SetVariable {
 impl SetVariable {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             variable_id: None,
             value: None,
@@ -99,7 +99,7 @@ pub struct ChangeVariable {
 impl ChangeVariable {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             variable_id: None,
             value: None,

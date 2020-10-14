@@ -29,7 +29,7 @@ pub struct PenDown {
 impl PenDown {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
         }
@@ -78,7 +78,7 @@ pub struct PenUp {
 impl PenUp {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
         }
@@ -126,7 +126,7 @@ pub struct SetPenColorToColor {
 impl SetPenColorToColor {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             color: None,
@@ -188,7 +188,7 @@ pub struct SetPenSizeTo {
 impl SetPenSizeTo {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             size: None,
@@ -243,7 +243,7 @@ pub struct Clear {
 impl Clear {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
         }
@@ -291,7 +291,7 @@ pub struct SetPenShadeToNumber {
 impl SetPenShadeToNumber {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             shade: None,
@@ -371,7 +371,7 @@ pub struct SetPenHueToNumber {
 impl SetPenHueToNumber {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             hue: None,

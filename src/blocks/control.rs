@@ -30,7 +30,7 @@ pub struct If {
 impl If {
     pub fn new(id: String) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             condition: None,
             next: None,
             substack: None,
@@ -111,7 +111,7 @@ pub struct Wait {
 impl Wait {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             next: None,
             duration: None,
             runtime,
@@ -165,10 +165,7 @@ pub struct Forever {
 
 impl Forever {
     pub fn new(id: String) -> Self {
-        Self {
-            id: id.to_string(),
-            substack: None,
-        }
+        Self { id, substack: None }
     }
 }
 
@@ -216,7 +213,7 @@ pub struct Repeat {
 impl Repeat {
     pub fn new(id: String) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             times: None,
             next: None,
             substack: None,
@@ -282,7 +279,7 @@ pub struct RepeatUntil {
 impl RepeatUntil {
     pub fn new(id: String) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             next: None,
             substack: None,
             condition: None,
@@ -356,7 +353,7 @@ pub struct IfElse {
 impl IfElse {
     pub fn new(id: String) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             next: None,
             condition: None,
             substack_true: None,

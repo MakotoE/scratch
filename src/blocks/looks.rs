@@ -7,8 +7,9 @@ pub fn get_block(
     runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
-        "say" => Box::new(looks::Say::new(id, runtime)),
-        "sayforsecs" => Box::new(looks::SayForSecs::new(id, runtime)),
+        "say" => Box::new(Say::new(id, runtime)),
+        "sayforsecs" => Box::new(SayForSecs::new(id, runtime)),
+        "gotofrontback" => Box::new(GoToFrontBack::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -24,7 +25,7 @@ pub struct Say {
 impl Say {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             message: None,
             next: None,
@@ -88,7 +89,7 @@ pub struct SayForSecs {
 impl SayForSecs {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             message: None,
             secs: None,
@@ -143,4 +144,39 @@ impl Block for SayForSecs {
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
         Next::continue_(self.next.clone())
     }
+}
+
+#[derive(Debug)]
+pub struct GoToFrontBack {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl GoToFrontBack {
+    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+        Self { id, next: None }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for GoToFrontBack {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "GoToFrontBack",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+
+    fn set_field(&mut self, _key: &str, _value_id: String) {}
 }

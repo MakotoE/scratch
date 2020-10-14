@@ -23,7 +23,7 @@ pub struct WhenFlagClicked {
 impl WhenFlagClicked {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
         }
@@ -70,7 +70,7 @@ pub struct WhenBroadcastReceived {
 impl WhenBroadcastReceived {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             broadcast_id: String::new(),
@@ -96,19 +96,19 @@ impl Block for WhenBroadcastReceived {
         }
     }
 
-    fn set_field(&mut self, key: &str, value_id: String) {
-        if key == "BROADCAST_OPTION" {
-            self.broadcast_id = value_id;
-        }
-    }
-
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "next" {
             self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 
+    fn set_field(&mut self, key: &str, value_id: String) {
+        if key == "BROADCAST_OPTION" {
+            self.broadcast_id = value_id;
+        }
+    }
+
     async fn execute(&mut self) -> Next {
-        Next::continue_(self.next.clone())
+        unimplemented!()
     }
 }

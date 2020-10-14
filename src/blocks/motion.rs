@@ -30,7 +30,7 @@ pub struct MoveSteps {
 impl MoveSteps {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             steps: None,
@@ -90,7 +90,7 @@ pub struct GoToXY {
 impl GoToXY {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             x: None,
@@ -155,7 +155,7 @@ pub struct ChangeXBy {
 impl ChangeXBy {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             dx: None,
@@ -213,7 +213,7 @@ pub struct ChangeYBy {
 impl ChangeYBy {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             dy: None,
@@ -271,7 +271,7 @@ pub struct SetX {
 impl SetX {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             x: None,
@@ -332,7 +332,7 @@ pub struct SetY {
 impl SetY {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
-            id: id.to_string(),
+            id,
             runtime,
             next: None,
             y: None,
@@ -388,10 +388,7 @@ pub struct XPosition {
 
 impl XPosition {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
-        Self {
-            id: id.to_string(),
-            runtime,
-        }
+        Self { id, runtime }
     }
 }
 
@@ -428,10 +425,7 @@ pub struct YPosition {
 
 impl YPosition {
     pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
-        Self {
-            id: id.to_string(),
-            runtime,
-        }
+        Self { id, runtime }
     }
 }
 
