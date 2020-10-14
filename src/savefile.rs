@@ -1,5 +1,6 @@
 use super::*;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -14,7 +15,7 @@ pub struct ScratchFile {
 #[serde(rename_all = "camelCase")]
 pub struct Project {
     pub targets: Vec<Target>,
-    pub monitors: Vec<String>,
+    pub monitors: Vec<Monitor>,
     pub extensions: Vec<String>,
     pub meta: Meta,
 }
@@ -39,7 +40,7 @@ pub struct Target {
 #[serde(rename_all = "camelCase")]
 pub struct Variable {
     pub id: String,
-    pub value: serde_json::Value,
+    pub value: Value,
     #[serde(default)]
     pub i_dont_know_what_this_does: bool,
 }
@@ -49,7 +50,7 @@ pub struct Variable {
 pub struct Block {
     pub opcode: String,
     pub next: Option<String>,
-    pub inputs: HashMap<String, serde_json::Value>,
+    pub inputs: HashMap<String, Value>,
     pub fields: HashMap<String, Vec<String>>,
     pub top_level: bool,
 }
@@ -61,6 +62,30 @@ pub struct Costume {
     pub md5ext: String,
     pub rotation_center_x: f64,
     pub rotation_center_y: f64,
+}
+
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Monitor {
+    pub id: String,
+    pub mode: String,
+    pub opcode: String,
+    pub params: MonitorParams,
+    pub sprite_name: Option<String>,
+    pub value: Value,
+    pub x: f64,
+    pub y: f64,
+    pub visible: bool,
+    pub slider_min: f64,
+    pub slider_max: f64,
+    pub is_discrete: bool,
+}
+
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonitorParams {
+    #[serde(rename = "VARIABLE")]
+    pub variable: String,
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
