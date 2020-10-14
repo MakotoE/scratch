@@ -5,6 +5,7 @@ mod looks;
 mod motion;
 mod operator;
 mod pen;
+mod sound;
 mod value;
 
 use super::*;
@@ -45,6 +46,8 @@ fn get_block(
         "pen" => {
             pen::get_block(name, id.clone(), runtime).map_err(|e| add_error_context(id, "pen", e))
         }
+        "sound" => sound::get_block(name, id.clone(), runtime)
+            .map_err(|e| add_error_context(id, "sound", e)),
         _ => Err(wrap_err!(format!(
             "block id \"{}\": opcode {} does not exist",
             id, info.opcode
