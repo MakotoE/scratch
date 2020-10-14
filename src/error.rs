@@ -36,6 +36,11 @@ error_chain::error_chain! {
                 error.to_string(),
             )
         }
+
+        File(error: Box<Error>, file: String) {
+            description("file error")
+            display("{}: {}", file, error.to_string())
+        }
     }
 }
 

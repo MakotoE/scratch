@@ -84,7 +84,7 @@ impl Sprite {
     }
 
     pub async fn continue_(&mut self) {
-        self.runtime.write().await.set_draw_debug_info(true);
+        self.runtime.write().await.set_draw_debug_info(false);
         for thread in &mut self.threads {
             thread.continue_().await;
         }

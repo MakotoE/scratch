@@ -76,7 +76,12 @@ impl ScratchFile {
         use std::io::Read;
 
         let mut archive = zip::ZipArchive::new(file)?;
-        let project: Project = serde_json::from_reader(archive.by_name("project.json")?)?;
+        let project: Project = match serde_json::from_reader(archive.by_name("project.json")?) {
+            Ok(p) => p,
+            Err(e) => {
+                return Err(ErrorKind::File(Box::new(e.into()), "project.json".to_string()).into());
+            }
+        };
 
         let mut image_names: Vec<String> = Vec::new();
         for name in archive.file_names() {
@@ -88,13 +93,18 @@ impl ScratchFile {
         let mut images: HashMap<String, Image> = HashMap::new();
         for name in &image_names {
             let mut b: Vec<u8> = Vec::new();
-            archive.by_name(name)?.read_to_end(&mut b)?;
+            match archive.by_name(name).unwrap().read_to_end(&mut b) {
+                Ok(_) => {}
+                Err(e) => return Err(ErrorKind::File(Box::new(e.into()), name.clone()).into()),
+            };
             let image = if name.ends_with(".svg") {
                 Image::SVG(b)
             } else if name.ends_with(".png") {
                 Image::PNG(b)
             } else {
-                unreachable!()
+                let e =
+                    ErrorKind::File(Box::new("unrecognized file extension".into()), name.clone());
+                return Err(e.into());
             };
             images.insert(name.clone(), image);
         }
