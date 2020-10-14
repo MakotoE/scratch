@@ -16,7 +16,8 @@ pub struct SpriteRuntime {
     current_costume: usize,
     text: Option<String>,
     pen: Pen,
-    debug_info: DebugInfo,
+    draw_debug_info: bool,
+    debug_info: HashMap<usize, DebugInfo>,
 }
 
 #[allow(dead_code)]
@@ -34,7 +35,8 @@ impl SpriteRuntime {
             current_costume: 0,
             text: None,
             pen: Pen::new(),
-            debug_info: DebugInfo::default(),
+            draw_debug_info: false,
+            debug_info: HashMap::new(),
         }
     }
 
@@ -70,7 +72,9 @@ impl SpriteRuntime {
             self.context.restore();
         }
 
-        SpriteRuntime::draw_debug_info(&self.context, &self.debug_info)?;
+        if self.draw_debug_info {
+            SpriteRuntime::draw_debug_info(&self.context, &self.debug_info)?;
+        }
 
         self.need_redraw = false;
         Ok(())
@@ -158,16 +162,22 @@ impl SpriteRuntime {
 
     fn draw_debug_info(
         context: &web_sys::CanvasRenderingContext2d,
-        debug_info: &DebugInfo,
+        debug_info: &HashMap<usize, DebugInfo>,
     ) -> Result<()> {
-        if debug_info.show {
-            context.set_font("12px monospace");
-            context.set_fill_style(&"#080808".into());
-            context.fill_text(&format!("block_id: {}", &debug_info.block_id), 10.0, 20.0)?;
+        context.set_font("10px monospace");
+        context.set_fill_style(&"#080808".into());
+        for (i, (thread_id, debug_info)) in debug_info.iter().enumerate() {
+            let y_start = 16.0 + (i as f64 * 42.0);
+            context.fill_text(&format!("thread_id: {}", &thread_id), 8.0, y_start)?;
+            context.fill_text(
+                &format!("block_id: {}", &debug_info.block_id),
+                8.0,
+                y_start + 13.0,
+            )?;
             context.fill_text(
                 &format!("block_name: {}", &debug_info.block_name),
-                10.0,
-                35.0,
+                8.0,
+                y_start + 26.0,
             )?;
         }
         Ok(())
@@ -229,10 +239,13 @@ impl SpriteRuntime {
         &mut self.pen
     }
 
-    pub fn set_debug_info(&mut self, debug_info: &DebugInfo) {
-        // TODO thread id parameter
+    pub fn set_draw_debug_info(&mut self, draw_debug_info: bool) {
+        self.draw_debug_info = draw_debug_info;
+    }
+
+    pub fn set_debug_info(&mut self, thread_id: usize, debug_info: DebugInfo) {
         self.need_redraw = true;
-        self.debug_info = debug_info.clone();
+        self.debug_info.insert(thread_id, debug_info);
     }
 }
 

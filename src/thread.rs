@@ -14,6 +14,7 @@ impl Thread {
         hat: Box<dyn Block>,
         runtime: Rc<RwLock<SpriteRuntime>>,
         start_state: vm::VMState,
+        thread_id: usize,
     ) -> Self {
         let thread = Thread {
             controller: Rc::new(ThreadController::new()),
@@ -25,9 +26,14 @@ impl Thread {
                 vm::VMState::Paused => controller_clone.pause().await,
                 vm::VMState::Running => controller_clone.continue_().await,
             }
-            Thread::run(Rc::new(RefCell::new(hat)), runtime, controller_clone)
-                .await
-                .unwrap_or_else(|e| log::error!("{}", e));
+            Thread::run(
+                Rc::new(RefCell::new(hat)),
+                runtime,
+                controller_clone,
+                thread_id,
+            )
+            .await
+            .unwrap_or_else(|e| log::error!("{}", e));
         });
         thread
     }
@@ -36,19 +42,19 @@ impl Thread {
         hat: Rc<RefCell<Box<dyn Block>>>,
         runtime: Rc<RwLock<SpriteRuntime>>,
         controller: Rc<ThreadController>,
+        thread_id: usize,
     ) -> Result<()> {
         {
             let debug_info = if controller.state().await == PauseState::Paused {
                 let block = hat.borrow();
                 DebugInfo {
-                    show: true,
                     block_name: block.block_info().name.to_string(),
                     block_id: block.block_info().id,
                 }
             } else {
                 DebugInfo::default()
             };
-            runtime.write().await.set_debug_info(&debug_info);
+            runtime.write().await.set_debug_info(thread_id, debug_info);
         }
 
         let mut curr_block = hat.clone();
@@ -60,14 +66,13 @@ impl Thread {
             let debug_info = if controller.state().await == PauseState::Paused {
                 let block = curr_block.borrow();
                 DebugInfo {
-                    show: true,
                     block_name: block.block_info().name.to_string(),
                     block_id: block.block_info().id.to_string(),
                 }
             } else {
                 DebugInfo::default()
             };
-            runtime.write().await.set_debug_info(&debug_info);
+            runtime.write().await.set_debug_info(thread_id, debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
             match execute_result {
@@ -118,7 +123,6 @@ impl Thread {
 
 #[derive(Debug, Default, Clone)]
 pub struct DebugInfo {
-    pub show: bool,
     pub block_id: String,
     pub block_name: String,
 }

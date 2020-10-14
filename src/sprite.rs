@@ -22,10 +22,13 @@ impl Sprite {
         let runtime_ref = Rc::new(RwLock::new(runtime));
         let mut threads: Vec<Thread> = Vec::new();
 
-        for hat_id in find_hats(&target.blocks) {
-            let block = block_tree(hat_id, runtime_ref.clone(), &target.blocks)
-                .map_err(|e| ErrorKind::Initialization(Box::new(e)))?;
-            threads.push(Thread::start(block, runtime_ref.clone(), start_state));
+        for (thread_id, hat_id) in find_hats(&target.blocks).iter().enumerate() {
+            let block = match block_tree(hat_id, runtime_ref.clone(), &target.blocks) {
+                Ok(b) => b,
+                Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
+            };
+            let thread = Thread::start(block, runtime_ref.clone(), start_state, thread_id);
+            threads.push(thread);
         }
 
         let closure: ClosureRef = Rc::new(RefCell::new(None));
@@ -81,6 +84,7 @@ impl Sprite {
     }
 
     pub async fn continue_(&mut self) {
+        self.runtime.write().await.set_draw_debug_info(true);
         for thread in &mut self.threads {
             thread.continue_().await;
         }
@@ -90,11 +94,9 @@ impl Sprite {
         for thread in &mut self.threads {
             thread.pause().await;
         }
-        self.runtime
-            .write()
-            .await
-            .redraw()
-            .unwrap_or_else(|e| log::error!("{}", e));
+        let mut runtime = self.runtime.write().await;
+        runtime.set_draw_debug_info(true);
+        runtime.redraw().unwrap_or_else(|e| log::error!("{}", e));
     }
 
     pub fn step(&self) {
