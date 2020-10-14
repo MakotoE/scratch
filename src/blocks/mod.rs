@@ -198,17 +198,20 @@ pub fn block_tree(
         }
     }
     for (k, field) in &info.fields {
-        match field.get(1) {
-            Some(value_id) => {
-                block.set_field(k, value_id.clone());
-            }
-            None => {
-                return Err(wrap_err!(format!(
-                    "block \"{}\": invalid field {}",
-                    top_block_id, k
-                )))
-            }
-        }
+        let field_string = match field.get(1) {
+            Some(s) => s,
+            None => match field.get(0) {
+                Some(s) => s,
+                None => {
+                    return Err(wrap_err!(format!(
+                        "block \"{}\": invalid field {}",
+                        top_block_id, k
+                    )));
+                }
+            },
+        };
+
+        block.set_field(k, field_string.clone());
     }
     Ok(block)
 }
