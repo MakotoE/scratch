@@ -7,6 +7,7 @@ pub fn get_block(
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "play" => Box::new(Play::new(id, runtime)),
+        "sounds_menu" => Box::new(SoundsMenu::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -46,4 +47,36 @@ impl Block for Play {
             self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
+}
+
+#[derive(Debug)]
+pub struct SoundsMenu {
+    id: String,
+}
+
+impl SoundsMenu {
+    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SoundsMenu {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SoundsMenu",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 }
