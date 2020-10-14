@@ -17,6 +17,7 @@ pub struct SpriteRuntime {
     text: Option<String>,
     pen: Pen,
     draw_debug_info: bool,
+    // TODO make this a Vec because this should always be sorted
     debug_info: HashMap<usize, DebugInfo>,
 }
 

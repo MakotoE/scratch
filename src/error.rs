@@ -41,6 +41,11 @@ error_chain::error_chain! {
             description("file error")
             display("{}: {}", file, error.to_string())
         }
+
+        BlockInitialization(block_id: String, category: String, error: Box<Error>) {
+            description("block initialization error")
+            display("block id \"{}\", category {}: {}", block_id, category, error)
+        }
     }
 }
 

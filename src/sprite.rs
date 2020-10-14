@@ -23,7 +23,7 @@ impl Sprite {
         let mut threads: Vec<Thread> = Vec::new();
 
         for (thread_id, hat_id) in find_hats(&target.blocks).iter().enumerate() {
-            let block = match block_tree(hat_id, runtime_ref.clone(), &target.blocks) {
+            let block = match block_tree(hat_id.to_string(), runtime_ref.clone(), &target.blocks) {
                 Ok(b) => b,
                 Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
             };

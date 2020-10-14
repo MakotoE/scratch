@@ -46,7 +46,7 @@ impl Component for FileViewer {
 
                 self.block_inputs.clear();
                 for hat in hats {
-                    match blocks::block_tree(hat, runtime_ref.clone(), &target.blocks) {
+                    match blocks::block_tree(hat.to_string(), runtime_ref.clone(), &target.blocks) {
                         Ok(b) => self.block_inputs.push(b.block_inputs()),
                         Err(e) => log::error!("error occurred while initializing tree: {}", e),
                     }

@@ -4,7 +4,7 @@ use maplit::hashmap;
 
 pub fn get_block(
     name: &str,
-    id: &str,
+    id: String,
     runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -28,7 +28,7 @@ pub struct If {
 }
 
 impl If {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             condition: None,
@@ -109,7 +109,7 @@ pub struct Wait {
 }
 
 impl Wait {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             next: None,
@@ -164,7 +164,7 @@ pub struct Forever {
 }
 
 impl Forever {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             substack: None,
@@ -214,7 +214,7 @@ pub struct Repeat {
 }
 
 impl Repeat {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             times: None,
@@ -280,7 +280,7 @@ pub struct RepeatUntil {
 }
 
 impl RepeatUntil {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             next: None,
@@ -354,7 +354,7 @@ pub struct IfElse {
 }
 
 impl IfElse {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             next: None,

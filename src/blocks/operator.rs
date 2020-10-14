@@ -2,7 +2,7 @@ use super::*;
 
 pub fn get_block(
     name: &str,
-    id: &str,
+    id: String,
     _runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -27,7 +27,7 @@ pub struct Equals {
 }
 
 impl Equals {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             operand1: None,
@@ -113,7 +113,7 @@ pub struct Add {
 }
 
 impl Add {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             num1: None,
@@ -162,7 +162,7 @@ pub struct Subtract {
 }
 
 impl Subtract {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             num1: None,
@@ -211,7 +211,7 @@ pub struct Multiply {
 }
 
 impl Multiply {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             num1: None,
@@ -260,7 +260,7 @@ pub struct Divide {
 }
 
 impl Divide {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             num1: None,
@@ -309,7 +309,7 @@ pub struct And {
 }
 
 impl And {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             operand1: None,
@@ -381,7 +381,7 @@ pub struct Not {
 }
 
 impl Not {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             operand: None,
@@ -441,7 +441,7 @@ pub struct LessThan {
 }
 
 impl LessThan {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             operand1: None,
@@ -502,7 +502,7 @@ pub struct GreaterThan {
 }
 
 impl GreaterThan {
-    pub fn new(id: &str) -> Self {
+    pub fn new(id: String) -> Self {
         Self {
             id: id.to_string(),
             operand1: None,

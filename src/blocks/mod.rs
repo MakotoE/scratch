@@ -14,7 +14,7 @@ use runtime::Coordinate;
 use runtime::SpriteRuntime;
 
 fn get_block(
-    id: &str,
+    id: String,
     runtime: Rc<RwLock<SpriteRuntime>>,
     info: &savefile::Block,
 ) -> Result<Box<dyn Block>> {
@@ -29,23 +29,22 @@ fn get_block(
     };
 
     match category {
-        "control" => {
-            control::get_block(name, id, runtime).map_err(|e| add_error_context(id, "control", e))
+        "control" => control::get_block(name, id.clone(), runtime)
+            .map_err(|e| add_error_context(id, "control", e)),
+        "data" => {
+            data::get_block(name, id.clone(), runtime).map_err(|e| add_error_context(id, "data", e))
         }
-        "data" => data::get_block(name, id, runtime).map_err(|e| add_error_context(id, "data", e)),
-        "event" => {
-            event::get_block(name, id, runtime).map_err(|e| add_error_context(id, "event", e))
+        "event" => event::get_block(name, id.clone(), runtime)
+            .map_err(|e| add_error_context(id, "event", e)),
+        "looks" => looks::get_block(name, id.clone(), runtime)
+            .map_err(|e| add_error_context(id, "looks", e)),
+        "motion" => motion::get_block(name, id.clone(), runtime)
+            .map_err(|e| add_error_context(id, "motion", e)),
+        "operator" => operator::get_block(name, id.clone(), runtime)
+            .map_err(|e| add_error_context(id, "operator", e)),
+        "pen" => {
+            pen::get_block(name, id.clone(), runtime).map_err(|e| add_error_context(id, "pen", e))
         }
-        "looks" => {
-            looks::get_block(name, id, runtime).map_err(|e| add_error_context(id, "looks", e))
-        }
-        "motion" => {
-            motion::get_block(name, id, runtime).map_err(|e| add_error_context(id, "motion", e))
-        }
-        "operator" => {
-            operator::get_block(name, id, runtime).map_err(|e| add_error_context(id, "operator", e))
-        }
-        "pen" => pen::get_block(name, id, runtime).map_err(|e| add_error_context(id, "pen", e)),
         _ => Err(wrap_err!(format!(
             "block id \"{}\": opcode {} does not exist",
             id, info.opcode
@@ -53,8 +52,8 @@ fn get_block(
     }
 }
 
-fn add_error_context(id: &str, category: &str, err: Error) -> Error {
-    format!("block id \"{}\", category {}: {}", id, category, err).into()
+fn add_error_context(id: String, category: &str, e: Error) -> Error {
+    ErrorKind::BlockInitialization(id, category.to_string(), Box::new(e)).into()
 }
 
 #[async_trait(?Send)]
@@ -162,17 +161,17 @@ impl BlockInputs {
 }
 
 pub fn block_tree(
-    top_block_id: &str,
+    top_block_id: String,
     runtime: Rc<RwLock<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
-    let info = match infos.get(top_block_id) {
+    let info = match infos.get(&top_block_id) {
         Some(b) => b,
         None => return Err(wrap_err!(format!("could not find block: {}", top_block_id))),
     };
-    let mut block = get_block(top_block_id, runtime.clone(), &info)?;
+    let mut block = get_block(top_block_id.clone(), runtime.clone(), &info)?;
     if let Some(next_id) = &info.next {
-        block.set_input("next", block_tree(next_id, runtime.clone(), infos)?);
+        block.set_input("next", block_tree(next_id.clone(), runtime.clone(), infos)?);
     }
     for (k, input) in &info.inputs {
         let input_err = |msg: &str| {
@@ -234,7 +233,7 @@ fn block_from_input_arr(
 ) -> Result<Box<dyn Block>> {
     match input_arr.get(1) {
         Some(a) => match a {
-            serde_json::Value::String(id) => block_tree(&id, runtime, infos),
+            serde_json::Value::String(id) => block_tree(id.clone(), runtime, infos),
             serde_json::Value::Array(arr) => match arr.get(2).and_then(|v| v.as_str()) {
                 Some(id) => Ok(Box::new(value::Variable::new(id.to_string(), runtime))),
                 None => Err(wrap_err!("invalid input type")),

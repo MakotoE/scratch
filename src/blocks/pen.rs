@@ -4,7 +4,7 @@ use palette::Mix;
 
 pub fn get_block(
     name: &str,
-    id: &str,
+    id: String,
     runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -27,7 +27,7 @@ pub struct PenDown {
 }
 
 impl PenDown {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -76,7 +76,7 @@ pub struct PenUp {
 }
 
 impl PenUp {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -124,7 +124,7 @@ pub struct SetPenColorToColor {
 }
 
 impl SetPenColorToColor {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -186,7 +186,7 @@ pub struct SetPenSizeTo {
 }
 
 impl SetPenSizeTo {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -241,7 +241,7 @@ pub struct Clear {
 }
 
 impl Clear {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -289,7 +289,7 @@ pub struct SetPenShadeToNumber {
 }
 
 impl SetPenShadeToNumber {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -369,7 +369,7 @@ pub struct SetPenHueToNumber {
 }
 
 impl SetPenHueToNumber {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,

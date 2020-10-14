@@ -3,11 +3,12 @@ use maplit::hashmap;
 
 pub fn get_block(
     name: &str,
-    id: &str,
+    id: String,
     runtime: Rc<RwLock<SpriteRuntime>>,
 ) -> Result<Box<dyn Block>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
+        "whenbroadcastreceived" => Box::new(WhenBroadcastReceived::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -20,7 +21,7 @@ pub struct WhenFlagClicked {
 }
 
 impl WhenFlagClicked {
-    pub fn new(id: &str, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
         Self {
             id: id.to_string(),
             runtime,
@@ -44,6 +45,60 @@ impl Block for WhenFlagClicked {
             fields: HashMap::new(),
             inputs: HashMap::new(),
             stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        Next::continue_(self.next.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct WhenBroadcastReceived {
+    id: String,
+    runtime: Rc<RwLock<SpriteRuntime>>,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    broadcast_id: String,
+}
+
+impl WhenBroadcastReceived {
+    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+        Self {
+            id: id.to_string(),
+            runtime,
+            next: None,
+            broadcast_id: String::new(),
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for WhenBroadcastReceived {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "WhenBroadcastReceived",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: hashmap! {"BROADCAST_OPTION" => self.broadcast_id.clone()},
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_field(&mut self, key: &str, value_id: String) {
+        if key == "BROADCAST_OPTION" {
+            self.broadcast_id = value_id;
         }
     }
 
