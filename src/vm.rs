@@ -34,7 +34,7 @@ impl VM {
     ) -> Result<SpriteRuntime> {
         let mut variables: HashMap<String, serde_json::Value> = HashMap::new();
         for (key, v) in &scratch_file.project.targets[0].variables {
-            variables.insert(key.clone(), v.1.clone());
+            variables.insert(key.clone(), v.value.clone());
         }
 
         let mut runtime = runtime::SpriteRuntime::new(context, variables);

@@ -24,7 +24,7 @@ pub struct Project {
 pub struct Target {
     pub is_stage: bool,
     pub name: String,
-    pub variables: HashMap<String, (String, serde_json::Value)>,
+    pub variables: HashMap<String, Variable>,
     pub blocks: HashMap<String, Block>,
     pub costumes: Vec<Costume>,
     #[serde(default)]
@@ -33,6 +33,15 @@ pub struct Target {
     pub y: f64,
     #[serde(default)]
     pub size: f64,
+}
+
+#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Variable {
+    pub id: String,
+    pub value: serde_json::Value,
+    #[serde(default)]
+    pub i_dont_know_what_this_does: bool,
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
