@@ -177,33 +177,25 @@ pub fn block_tree(
         block.set_input("next", block_tree(next_id.clone(), runtime.clone(), infos)?);
     }
     for (k, input) in &info.inputs {
-        let input_err = |msg: &str| {
-            Err(wrap_err!(format!(
-                "block \"{}\", input {}: {}",
-                top_block_id,
-                k.as_str(),
-                msg,
-            )))
-        };
         let input_arr = match input.as_array() {
             Some(a) => a,
-            None => return input_err("invalid type"),
+            None => {
+                let e = ErrorKind::BlockInput(
+                    top_block_id.clone(),
+                    k.clone(),
+                    Box::new("invalid type".into()),
+                );
+                return Err(e.into());
+            }
         };
-        let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
-            Some(n) => n,
-            None => return input_err("invalid type"),
-        };
-        let input_block = match input_type {
-            // Value
-            1 => match value_from_input_arr(input_arr) {
-                Some(b) => b,
-                None => return input_err("invalid type"),
-            },
-            // Block or variable
-            2 | 3 => block_from_input_arr(input_arr, runtime.clone(), infos)?,
-            _ => return input_err("invalid type"),
-        };
-        block.set_input(k, input_block);
+
+        match input_block(input_arr, runtime.clone(), infos) {
+            Ok(b) => block.set_input(k, b),
+            Err(e) => {
+                let e = ErrorKind::BlockInput(top_block_id.clone(), k.clone(), Box::new(e));
+                return Err(e.into());
+            }
+        }
     }
     for (k, field) in &info.fields {
         match field.get(1) {
@@ -221,29 +213,42 @@ pub fn block_tree(
     Ok(block)
 }
 
-fn value_from_input_arr(input_arr: &[serde_json::Value]) -> Option<Box<value::Value>> {
-    input_arr
-        .get(1)
-        .and_then(|v| v.as_array())
-        .and_then(|v| v.get(1))
-        .map(|v| Box::new(value::Value::from(v.clone())))
-}
-
-fn block_from_input_arr(
-    input_arr: &[serde_json::Value],
+fn input_block(
+    input_arr: &Vec<serde_json::Value>,
     runtime: Rc<RwLock<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
-    match input_arr.get(1) {
-        Some(a) => match a {
-            serde_json::Value::String(id) => block_tree(id.clone(), runtime, infos),
-            serde_json::Value::Array(arr) => match arr.get(2).and_then(|v| v.as_str()) {
-                Some(id) => Ok(Box::new(value::Variable::new(id.to_string(), runtime))),
-                None => Err(wrap_err!("invalid input type")),
-            },
-            _ => Err(wrap_err!("invalid input type")),
-        },
-        None => Err(wrap_err!("invalid input type")),
+    let input_arr1 = match input_arr.get(1) {
+        Some(v) => v,
+        None => return Err(wrap_err!("invalid type")),
+    };
+
+    match input_arr1 {
+        serde_json::Value::String(block_id) => block_tree(block_id.clone(), runtime.clone(), infos),
+        serde_json::Value::Array(arr) => {
+            let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
+                Some(n) => n,
+                None => return Err(wrap_err!("invalid type")),
+            };
+
+            match input_type {
+                // Value
+                1 => match arr.get(1) {
+                    Some(v) => Ok(Box::new(value::Value::from(v.clone()))),
+                    None => Err(wrap_err!("invalid input type")),
+                },
+                // Variable
+                2 | 3 => match arr.get(2).and_then(|v| v.as_str()) {
+                    Some(id) => Ok(Box::new(value::Variable::new(
+                        id.to_string(),
+                        runtime.clone(),
+                    ))),
+                    None => Err(wrap_err!("invalid input type")),
+                },
+                _ => Err(wrap_err!("invalid input type id")),
+            }
+        }
+        _ => Err(wrap_err!("invalid type")),
     }
 }
 

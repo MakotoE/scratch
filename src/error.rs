@@ -21,10 +21,7 @@ error_chain::error_chain! {
 
         Initialization(error: Box<Error>) {
             description("initialization error")
-            display(
-                "error during initialization: {}",
-                error.to_string(),
-            )
+            display("error during initialization: {}", error)
         }
 
         Block(block_name: &'static str, block_id: String, error: Box<Error>) {
@@ -33,18 +30,23 @@ error_chain::error_chain! {
                 r#"block "{}" of type {} returned error during execution: {}"#,
                 block_id,
                 block_name,
-                error.to_string(),
+                error
             )
         }
 
         File(error: Box<Error>, file: String) {
             description("file error")
-            display("{}: {}", file, error.to_string())
+            display("{}: {}", file, error)
         }
 
         BlockInitialization(block_id: String, category: String, error: Box<Error>) {
             description("block initialization error")
             display("block id \"{}\", category {}: {}", block_id, category, error)
+        }
+
+        BlockInput(block_id: String, input_id: String, error: Box<Error>) {
+            description("block input error")
+            display(r#"block id "{}", input "{}": {}"#, block_id, input_id, error)
         }
     }
 }
