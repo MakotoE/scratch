@@ -10,6 +10,8 @@ pub fn get_block(
         "say" => Box::new(Say::new(id, runtime)),
         "sayforsecs" => Box::new(SayForSecs::new(id, runtime)),
         "gotofrontback" => Box::new(GoToFrontBack::new(id, runtime)),
+        "hide" => Box::new(Hide::new(id, runtime)),
+        "show" => Box::new(Show::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -179,4 +181,70 @@ impl Block for GoToFrontBack {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     fn set_field(&mut self, _key: &str, _value_id: String) {}
+}
+
+#[derive(Debug)]
+pub struct Hide {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl Hide {
+    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+        Self { id, next: None }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Hide {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Hide",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct Show {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl Show {
+    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+        Self { id, next: None }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Show {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Show",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 }
