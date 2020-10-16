@@ -64,10 +64,11 @@ impl Component for FileViewer {
         html! {
             <>
                 <FileInput onchange={self.link.callback(Msg::LoadFile)} />
-                <canvas // Dummy canvas
+                <canvas // Dummy canvas for Sprite
                     ref={self.canvas_ref.clone()}
                     width="0"
                     height="0"
+                    hidden="true"
                 />
                 <style>
                     {"br { margin-bottom: 2px; }"}
@@ -77,7 +78,7 @@ impl Component for FileViewer {
                         for self.block_inputs.iter().enumerate().map(|(i, block)| {
                             html! {
                                 <>
-                                    <h1><strong>{String::from("Thread ") + &i.to_string()}</strong></h1>
+                                    <h2><strong>{String::from("Thread ") + &i.to_string()}</strong></h2>
                                     <Diagram block_inputs={block} />
                                 </>
                             }
