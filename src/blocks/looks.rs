@@ -12,6 +12,7 @@ pub fn get_block(
         "gotofrontback" => Box::new(GoToFrontBack::new(id, runtime)),
         "hide" => Box::new(Hide::new(id, runtime)),
         "show" => Box::new(Show::new(id, runtime)),
+        "seteffectto" => Box::new(SetEffectTo::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -233,6 +234,39 @@ impl Block for Show {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Show",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct SetEffectTo {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl SetEffectTo {
+    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+        Self { id, next: None }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SetEffectTo {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetEffectTo",
             id: self.id.clone(),
         }
     }
