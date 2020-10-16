@@ -15,7 +15,7 @@ impl Sprite {
     pub fn new(
         mut runtime: SpriteRuntime,
         target: &savefile::Target,
-        start_state: vm::VMState,
+        start_state: interface::VMState,
     ) -> Result<Self> {
         runtime.set_position(&Coordinate::new(target.x, target.y));
 

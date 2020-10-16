@@ -1,6 +1,6 @@
 use super::*;
 use fileviewer::FileViewer;
-use vm::VM;
+use interface::ScratchInterface;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -32,7 +32,7 @@ impl Component for App {
 
     fn view(&self) -> Html {
         let render = Router::render(|switch: Route| match switch {
-            Route::Index => html! {<VM />},
+            Route::Index => html! {<ScratchInterface />},
             Route::FileViewer => html! {<FileViewer />},
         });
         let redirect = Router::redirect(|route: yew_router::route::Route| {

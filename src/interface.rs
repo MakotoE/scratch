@@ -5,7 +5,7 @@ use savefile::ScratchFile;
 use sprite::Sprite;
 use yew::prelude::*;
 
-pub struct VM {
+pub struct ScratchInterface {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     vm_state: VMState,
@@ -27,7 +27,7 @@ pub enum VMState {
     Paused,
 }
 
-impl VM {
+impl ScratchInterface {
     async fn runtime(
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
@@ -55,7 +55,7 @@ impl VM {
     }
 }
 
-impl Component for VM {
+impl Component for ScratchInterface {
     type Message = Msg;
     type Properties = ();
 
@@ -90,7 +90,7 @@ impl Component for VM {
                 let start_state = self.vm_state;
                 let set_sprite = self.link.callback(Msg::SetSprite);
                 wasm_bindgen_futures::spawn_local(async move {
-                    match VM::runtime(ctx, &scratch_file).await {
+                    match ScratchInterface::runtime(ctx, &scratch_file).await {
                         Ok(runtime) => {
                             match Sprite::new(
                                 runtime,

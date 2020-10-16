@@ -10,12 +10,12 @@ mod blocks;
 mod controller;
 mod fileinput;
 mod fileviewer;
+mod interface;
 mod pen;
 mod runtime;
 mod savefile;
 mod sprite;
 mod thread;
-mod vm;
 
 use error::*;
 use std::cell::RefCell;

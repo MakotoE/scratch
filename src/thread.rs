@@ -2,6 +2,7 @@ use super::*;
 use blocks::{Block, Next};
 use controller::{PauseState, ThreadController};
 use gloo_timers::future::TimeoutFuture;
+use interface::VMState;
 use runtime::SpriteRuntime;
 
 #[derive(Debug)]
@@ -13,7 +14,7 @@ impl Thread {
     pub fn start(
         hat: Box<dyn Block>,
         runtime: Rc<RwLock<SpriteRuntime>>,
-        start_state: vm::VMState,
+        start_state: VMState,
         thread_id: usize,
     ) -> Self {
         let thread = Thread {
@@ -23,8 +24,8 @@ impl Thread {
         let controller_clone = thread.controller.clone();
         wasm_bindgen_futures::spawn_local(async move {
             match start_state {
-                vm::VMState::Paused => controller_clone.pause().await,
-                vm::VMState::Running => controller_clone.continue_().await,
+                VMState::Paused => controller_clone.pause().await,
+                VMState::Running => controller_clone.continue_().await,
             }
             Thread::run(
                 Rc::new(RefCell::new(hat)),
