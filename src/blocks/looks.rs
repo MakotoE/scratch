@@ -182,9 +182,8 @@ impl Block for GoToFrontBack {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 
@@ -222,9 +221,8 @@ impl Block for Hide {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 }
@@ -260,9 +258,8 @@ impl Block for Show {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 }
@@ -298,9 +295,8 @@ impl Block for SetEffectTo {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 }
@@ -336,9 +332,8 @@ impl Block for NextCostume {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 }
@@ -374,9 +369,8 @@ impl Block for ChangeEffectBy {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 }

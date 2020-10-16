@@ -17,8 +17,7 @@ pub struct SpriteRuntime {
     text: Option<String>,
     pen: Pen,
     draw_debug_info: bool,
-    // TODO make this a Vec because this should always be sorted
-    debug_info: HashMap<usize, DebugInfo>,
+    debug_info: Vec<DebugInfo>,
 }
 
 #[allow(dead_code)]
@@ -37,7 +36,7 @@ impl SpriteRuntime {
             text: None,
             pen: Pen::new(),
             draw_debug_info: false,
-            debug_info: HashMap::new(),
+            debug_info: Vec::new(),
         }
     }
 
@@ -163,12 +162,12 @@ impl SpriteRuntime {
 
     fn draw_debug_info(
         context: &web_sys::CanvasRenderingContext2d,
-        debug_info: &HashMap<usize, DebugInfo>,
+        debug_info: &[DebugInfo],
     ) -> Result<()> {
         context.set_font("10px monospace");
         context.set_fill_style(&"#080808".into());
-        for (i, (thread_id, debug_info)) in debug_info.iter().enumerate() {
-            let y_start = 16.0 + (i as f64 * 42.0);
+        for (thread_id, debug_info) in debug_info.iter().enumerate() {
+            let y_start = 16.0 + (thread_id as f64 * 42.0);
             context.fill_text(&format!("thread_id: {}", &thread_id), 8.0, y_start)?;
             context.fill_text(
                 &format!("block_id: {}", &debug_info.block_id),
@@ -246,7 +245,12 @@ impl SpriteRuntime {
 
     pub fn set_debug_info(&mut self, thread_id: usize, debug_info: DebugInfo) {
         self.need_redraw = true;
-        self.debug_info.insert(thread_id, debug_info);
+
+        if self.debug_info.len() <= thread_id {
+            self.debug_info.resize(thread_id + 1, DebugInfo::default());
+        }
+
+        self.debug_info[thread_id] = debug_info;
     }
 }
 

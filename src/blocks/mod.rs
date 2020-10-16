@@ -217,7 +217,7 @@ pub fn block_tree(
 }
 
 fn input_block(
-    input_arr: &Vec<serde_json::Value>,
+    input_arr: &[serde_json::Value],
     runtime: Rc<RwLock<SpriteRuntime>>,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
@@ -227,7 +227,7 @@ fn input_block(
     };
 
     match input_arr1 {
-        serde_json::Value::String(block_id) => block_tree(block_id.clone(), runtime.clone(), infos),
+        serde_json::Value::String(block_id) => block_tree(block_id.clone(), runtime, infos),
         serde_json::Value::Array(arr) => {
             let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
                 Some(n) => n,
@@ -242,10 +242,7 @@ fn input_block(
                 },
                 // Variable
                 2 | 3 => match arr.get(2).and_then(|v| v.as_str()) {
-                    Some(id) => Ok(Box::new(value::Variable::new(
-                        id.to_string(),
-                        runtime.clone(),
-                    ))),
+                    Some(id) => Ok(Box::new(value::Variable::new(id.to_string(), runtime))),
                     None => Err(wrap_err!("invalid input type")),
                 },
                 _ => Err(wrap_err!("invalid input type id")),

@@ -68,7 +68,7 @@ impl Component for FileViewer {
                     ref={self.canvas_ref.clone()}
                     width="0"
                     height="0"
-                    hidden="true"
+                    hidden={true}
                 />
                 <style>
                     {"br { margin-bottom: 2px; }"}
