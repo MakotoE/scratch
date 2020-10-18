@@ -11,7 +11,6 @@ impl VM {
     pub async fn new(
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
-        start_state: interface::VMState,
     ) -> Result<Self> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
@@ -27,7 +26,7 @@ impl VM {
             global,
         };
 
-        let sprite = Sprite::new(runtime, &scratch_file.project.targets[1], start_state).await?;
+        let sprite = Sprite::new(runtime, &scratch_file.project.targets[1]).await?;
 
         Ok(Self {
             sprites: vec![sprite],

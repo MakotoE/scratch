@@ -1,7 +1,6 @@
 use super::*;
 use blocks::BlockInputs;
 use fileinput::FileInput;
-use interface::VMState;
 use savefile::ScratchFile;
 use vm::VM;
 use yew::prelude::*;
@@ -44,7 +43,7 @@ impl Component for FileViewer {
 
                 let set_block_inputs = self.link.callback(Msg::SetBlockInputs);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let v = match VM::new(ctx, &file, VMState::Paused).await {
+                    let v = match VM::new(ctx, &file).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);

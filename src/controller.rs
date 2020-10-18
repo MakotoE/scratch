@@ -11,7 +11,7 @@ impl ThreadController {
     pub fn new() -> Self {
         Self {
             semphore: Notify::new(),
-            state: RwLock::new(PauseState::Continue),
+            state: RwLock::new(PauseState::Paused),
         }
     }
 
@@ -55,14 +55,13 @@ mod tests {
     #[tokio::test]
     async fn thread_controller() {
         let controller = ThreadController::new();
+        assert_eq!(controller.state().await, PauseState::Paused);
+        controller.continue_().await;
         assert_eq!(controller.state().await, PauseState::Continue);
         controller.wait().await;
         controller.pause().await;
         assert_eq!(controller.state().await, PauseState::Paused);
         controller.step();
-        controller.wait().await;
-        controller.continue_().await;
-        assert_eq!(controller.state().await, PauseState::Continue);
         controller.wait().await;
     }
 }

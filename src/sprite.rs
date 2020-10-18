@@ -12,11 +12,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub async fn new(
-        runtime: Runtime,
-        target: &savefile::Target,
-        start_state: interface::VMState,
-    ) -> Result<Self> {
+    pub async fn new(runtime: Runtime, target: &savefile::Target) -> Result<Self> {
         runtime
             .sprite
             .write()
@@ -30,7 +26,7 @@ impl Sprite {
                 Ok(b) => b,
                 Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
             };
-            let thread = Thread::start(block, runtime.clone(), start_state, thread_id);
+            let thread = Thread::start(block, runtime.clone(), thread_id);
             threads.push(thread);
         }
 

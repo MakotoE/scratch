@@ -62,10 +62,18 @@ impl Component for ScratchInterface {
                 let start_state = self.vm_state;
                 let set_vm = self.link.callback(Msg::SetVM);
                 wasm_bindgen_futures::spawn_local(async move {
-                    match VM::new(ctx, &scratch_file, start_state).await {
-                        Ok(v) => set_vm.emit(v),
-                        Err(e) => log::error!("{}", e),
+                    let vm = match VM::new(ctx, &scratch_file).await {
+                        Ok(v) => v,
+                        Err(e) => {
+                            log::error!("{}", e);
+                            return;
+                        }
                     };
+                    match start_state {
+                        VMState::Paused => vm.pause().await,
+                        VMState::Running => vm.continue_().await,
+                    }
+                    set_vm.emit(vm);
                 });
                 false
             }
