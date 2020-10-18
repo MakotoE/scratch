@@ -34,19 +34,12 @@ impl ScratchInterface {
     ) -> Result<Runtime> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
-        let mut runtime = runtime::SpriteRuntime::new(context);
-        for costume in &scratch_file.project.targets[1].costumes {
-            match scratch_file.images.get(&costume.md5ext) {
-                Some(file) => {
-                    let rotation_center = runtime::Coordinate::new(
-                        costume.rotation_center_x,
-                        costume.rotation_center_y,
-                    );
-                    runtime.load_costume(file, rotation_center).await?
-                }
-                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
-            }
-        }
+        let runtime = runtime::SpriteRuntime::new(
+            context,
+            &scratch_file.project.targets[1].costumes,
+            &scratch_file.images,
+        )
+        .await?;
 
         Ok(Runtime {
             sprite: Rc::new(RwLock::new(runtime)),
@@ -80,6 +73,7 @@ impl Component for ScratchInterface {
             Msg::SetFile(file) => {
                 self.file = Some(file);
                 self.link.send_message(Msg::Run);
+                false
             }
             Msg::Run => {
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
@@ -106,9 +100,11 @@ impl Component for ScratchInterface {
                         Err(e) => log::error!("{}", e),
                     };
                 });
+                false
             }
             Msg::SetSprite(sprite) => {
                 self.sprite = Some(Arc::new(RwLock::new(sprite)));
+                false
             }
             Msg::ContinuePause => {
                 let state = self.vm_state;
@@ -126,6 +122,7 @@ impl Component for ScratchInterface {
                         }
                     }
                 });
+                true
             }
             Msg::Step => {
                 if let Some(sprite) = self.sprite.clone() {
@@ -133,9 +130,9 @@ impl Component for ScratchInterface {
                         sprite.write().await.step();
                     })
                 }
+                false
             }
         }
-        true
     }
 
     fn change(&mut self, _: ()) -> bool {

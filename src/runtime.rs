@@ -45,8 +45,12 @@ pub struct SpriteRuntime {
 
 #[allow(dead_code)]
 impl SpriteRuntime {
-    pub fn new(context: web_sys::CanvasRenderingContext2d) -> Self {
-        Self {
+    pub async fn new(
+        context: web_sys::CanvasRenderingContext2d,
+        costumes: &[savefile::Costume],
+        images: &HashMap<String, Image>,
+    ) -> Result<Self> {
+        let mut runtime = Self {
             context,
             need_redraw: true,
             position: Coordinate::default(),
@@ -56,7 +60,22 @@ impl SpriteRuntime {
             pen: Pen::new(),
             draw_debug_info: false,
             debug_info: Vec::new(),
+        };
+
+        for costume in costumes {
+            match images.get(&costume.md5ext) {
+                Some(file) => {
+                    let rotation_center = runtime::Coordinate::new(
+                        costume.rotation_center_x,
+                        costume.rotation_center_y,
+                    );
+                    runtime.load_costume(file, rotation_center).await?
+                }
+                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
+            }
         }
+
+        Ok(runtime)
     }
 
     pub fn redraw(&mut self) -> Result<()> {
@@ -202,7 +221,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    pub async fn load_costume(&mut self, file: &Image, rotation_center: Coordinate) -> Result<()> {
+    async fn load_costume(&mut self, file: &Image, rotation_center: Coordinate) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = match file {
             Image::SVG(b) => b.as_slice().into(),
