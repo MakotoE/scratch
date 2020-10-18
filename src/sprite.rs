@@ -86,15 +86,15 @@ impl Sprite {
         Ok(())
     }
 
-    pub async fn continue_(&mut self) {
+    pub async fn continue_(&self) {
         self.runtime.sprite.write().await.set_draw_debug_info(false);
-        for thread in &mut self.threads {
+        for thread in &self.threads {
             thread.continue_().await;
         }
     }
 
-    pub async fn pause(&mut self) {
-        for thread in &mut self.threads {
+    pub async fn pause(&self) {
+        for thread in &self.threads {
             thread.pause().await;
         }
         let mut runtime = self.runtime.sprite.write().await;

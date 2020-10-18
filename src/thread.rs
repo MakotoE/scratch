@@ -23,6 +23,7 @@ impl Thread {
 
         let controller_clone = thread.controller.clone();
         wasm_bindgen_futures::spawn_local(async move {
+            // TODO move this out
             match start_state {
                 VMState::Paused => controller_clone.pause().await,
                 VMState::Running => controller_clone.continue_().await,
@@ -117,11 +118,11 @@ impl Thread {
         Ok(())
     }
 
-    pub async fn continue_(&mut self) {
+    pub async fn continue_(&self) {
         self.controller.continue_().await;
     }
 
-    pub async fn pause(&mut self) {
+    pub async fn pause(&self) {
         self.controller.pause().await;
     }
 
