@@ -1,10 +1,6 @@
 use super::*;
 
-pub fn get_block(
-    name: &str,
-    id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
-) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "play" => Box::new(Play::new(id, runtime)),
         "sounds_menu" => Box::new(SoundsMenu::new(id, runtime)),
@@ -19,7 +15,7 @@ pub struct Play {
 }
 
 impl Play {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -55,7 +51,7 @@ pub struct SoundsMenu {
 }
 
 impl SoundsMenu {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id }
     }
 }

@@ -11,14 +11,9 @@ mod value;
 use super::*;
 use async_trait::async_trait;
 use maplit::hashmap;
-use runtime::Coordinate;
-use runtime::SpriteRuntime;
+use runtime::{Coordinate, Runtime};
 
-fn get_block(
-    id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
-    info: &savefile::Block,
-) -> Result<Box<dyn Block>> {
+fn get_block(id: String, runtime: Runtime, info: &savefile::Block) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
         Some(s) => s,
         None => {
@@ -165,7 +160,7 @@ impl BlockInputs {
 
 pub fn block_tree(
     top_block_id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
     let info = match infos.get(&top_block_id) {
@@ -218,7 +213,7 @@ pub fn block_tree(
 
 fn input_block(
     input_arr: &[serde_json::Value],
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     infos: &HashMap<String, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
     let input_arr1 = match input_arr.get(1) {

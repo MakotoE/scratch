@@ -16,6 +16,7 @@ mod runtime;
 mod savefile;
 mod sprite;
 mod thread;
+mod vm;
 
 use error::*;
 use std::cell::RefCell;

@@ -1,11 +1,7 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
 
-pub fn get_block(
-    name: &str,
-    id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
-) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "say" => Box::new(Say::new(id, runtime)),
         "sayforsecs" => Box::new(SayForSecs::new(id, runtime)),
@@ -22,13 +18,13 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct Say {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     message: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Say {
-    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -77,7 +73,7 @@ impl Block for Say {
             Some(b) => Say::value_to_string(&b.value().await?),
             None => return Next::Err(wrap_err!("message is None")),
         };
-        self.runtime.write().await.say(Some(&message));
+        self.runtime.sprite.write().await.say(Some(&message));
         Next::continue_(self.next.clone())
     }
 }
@@ -85,14 +81,14 @@ impl Block for Say {
 #[derive(Debug)]
 pub struct SayForSecs {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     message: Option<Box<dyn Block>>,
     secs: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SayForSecs {
-    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -143,7 +139,7 @@ impl Block for SayForSecs {
             None => return Next::Err(wrap_err!("secs is None")),
         };
 
-        let mut runtime = self.runtime.write().await;
+        let mut runtime = self.runtime.sprite.write().await;
         runtime.say(Some(&message));
         runtime.redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
@@ -158,7 +154,7 @@ pub struct GoToFrontBack {
 }
 
 impl GoToFrontBack {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -197,7 +193,7 @@ pub struct Hide {
 }
 
 impl Hide {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -234,7 +230,7 @@ pub struct Show {
 }
 
 impl Show {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -271,7 +267,7 @@ pub struct SetEffectTo {
 }
 
 impl SetEffectTo {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -308,7 +304,7 @@ pub struct NextCostume {
 }
 
 impl NextCostume {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -345,7 +341,7 @@ pub struct ChangeEffectBy {
 }
 
 impl ChangeEffectBy {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }

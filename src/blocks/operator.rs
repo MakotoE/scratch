@@ -1,10 +1,6 @@
 use super::*;
 
-pub fn get_block(
-    name: &str,
-    id: String,
-    _runtime: Rc<RwLock<SpriteRuntime>>,
-) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: String, _runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "equals" => Box::new(Equals::new(id)),
         "add" => Box::new(Add::new(id)),

@@ -1,6 +1,7 @@
 use super::*;
 use blocks::BlockInputs;
 use fileinput::FileInput;
+use runtime::{Global, Runtime};
 use savefile::ScratchFile;
 use yew::prelude::*;
 
@@ -41,12 +42,14 @@ impl Component for FileViewer {
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx: web_sys::CanvasRenderingContext2d =
                     canvas.get_context("2d").unwrap().unwrap().unchecked_into();
-                let runtime = runtime::SpriteRuntime::new(ctx, HashMap::new());
-                let runtime_ref: Rc<RwLock<runtime::SpriteRuntime>> = Rc::new(RwLock::new(runtime));
+                let runtime = Runtime {
+                    sprite: Rc::new(RwLock::new(runtime::SpriteRuntime::new(ctx))),
+                    global: Global::new(&HashMap::new()),
+                };
 
                 self.block_inputs.clear();
                 for hat in hats {
-                    match blocks::block_tree(hat.to_string(), runtime_ref.clone(), &target.blocks) {
+                    match blocks::block_tree(hat.to_string(), runtime.clone(), &target.blocks) {
                         Ok(b) => self.block_inputs.push(b.block_inputs()),
                         Err(e) => log::error!("error occurred while initializing tree: {}", e),
                     }

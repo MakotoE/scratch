@@ -1,11 +1,7 @@
 use super::*;
 use maplit::hashmap;
 
-pub fn get_block(
-    name: &str,
-    id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
-) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
@@ -16,14 +12,14 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct SetVariable {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SetVariable {
-    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -79,9 +75,10 @@ impl Block for SetVariable {
             None => return Next::Err(wrap_err!("value is None")),
         };
         self.runtime
+            .global
+            .variables
             .write()
             .await
-            .variables
             .insert(variable_id.clone(), value);
         Next::continue_(self.next.clone())
     }
@@ -90,14 +87,14 @@ impl Block for SetVariable {
 #[derive(Debug)]
 pub struct ChangeVariable {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     variable_id: Option<String>,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl ChangeVariable {
-    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -149,7 +146,14 @@ impl Block for ChangeVariable {
             None => return Next::Err(wrap_err!("variable_id is None")),
         };
 
-        let previous_value = match self.runtime.write().await.variables.remove(variable_id) {
+        let previous_value = match self
+            .runtime
+            .global
+            .variables
+            .write()
+            .await
+            .remove(variable_id)
+        {
             Some(v) => v,
             None => {
                 return Next::Err(wrap_err!(format!(
@@ -168,9 +172,10 @@ impl Block for ChangeVariable {
 
         let new_value = previous_float + value_to_float(&value)?;
         self.runtime
+            .global
+            .variables
             .write()
             .await
-            .variables
             .insert(variable_id.clone(), new_value.into());
         Next::continue_(self.next.clone())
     }

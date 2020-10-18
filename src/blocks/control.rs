@@ -2,11 +2,7 @@ use super::*;
 use gloo_timers::future::TimeoutFuture;
 use maplit::hashmap;
 
-pub fn get_block(
-    name: &str,
-    id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
-) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
@@ -105,11 +101,11 @@ pub struct Wait {
     id: String,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     duration: Option<Box<dyn Block>>,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
 }
 
 impl Wait {
-    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Runtime) -> Self {
         Self {
             id,
             next: None,
@@ -151,7 +147,7 @@ impl Block for Wait {
             None => return Next::Err(wrap_err!("duration is None")),
         };
 
-        self.runtime.write().await.redraw()?;
+        self.runtime.sprite.write().await.redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
         Next::continue_(self.next.clone())
     }

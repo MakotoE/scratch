@@ -1,6 +1,6 @@
 use super::*;
 use fileinput::FileInput;
-use runtime::SpriteRuntime;
+use runtime::{Global, Runtime};
 use savefile::ScratchFile;
 use sprite::Sprite;
 use yew::prelude::*;
@@ -31,13 +31,10 @@ impl ScratchInterface {
     async fn runtime(
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
-    ) -> Result<SpriteRuntime> {
-        let mut variables: HashMap<String, serde_json::Value> = HashMap::new();
-        for (key, v) in &scratch_file.project.targets[0].variables {
-            variables.insert(key.clone(), v.value.clone());
-        }
+    ) -> Result<Runtime> {
+        let global = Global::new(&scratch_file.project.targets[0].variables);
 
-        let mut runtime = runtime::SpriteRuntime::new(context, variables);
+        let mut runtime = runtime::SpriteRuntime::new(context);
         for costume in &scratch_file.project.targets[1].costumes {
             match scratch_file.images.get(&costume.md5ext) {
                 Some(file) => {
@@ -51,7 +48,10 @@ impl ScratchInterface {
             }
         }
 
-        Ok(runtime)
+        Ok(Runtime {
+            sprite: Rc::new(RwLock::new(runtime)),
+            global,
+        })
     }
 }
 
@@ -96,7 +96,9 @@ impl Component for ScratchInterface {
                                 runtime,
                                 &scratch_file.project.targets[1],
                                 start_state,
-                            ) {
+                            )
+                            .await
+                            {
                                 Ok(s) => set_sprite.emit(s),
                                 Err(e) => log::error!("{}", e),
                             }

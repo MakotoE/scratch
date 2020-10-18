@@ -3,7 +3,7 @@ use blocks::{Block, Next};
 use controller::{PauseState, ThreadController};
 use gloo_timers::future::TimeoutFuture;
 use interface::VMState;
-use runtime::SpriteRuntime;
+use runtime::Runtime;
 
 #[derive(Debug)]
 pub struct Thread {
@@ -13,7 +13,7 @@ pub struct Thread {
 impl Thread {
     pub fn start(
         hat: Box<dyn Block>,
-        runtime: Rc<RwLock<SpriteRuntime>>,
+        runtime: Runtime,
         start_state: VMState,
         thread_id: usize,
     ) -> Self {
@@ -41,7 +41,7 @@ impl Thread {
 
     async fn run(
         hat: Rc<RefCell<Box<dyn Block>>>,
-        runtime: Rc<RwLock<SpriteRuntime>>,
+        runtime: Runtime,
         controller: Rc<ThreadController>,
         thread_id: usize,
     ) -> Result<()> {
@@ -55,7 +55,11 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            runtime.write().await.set_debug_info(thread_id, debug_info);
+            runtime
+                .sprite
+                .write()
+                .await
+                .set_debug_info(thread_id, debug_info);
         }
 
         let mut curr_block = hat.clone();
@@ -73,7 +77,11 @@ impl Thread {
             } else {
                 DebugInfo::default()
             };
-            runtime.write().await.set_debug_info(thread_id, debug_info);
+            runtime
+                .sprite
+                .write()
+                .await
+                .set_debug_info(thread_id, debug_info);
 
             let execute_result = curr_block.borrow_mut().execute().await;
             match execute_result {

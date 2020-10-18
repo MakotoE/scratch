@@ -1,6 +1,6 @@
 use super::*;
 use blocks::*;
-use runtime::{Coordinate, SpriteRuntime};
+use runtime::{Coordinate, Runtime};
 use thread::Thread;
 
 #[derive(Debug)]
@@ -8,26 +8,29 @@ pub struct Sprite {
     threads: Vec<Thread>,
     closure: ClosureRef,
     request_animation_frame_id: Rc<RefCell<i32>>,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
 }
 
 impl Sprite {
-    pub fn new(
-        mut runtime: SpriteRuntime,
+    pub async fn new(
+        runtime: Runtime,
         target: &savefile::Target,
         start_state: interface::VMState,
     ) -> Result<Self> {
-        runtime.set_position(&Coordinate::new(target.x, target.y));
+        runtime
+            .sprite
+            .write()
+            .await
+            .set_position(&Coordinate::new(target.x, target.y));
 
-        let runtime_ref = Rc::new(RwLock::new(runtime));
         let mut threads: Vec<Thread> = Vec::new();
 
         for (thread_id, hat_id) in find_hats(&target.blocks).iter().enumerate() {
-            let block = match block_tree(hat_id.to_string(), runtime_ref.clone(), &target.blocks) {
+            let block = match block_tree(hat_id.to_string(), runtime.clone(), &target.blocks) {
                 Ok(b) => b,
                 Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
             };
-            let thread = Thread::start(block, runtime_ref.clone(), start_state, thread_id);
+            let thread = Thread::start(block, runtime.clone(), start_state, thread_id);
             threads.push(thread);
         }
 
@@ -36,27 +39,27 @@ impl Sprite {
         Sprite::start_redraw_loop(
             closure.clone(),
             request_animation_frame_id.clone(),
-            runtime_ref.clone(),
+            runtime.clone(),
         )?;
 
         Ok(Self {
             threads,
             closure,
             request_animation_frame_id,
-            runtime: runtime_ref,
+            runtime,
         })
     }
 
     fn start_redraw_loop(
         closure: ClosureRef,
         request_animation_frame_id: Rc<RefCell<i32>>,
-        runtime: Rc<RwLock<SpriteRuntime>>,
+        runtime: Runtime,
     ) -> Result<()> {
         let window = web_sys::window().unwrap();
         let closure_clone = closure.clone();
         let request_animation_frame_id_clone = request_animation_frame_id.clone();
         *closure.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            let runtime_clone = runtime.clone();
+            let runtime_clone = runtime.sprite.clone();
             let closure_clone = closure_clone.clone();
             let request_animation_frame_id_clone = request_animation_frame_id_clone.clone();
             let window = window.clone();
@@ -84,7 +87,7 @@ impl Sprite {
     }
 
     pub async fn continue_(&mut self) {
-        self.runtime.write().await.set_draw_debug_info(false);
+        self.runtime.sprite.write().await.set_draw_debug_info(false);
         for thread in &mut self.threads {
             thread.continue_().await;
         }
@@ -94,7 +97,7 @@ impl Sprite {
         for thread in &mut self.threads {
             thread.pause().await;
         }
-        let mut runtime = self.runtime.write().await;
+        let mut runtime = self.runtime.sprite.write().await;
         runtime.set_draw_debug_info(true);
         runtime.redraw().unwrap_or_else(|e| log::error!("{}", e));
     }

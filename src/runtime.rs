@@ -6,12 +6,35 @@ use thread::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
+#[derive(Debug, Clone)]
+pub struct Runtime {
+    pub sprite: Rc<RwLock<SpriteRuntime>>,
+    pub global: Global,
+}
+
+#[derive(Debug, Clone)]
+pub struct Global {
+    pub variables: Rc<RwLock<HashMap<String, serde_json::Value>>>,
+}
+
+impl Global {
+    pub fn new(scratch_file_variables: &HashMap<String, savefile::Variable>) -> Self {
+        let mut variables: HashMap<String, serde_json::Value> = HashMap::new();
+        for (key, v) in scratch_file_variables {
+            variables.insert(key.clone(), v.value.clone());
+        }
+
+        Self {
+            variables: Rc::new(RwLock::new(variables)),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct SpriteRuntime {
     context: web_sys::CanvasRenderingContext2d,
     need_redraw: bool,
     position: Coordinate,
-    pub variables: HashMap<String, serde_json::Value>,
     costumes: Vec<Costume>,
     current_costume: usize,
     text: Option<String>,
@@ -22,15 +45,11 @@ pub struct SpriteRuntime {
 
 #[allow(dead_code)]
 impl SpriteRuntime {
-    pub fn new(
-        context: web_sys::CanvasRenderingContext2d,
-        variables: HashMap<String, serde_json::Value>,
-    ) -> Self {
+    pub fn new(context: web_sys::CanvasRenderingContext2d) -> Self {
         Self {
             context,
             need_redraw: true,
             position: Coordinate::default(),
-            variables,
             costumes: Vec::new(),
             current_costume: 0,
             text: None,

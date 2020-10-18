@@ -1,11 +1,7 @@
 use super::*;
 use maplit::hashmap;
 
-pub fn get_block(
-    name: &str,
-    id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
-) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
         "whenbroadcastreceived" => Box::new(WhenBroadcastReceived::new(id, runtime)),
@@ -17,12 +13,12 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct WhenFlagClicked {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl WhenFlagClicked {
-    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -63,13 +59,13 @@ impl Block for WhenFlagClicked {
 #[derive(Debug)]
 pub struct WhenBroadcastReceived {
     id: String,
-    runtime: Rc<RwLock<SpriteRuntime>>,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     broadcast_id: String,
 }
 
 impl WhenBroadcastReceived {
-    pub fn new(id: String, runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -121,7 +117,7 @@ pub struct Broadcast {
 }
 
 impl Broadcast {
-    pub fn new(id: String, _runtime: Rc<RwLock<SpriteRuntime>>) -> Self {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
