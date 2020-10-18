@@ -52,4 +52,8 @@ impl VM {
             sprite.step();
         }
     }
+
+    pub fn sprites(&self) -> &[Sprite] {
+        &self.sprites
+    }
 }

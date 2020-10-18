@@ -107,6 +107,10 @@ impl Sprite {
             thread.step();
         }
     }
+
+    pub fn threads(&self) -> &[Thread] {
+        &self.threads
+    }
 }
 
 impl Drop for Sprite {

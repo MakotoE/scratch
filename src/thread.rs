@@ -8,6 +8,7 @@ use runtime::Runtime;
 #[derive(Debug)]
 pub struct Thread {
     controller: Rc<ThreadController>,
+    hat: Rc<RefCell<Box<dyn Block>>>,
 }
 
 impl Thread {
@@ -19,23 +20,20 @@ impl Thread {
     ) -> Self {
         let thread = Thread {
             controller: Rc::new(ThreadController::new()),
+            hat: Rc::new(RefCell::new(hat)),
         };
 
         let controller_clone = thread.controller.clone();
+        let hat_clone = thread.hat.clone();
         wasm_bindgen_futures::spawn_local(async move {
             // TODO move this out
             match start_state {
                 VMState::Paused => controller_clone.pause().await,
                 VMState::Running => controller_clone.continue_().await,
             }
-            Thread::run(
-                Rc::new(RefCell::new(hat)),
-                runtime,
-                controller_clone,
-                thread_id,
-            )
-            .await
-            .unwrap_or_else(|e| log::error!("{}", e));
+            Thread::run(hat_clone, runtime, controller_clone, thread_id)
+                .await
+                .unwrap_or_else(|e| log::error!("{}", e));
         });
         thread
     }
@@ -128,6 +126,10 @@ impl Thread {
 
     pub fn step(&self) {
         self.controller.step();
+    }
+
+    pub fn hat(&self) -> &Rc<RefCell<Box<dyn Block>>> {
+        &self.hat
     }
 }
 

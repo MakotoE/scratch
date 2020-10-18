@@ -1,8 +1,9 @@
 use super::*;
 use blocks::BlockInputs;
 use fileinput::FileInput;
-use runtime::{Global, Runtime, SpriteRuntime};
+use interface::VMState;
 use savefile::ScratchFile;
+use vm::VM;
 use yew::prelude::*;
 
 pub struct FileViewer {
@@ -43,34 +44,17 @@ impl Component for FileViewer {
 
                 let set_block_inputs = self.link.callback(Msg::SetBlockInputs);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let sprite = match SpriteRuntime::new(
-                        ctx,
-                        &file.project.targets[1].costumes,
-                        &file.images,
-                    )
-                    .await
-                    {
-                        Ok(s) => s,
+                    let v = match VM::new(ctx, &file, VMState::Paused).await {
+                        Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);
                             return;
                         }
                     };
 
-                    let runtime = Runtime {
-                        sprite: Rc::new(RwLock::new(sprite)),
-                        global: Global::new(&HashMap::new()),
-                    };
-
-                    let target = &file.project.targets[1];
-                    let hats = sprite::find_hats(&target.blocks);
-
                     let mut blocks: Vec<BlockInputs> = Vec::new();
-                    for hat in hats {
-                        match blocks::block_tree(hat.to_string(), runtime.clone(), &target.blocks) {
-                            Ok(b) => blocks.push(b.block_inputs()),
-                            Err(e) => log::error!("error occurred while initializing tree: {}", e),
-                        }
+                    for thread in v.sprites()[0].threads() {
+                        blocks.push(thread.hat().borrow_mut().block_inputs());
                     }
                     set_block_inputs.emit(blocks);
                 });
