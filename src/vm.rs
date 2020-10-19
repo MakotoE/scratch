@@ -14,27 +14,28 @@ impl VM {
     ) -> Result<Self> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
-        let runtime = runtime::SpriteRuntime::new(
-            context,
-            &scratch_file.project.targets[1].costumes,
-            &scratch_file.images,
-        )
-        .await?;
+        let mut sprites: Vec<Sprite> = Vec::with_capacity(scratch_file.project.targets.len());
+        for target in &scratch_file.project.targets {
+            let runtime = runtime::SpriteRuntime::new(
+                context.clone(),
+                &target.costumes,
+                &scratch_file.images,
+            )
+            .await?;
 
-        let runtime = Runtime {
-            sprite: Rc::new(RwLock::new(runtime)),
-            global,
-        };
+            let runtime = Runtime {
+                sprite: Rc::new(RwLock::new(runtime)),
+                global: global.clone(),
+            };
 
-        let sprite = Sprite::new(runtime, &scratch_file.project.targets[1]).await?;
+            sprites.push(Sprite::new(runtime, target).await?);
+        }
 
-        Ok(Self {
-            sprites: vec![sprite],
-        })
+        Ok(Self { sprites })
     }
 
     pub async fn continue_(&self) {
-        // TODO https://rust-lang.github.io/async-book/06_multiple_futures/02_join.html
+        // TODO use FuturesUnordered
         for sprite in &self.sprites {
             sprite.continue_().await;
         }
