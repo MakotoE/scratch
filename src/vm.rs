@@ -94,11 +94,10 @@ impl VM {
         context: &web_sys::CanvasRenderingContext2d,
     ) -> Result<()> {
         context.reset_transform().unwrap();
-        context.clear_rect(0.0, 0.0, 960.0, 720.0);
         context.scale(2.0, 2.0).unwrap();
 
-        for runtime in runtimes {
-            runtime.write().await.redraw(&context)?;
+        for (i, runtime) in runtimes.iter().enumerate() {
+            runtime.write().await.redraw(&context, i == 0)?;
         }
         Ok(())
     }

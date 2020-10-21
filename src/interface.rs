@@ -121,7 +121,7 @@ impl Component for ScratchInterface {
                     ref={self.canvas_ref.clone()}
                     width="960"
                     height="720"
-                    style="height: 360px; width: 480px; border: 1px solid black;"
+                    style="width: 480px; height: 360px; border: 1px solid black;"
                 /><br />
                 <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                 <br />
