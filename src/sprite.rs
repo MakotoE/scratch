@@ -6,8 +6,6 @@ use thread::Thread;
 #[derive(Debug)]
 pub struct Sprite {
     threads: Vec<Thread>,
-    closure: ClosureRef,
-    request_animation_frame_id: Rc<RefCell<i32>>,
     runtime: Runtime,
 }
 
@@ -30,56 +28,7 @@ impl Sprite {
             threads.push(thread);
         }
 
-        let closure: ClosureRef = Rc::new(RefCell::new(None));
-        let request_animation_frame_id = Rc::new(RefCell::new(0));
-        Sprite::start_redraw_loop(
-            closure.clone(),
-            request_animation_frame_id.clone(),
-            runtime.clone(),
-        )?;
-
-        Ok(Self {
-            threads,
-            closure,
-            request_animation_frame_id,
-            runtime,
-        })
-    }
-
-    fn start_redraw_loop(
-        closure: ClosureRef,
-        request_animation_frame_id: Rc<RefCell<i32>>,
-        runtime: Runtime,
-    ) -> Result<()> {
-        let window = web_sys::window().unwrap();
-        let closure_clone = closure.clone();
-        let request_animation_frame_id_clone = request_animation_frame_id.clone();
-        *closure.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            let runtime_clone = runtime.sprite.clone();
-            let closure_clone = closure_clone.clone();
-            let request_animation_frame_id_clone = request_animation_frame_id_clone.clone();
-            let window = window.clone();
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Err(e) = runtime_clone.write().await.redraw() {
-                    log::error!("error occurred on redraw: {}", e);
-                    return;
-                }
-
-                let cb = closure_clone.borrow();
-                let f = cb.as_ref().unwrap();
-                *request_animation_frame_id_clone.borrow_mut() = window
-                    .request_animation_frame(f.as_ref().unchecked_ref())
-                    .unwrap();
-            });
-        }) as Box<dyn Fn()>));
-
-        let closure_clone = closure.clone();
-        let cb = closure_clone.borrow();
-        let f = cb.as_ref().unwrap();
-        *request_animation_frame_id.borrow_mut() = web_sys::window()
-            .unwrap()
-            .request_animation_frame(f.as_ref().unchecked_ref())?;
-        Ok(())
+        Ok(Self { threads, runtime })
     }
 
     pub async fn continue_(&self) {
@@ -95,7 +44,6 @@ impl Sprite {
         }
         let mut runtime = self.runtime.sprite.write().await;
         runtime.set_draw_debug_info(true);
-        runtime.redraw().unwrap_or_else(|e| log::error!("{}", e));
     }
 
     pub fn step(&self) {
@@ -108,17 +56,6 @@ impl Sprite {
         &self.threads
     }
 }
-
-impl Drop for Sprite {
-    fn drop(&mut self) {
-        web_sys::window()
-            .unwrap()
-            .cancel_animation_frame(*self.request_animation_frame_id.borrow())
-            .unwrap();
-    }
-}
-
-type ClosureRef = Rc<RefCell<Option<Closure<dyn Fn()>>>>;
 
 pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
     let mut hats: Vec<&str> = Vec::new();

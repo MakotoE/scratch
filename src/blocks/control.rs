@@ -147,7 +147,8 @@ impl Block for Wait {
             None => return Next::Err(wrap_err!("duration is None")),
         };
 
-        self.runtime.sprite.write().await.redraw()?;
+        // TODO
+        // self.runtime.sprite.write().await.redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
         Next::continue_(self.next.clone())
     }

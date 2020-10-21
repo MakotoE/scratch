@@ -141,7 +141,8 @@ impl Block for SayForSecs {
 
         let mut runtime = self.runtime.sprite.write().await;
         runtime.say(Some(&message));
-        runtime.redraw()?;
+        // TODO
+        // runtime.redraw()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
         Next::continue_(self.next.clone())
     }

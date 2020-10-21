@@ -32,7 +32,6 @@ impl Global {
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
-    context: web_sys::CanvasRenderingContext2d,
     need_redraw: bool,
     position: Coordinate,
     costumes: Vec<Costume>,
@@ -46,12 +45,10 @@ pub struct SpriteRuntime {
 #[allow(dead_code)]
 impl SpriteRuntime {
     pub async fn new(
-        context: web_sys::CanvasRenderingContext2d,
         costumes: &[savefile::Costume],
         images: &HashMap<String, Image>,
     ) -> Result<Self> {
         let mut runtime = Self {
-            context,
             need_redraw: true,
             position: Coordinate::default(),
             costumes: Vec::new(),
@@ -78,16 +75,12 @@ impl SpriteRuntime {
         Ok(runtime)
     }
 
-    pub fn redraw(&mut self) -> Result<()> {
+    pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         if !self.need_redraw {
             return Ok(());
         }
 
-        self.context.reset_transform().unwrap();
-        self.context.clear_rect(0.0, 0.0, 960.0, 720.0);
-        self.context.scale(2.0, 2.0).unwrap();
-
-        self.pen.draw(&self.context);
+        self.pen.draw(context);
 
         let costume = match self.costumes.get(self.current_costume) {
             Some(c) => c,
@@ -98,20 +91,20 @@ impl SpriteRuntime {
                 )));
             }
         };
-        SpriteRuntime::draw_costume(&self.context, costume, &self.position)?;
+        SpriteRuntime::draw_costume(context, costume, &self.position)?;
 
         if let Some(text) = &self.text {
-            self.context.save();
-            self.context.translate(
+            context.save();
+            context.translate(
                 240.0 + costume.rotation_center.x / 2.0 + self.position.x,
                 130.0 - costume.rotation_center.y - self.position.y,
             )?;
-            SpriteRuntime::draw_text_bubble(&self.context, text)?;
-            self.context.restore();
+            SpriteRuntime::draw_text_bubble(context, text)?;
+            context.restore();
         }
 
         if self.draw_debug_info {
-            SpriteRuntime::draw_debug_info(&self.context, &self.debug_info)?;
+            SpriteRuntime::draw_debug_info(context, &self.debug_info)?;
         }
 
         self.need_redraw = false;
