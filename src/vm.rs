@@ -1,4 +1,6 @@
 use super::*;
+use futures::stream::{FuturesUnordered};
+use futures::{StreamExt};
 use runtime::{Global, Runtime, SpriteRuntime};
 use savefile::ScratchFile;
 use sprite::Sprite;
@@ -50,7 +52,11 @@ impl VM {
             request_animation_frame_id,
         })
     }
-
+    // TODO global event loop
+    // Use FuturesUnordered and schedule redraws
+    // Remove continue and only call step
+    // Cleans up architecture by reducing number of Promises to about one
+    // Make redraws more consistent
     fn start_redraw_loop(
         request_animation_frame_id: Rc<RefCell<i32>>,
         context: web_sys::CanvasRenderingContext2d,
@@ -115,16 +121,20 @@ impl VM {
     }
 
     pub async fn continue_(&self) {
-        // TODO use FuturesUnordered
+        let mut futures = FuturesUnordered::new();
         for sprite in &self.sprites {
-            sprite.continue_().await;
+            futures.push(sprite.continue_());
         }
+        while futures.next().await.is_some() {}
     }
 
     pub async fn pause(&self) {
+        let mut futures = FuturesUnordered::new();
         for sprite in &self.sprites {
-            sprite.pause().await;
+            futures.push(sprite.pause());
         }
+        while futures.next().await.is_some() {}
+
         VM::redraw(&self.runtimes, &self.context)
             .await
             .unwrap_or_else(|e| log::error!("{}", e));

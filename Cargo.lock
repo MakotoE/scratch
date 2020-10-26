@@ -687,6 +687,7 @@ dependencies = [
  "async-trait",
  "console_error_panic_hook",
  "error-chain",
+ "futures",
  "gloo-timers",
  "js-sys",
  "lazy_static",
