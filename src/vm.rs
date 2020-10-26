@@ -93,6 +93,18 @@ impl VM {
         runtimes: &[Rc<RwLock<SpriteRuntime>>],
         context: &web_sys::CanvasRenderingContext2d,
     ) -> Result<()> {
+        let mut need_redraw = false;
+        for runtime in runtimes {
+            if runtime.read().await.need_redraw() {
+                need_redraw = true;
+                break;
+            }
+        }
+
+        if !need_redraw {
+            return Ok(());
+        }
+
         context.reset_transform().unwrap();
         context.scale(2.0, 2.0).unwrap();
 

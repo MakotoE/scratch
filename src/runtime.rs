@@ -84,11 +84,6 @@ impl SpriteRuntime {
             context.clear_rect(0.0, 0.0, 480.0, 360.0);
         }
 
-        if !self.need_redraw {
-            // TODO move to VM level
-            return Ok(());
-        }
-
         self.pen.draw(context);
 
         let costume = match self.costumes.get(self.current_costume) {
@@ -252,6 +247,10 @@ impl SpriteRuntime {
             rotation_center,
         });
         Ok(())
+    }
+
+    pub fn need_redraw(&self) -> bool {
+        self.need_redraw
     }
 
     pub fn position(&self) -> &Coordinate {
