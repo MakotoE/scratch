@@ -62,7 +62,7 @@ impl Component for ScratchInterface {
                 let start_state = self.vm_state;
                 let set_vm = self.link.callback(Msg::SetVM);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let vm = match VM::new(ctx, &scratch_file).await {
+                    let mut vm = match VM::start(ctx, &scratch_file).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);
@@ -102,7 +102,7 @@ impl Component for ScratchInterface {
             Msg::Step => {
                 if let Some(vm) = self.vm.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
-                        vm.write().await.step();
+                        vm.write().await.step().await;
                     })
                 }
                 false

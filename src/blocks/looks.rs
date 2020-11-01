@@ -139,10 +139,7 @@ impl Block for SayForSecs {
             None => return Next::Err(wrap_err!("secs is None")),
         };
 
-        let mut runtime = self.runtime.sprite.write().await;
-        runtime.say(Some(&message));
-        // TODO
-        // runtime.redraw()?;
+        self.runtime.sprite.write().await.say(Some(&message));
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
         Next::continue_(self.next.clone())
     }

@@ -8,12 +8,12 @@ use yew::prelude::*;
 pub struct FileViewer {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
-    block_inputs: Vec<BlockInputs>,
+    block_inputs: Vec<Vec<BlockInputs>>,
 }
 
 pub enum Msg {
     LoadFile(ScratchFile),
-    SetBlockInputs(Vec<BlockInputs>),
+    SetBlockInputs(Vec<Vec<BlockInputs>>),
 }
 
 impl Component for FileViewer {
@@ -43,7 +43,7 @@ impl Component for FileViewer {
 
                 let set_block_inputs = self.link.callback(Msg::SetBlockInputs);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let v = match VM::new(ctx, &file).await {
+                    let vm = match VM::start(ctx, &file).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);
@@ -51,11 +51,7 @@ impl Component for FileViewer {
                         }
                     };
 
-                    let mut blocks: Vec<BlockInputs> = Vec::new();
-                    for thread in v.sprites()[0].threads() {
-                        blocks.push(thread.hat().borrow_mut().block_inputs());
-                    }
-                    set_block_inputs.emit(blocks);
+                    set_block_inputs.emit(vm.block_inputs());
                 });
 
                 false
@@ -86,7 +82,7 @@ impl Component for FileViewer {
                 </style>
                 <span style="font-family: monospace;">
                     {
-                        for self.block_inputs.iter().enumerate().map(|(i, block)| {
+                        for self.block_inputs[0].iter().enumerate().map(|(i, block)| {
                             html! {
                                 <>
                                     <h2><strong>{String::from("Thread ") + &i.to_string()}</strong></h2>

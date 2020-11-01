@@ -7,7 +7,6 @@
 mod error;
 mod app;
 mod blocks;
-mod controller;
 mod fileinput;
 mod fileviewer;
 mod interface;
