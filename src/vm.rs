@@ -87,13 +87,13 @@ impl VM {
         context: &web_sys::CanvasRenderingContext2d,
     ) -> Result<()> {
         let control_chan = ReceiverCell::new(control_chan);
-        let mut futures: FuturesUnordered<LocalBoxFuture<Task>> = FuturesUnordered::new();
-        futures.push(Box::pin(TimeoutFuture::new(30).map(|_| Task::Redraw)));
+        let mut futures: FuturesUnordered<LocalBoxFuture<Event>> = FuturesUnordered::new();
+        futures.push(Box::pin(TimeoutFuture::new(30).map(|_| Event::Redraw)));
 
         for (sprite_id, sprite) in sprites.iter().enumerate() {
             for thread_id in 0..sprite.number_of_threads() {
                 let future = sprite.step(thread_id).map(move |result| {
-                    Task::Thread(ThreadTask {
+                    Event::Thread(ThreadEvent {
                         last_result: result,
                         sprite_id,
                         thread_id,
@@ -107,27 +107,29 @@ impl VM {
 
         loop {
             match futures.next().await.unwrap() {
-                Task::Thread(thread_task) => {
-                    let sprite_id = thread_task.sprite_id;
-                    let thread_id = thread_task.thread_id;
-                    thread_task.last_result?;
-                    let future = sprites[thread_task.sprite_id]
-                        .step(thread_task.thread_id)
+                Event::Thread(thread_event) => {
+                    let sprite_id = thread_event.sprite_id;
+                    let thread_id = thread_event.thread_id;
+                    thread_event.last_result?;
+                    let future = sprites[thread_event.sprite_id]
+                        .step(thread_event.thread_id)
                         .map(move |result| {
-                            Task::Thread(ThreadTask {
+                            Event::Thread(ThreadEvent {
                                 last_result: result,
                                 sprite_id,
                                 thread_id,
                             })
                         });
                     futures.push(Box::pin(future));
-                    TimeoutFuture::new(0).await; // TODO find a way to yield to redraw
+                    // TODO find a way to yield to redraw
+                    // Check event stack to see if redraw is being added
+                    TimeoutFuture::new(0).await;
                 }
-                Task::Redraw => {
+                Event::Redraw => {
                     VM::redraw(&sprites, context).await?;
-                    futures.push(Box::pin(TimeoutFuture::new(30).map(|_| Task::Redraw)));
+                    futures.push(Box::pin(TimeoutFuture::new(17).map(|_| Event::Redraw)));
                 }
-                Task::Control(control) => {
+                Event::Control(control) => {
                     log::debug!("{:?}", control);
                     if let Some(c) = control {
                         // TODO
@@ -161,14 +163,14 @@ impl VM {
 }
 
 #[derive(Debug)]
-enum Task {
-    Thread(ThreadTask),
+enum Event {
+    Thread(ThreadEvent),
     Redraw,
     Control(Option<Control>),
 }
 
 #[derive(Debug)]
-struct ThreadTask {
+struct ThreadEvent {
     last_result: Result<()>,
     sprite_id: usize,
     thread_id: usize,
@@ -187,7 +189,7 @@ impl ReceiverCell {
         }
     }
 
-    async fn recv(&self) -> Task {
-        Task::Control(self.receiver.borrow_mut().recv().await)
+    async fn recv(&self) -> Event {
+        Event::Control(self.receiver.borrow_mut().recv().await)
     }
 }
