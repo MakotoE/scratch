@@ -86,84 +86,62 @@ impl VM {
         control_chan: Receiver<Control>,
         context: &web_sys::CanvasRenderingContext2d,
     ) -> Result<()> {
+        const REDRAW_INTERVAL_MILLIS: u32 = 17;
+
         let control_chan = ReceiverCell::new(control_chan);
         let mut futures: FuturesUnordered<LocalBoxFuture<Event>> = FuturesUnordered::new();
-        futures.push(Box::pin(TimeoutFuture::new(30).map(|_| Event::Redraw)));
+        futures.push(Box::pin(control_chan.recv()));
+        futures.push(Box::pin(
+            TimeoutFuture::new(REDRAW_INTERVAL_MILLIS).map(|_| Event::Redraw),
+        ));
 
         for (sprite_id, sprite) in sprites.iter().enumerate() {
             for thread_id in 0..sprite.number_of_threads() {
-                let future = sprite.step(thread_id).map(move |result| {
-                    Event::Thread(ThreadEvent {
-                        last_result: result,
-                        sprite_id,
-                        thread_id,
-                    })
-                });
-                futures.push(Box::pin(future));
+                let id = ThreadID {
+                    sprite_id,
+                    thread_id,
+                };
+                futures.push(VM::step_sprite(&sprites[id.sprite_id], id))
             }
         }
 
-        futures.push(Box::pin(control_chan.recv()));
-
         let mut current_state = Control::Continue;
-        let mut paused_thread_event: Option<ThreadEvent> = None;
+        let mut paused_threads: Vec<ThreadID> = Vec::new();
 
         loop {
             match futures.next().await.unwrap() {
-                Event::Thread(thread_event) => {
-                    let sprite_id = thread_event.sprite_id;
-                    let thread_id = thread_event.thread_id;
-                    thread_event.last_result?;
+                Event::Thread(thread_id) => {
                     match current_state {
-                        Control::Continue | Control::Step => {
-                            let future = sprites[thread_event.sprite_id]
-                                .step(thread_event.thread_id)
-                                .map(move |result| {
-                                    Event::Thread(ThreadEvent {
-                                        last_result: result,
-                                        sprite_id,
-                                        thread_id,
-                                    })
-                                });
-                            futures.push(Box::pin(future));
-
-                            if let Control::Step = current_state {
-                                current_state = Control::Pause;
-                            }
+                        Control::Continue => {
+                            futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id))
                         }
-                        Control::Pause => {
-                            paused_thread_event = Some(ThreadEvent {
-                                last_result: Ok(()),
-                                sprite_id,
-                                thread_id,
-                            });
+                        Control::Pause => paused_threads.push(thread_id),
+                        Control::Step => {
+                            futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id));
+                            current_state = Control::Pause;
                         }
                     }
                     // TODO find a way to yield to redraw
                     // Check event stack to see if redraw is being added
                     TimeoutFuture::new(0).await;
                 }
+                Event::Error(e) => return Err(e),
                 Event::Redraw => {
                     VM::redraw(&sprites, context).await?;
-                    futures.push(Box::pin(TimeoutFuture::new(17).map(|_| Event::Redraw)));
+                    futures.push(Box::pin(
+                        TimeoutFuture::new(REDRAW_INTERVAL_MILLIS).map(|_| Event::Redraw),
+                    ));
                 }
                 Event::Control(control) => {
                     if let Some(c) = control {
                         current_state = c;
                         match c {
                             Control::Continue | Control::Step => {
-                                if let Some(thread_event) = paused_thread_event.take() {
-                                    futures.push(Box::pin(
-                                        sprites[thread_event.sprite_id]
-                                            .step(thread_event.thread_id)
-                                            .map(move |result| {
-                                                Event::Thread(ThreadEvent {
-                                                    last_result: result,
-                                                    sprite_id: thread_event.sprite_id,
-                                                    thread_id: thread_event.thread_id,
-                                                })
-                                            }),
-                                    ));
+                                for thread_id in paused_threads.drain(..) {
+                                    futures.push(VM::step_sprite(
+                                        &sprites[thread_id.sprite_id],
+                                        thread_id,
+                                    ))
                                 }
                             }
                             Control::Pause => {}
@@ -174,6 +152,17 @@ impl VM {
                 }
             };
         }
+    }
+
+    fn step_sprite(sprite: &Sprite, thread_id: ThreadID) -> LocalBoxFuture<Event> {
+        Box::pin(
+            sprite
+                .step(thread_id.thread_id)
+                .map(move |result| match result {
+                    Ok(_) => Event::Thread(thread_id),
+                    Err(e) => Event::Error(e),
+                }),
+        )
     }
 
     pub async fn continue_(&mut self) {
@@ -195,14 +184,14 @@ impl VM {
 
 #[derive(Debug)]
 enum Event {
-    Thread(ThreadEvent),
+    Thread(ThreadID),
+    Error(Error),
     Redraw,
     Control(Option<Control>),
 }
 
-#[derive(Debug)]
-struct ThreadEvent {
-    last_result: Result<()>,
+#[derive(Debug, Copy, Clone)]
+struct ThreadID {
     sprite_id: usize,
     thread_id: usize,
 }
