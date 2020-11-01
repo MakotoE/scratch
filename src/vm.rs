@@ -105,22 +105,40 @@ impl VM {
 
         futures.push(Box::pin(control_chan.recv()));
 
+        let mut current_state = Control::Continue;
+        let mut paused_thread_event: Option<ThreadEvent> = None;
+
         loop {
             match futures.next().await.unwrap() {
                 Event::Thread(thread_event) => {
                     let sprite_id = thread_event.sprite_id;
                     let thread_id = thread_event.thread_id;
                     thread_event.last_result?;
-                    let future = sprites[thread_event.sprite_id]
-                        .step(thread_event.thread_id)
-                        .map(move |result| {
-                            Event::Thread(ThreadEvent {
-                                last_result: result,
+                    match current_state {
+                        Control::Continue | Control::Step => {
+                            let future = sprites[thread_event.sprite_id]
+                                .step(thread_event.thread_id)
+                                .map(move |result| {
+                                    Event::Thread(ThreadEvent {
+                                        last_result: result,
+                                        sprite_id,
+                                        thread_id,
+                                    })
+                                });
+                            futures.push(Box::pin(future));
+
+                            if let Control::Step = current_state {
+                                current_state = Control::Pause;
+                            }
+                        }
+                        Control::Pause => {
+                            paused_thread_event = Some(ThreadEvent {
+                                last_result: Ok(()),
                                 sprite_id,
                                 thread_id,
-                            })
-                        });
-                    futures.push(Box::pin(future));
+                            });
+                        }
+                    }
                     // TODO find a way to yield to redraw
                     // Check event stack to see if redraw is being added
                     TimeoutFuture::new(0).await;
@@ -130,14 +148,27 @@ impl VM {
                     futures.push(Box::pin(TimeoutFuture::new(17).map(|_| Event::Redraw)));
                 }
                 Event::Control(control) => {
-                    log::debug!("{:?}", control);
                     if let Some(c) = control {
-                        // TODO
+                        current_state = c;
                         match c {
-                            Control::Continue => log::debug!("continue"),
-                            Control::Pause => log::debug!("pause"),
-                            Control::Step => log::debug!("step"),
+                            Control::Continue | Control::Step => {
+                                if let Some(thread_event) = paused_thread_event.take() {
+                                    futures.push(Box::pin(
+                                        sprites[thread_event.sprite_id]
+                                            .step(thread_event.thread_id)
+                                            .map(move |result| {
+                                                Event::Thread(ThreadEvent {
+                                                    last_result: result,
+                                                    sprite_id: thread_event.sprite_id,
+                                                    thread_id: thread_event.thread_id,
+                                                })
+                                            }),
+                                    ));
+                                }
+                            }
+                            Control::Pause => {}
                         }
+                        log::info!("{:?}", c);
                     }
                     futures.push(Box::pin(control_chan.recv()));
                 }
