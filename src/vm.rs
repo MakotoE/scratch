@@ -30,8 +30,8 @@ impl VM {
     ) -> Result<Self> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
-        let mut sprites: Vec<Sprite> = Vec::with_capacity(scratch_file.project.targets.len());
-        for target in &scratch_file.project.targets {
+        let mut sprites: Vec<Sprite> = Vec::with_capacity(scratch_file.project.targets[1..].len());
+        for target in &scratch_file.project.targets[1..] {
             let runtime =
                 runtime::SpriteRuntime::new(&target.costumes, &scratch_file.images).await?;
 

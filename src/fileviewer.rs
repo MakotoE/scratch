@@ -4,6 +4,7 @@ use fileinput::FileInput;
 use savefile::ScratchFile;
 use vm::VM;
 use yew::prelude::*;
+use yew::virtual_dom::VNode;
 
 pub struct FileViewer {
     link: ComponentLink<Self>,
@@ -14,6 +15,38 @@ pub struct FileViewer {
 pub enum Msg {
     LoadFile(ScratchFile),
     SetBlockInputs(Vec<Vec<BlockInputs>>),
+}
+
+impl FileViewer {
+    fn sprite(block_inputs: &[Vec<BlockInputs>]) -> Vec<VNode> {
+        block_inputs
+            .iter()
+            .enumerate()
+            .map(|(sprite_id, thread)| {
+                html! {
+                    <>
+                        <h1><strong>{format!("Sprite {}", sprite_id)}</strong></h1>
+                        {FileViewer::thread(thread)}
+                    </>
+                }
+            })
+            .collect()
+    }
+
+    fn thread(thread_blocks: &[BlockInputs]) -> Vec<VNode> {
+        thread_blocks
+            .iter()
+            .enumerate()
+            .map(|(thread_id, block_inputs)| {
+                html! {
+                    <>
+                        <h2><strong>{format!("Thread {}", thread_id)}</strong></h2>
+                        <Diagram block_inputs={block_inputs} />
+                    </>
+                }
+            })
+            .collect()
+    }
 }
 
 impl Component for FileViewer {
@@ -81,16 +114,7 @@ impl Component for FileViewer {
                     {"br { margin-bottom: 2px; }"}
                 </style>
                 <span style="font-family: monospace;">
-                    {
-                        for self.block_inputs[0].iter().enumerate().map(|(i, block)| {
-                            html! {
-                                <>
-                                    <h2><strong>{String::from("Thread ") + &i.to_string()}</strong></h2>
-                                    <Diagram block_inputs={block} />
-                                </>
-                            }
-                        })
-                    }
+                    {FileViewer::sprite(&self.block_inputs)}
                 </span>
             </>
         }
