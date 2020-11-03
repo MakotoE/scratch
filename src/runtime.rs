@@ -75,15 +75,7 @@ impl SpriteRuntime {
         Ok(runtime)
     }
 
-    pub fn redraw(
-        &mut self,
-        context: &web_sys::CanvasRenderingContext2d,
-        first_sprite: bool,
-    ) -> Result<()> {
-        if first_sprite {
-            context.clear_rect(0.0, 0.0, 480.0, 360.0);
-        }
-
+    pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         self.pen.draw(context);
 
         let costume = match self.costumes.get(self.current_costume) {

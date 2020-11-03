@@ -43,16 +43,8 @@ impl Sprite {
         self.runtime.sprite.read().await.need_redraw()
     }
 
-    pub async fn redraw(
-        &self,
-        context: &web_sys::CanvasRenderingContext2d,
-        first_sprite: bool,
-    ) -> Result<()> {
-        self.runtime
-            .sprite
-            .write()
-            .await
-            .redraw(context, first_sprite)
+    pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+        self.runtime.sprite.write().await.redraw(context)
     }
 
     pub fn block_inputs(&self) -> Vec<BlockInputs> {

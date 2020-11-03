@@ -75,9 +75,10 @@ impl VM {
 
         context.reset_transform().unwrap();
         context.scale(2.0, 2.0).unwrap();
+        context.clear_rect(0.0, 0.0, 480.0, 360.0);
 
-        for (i, sprite) in sprites.iter().enumerate() {
-            sprite.redraw(&context, i == 0).await?;
+        for sprite in sprites {
+            sprite.redraw(&context).await?;
         }
         Ok(())
     }
@@ -87,14 +88,15 @@ impl VM {
         control_chan: Receiver<Control>,
         context: &web_sys::CanvasRenderingContext2d,
     ) -> Result<()> {
-        const REDRAW_INTERVAL_MILLIS: u32 = 17;
+        const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
+
+        let performance = web_sys::window().unwrap().performance().unwrap();
+
+        let mut last_redraw = performance.now();
 
         let control_chan = ReceiverCell::new(control_chan);
         let mut futures: FuturesUnordered<LocalBoxFuture<Event>> = FuturesUnordered::new();
         futures.push(Box::pin(control_chan.recv()));
-        futures.push(Box::pin(
-            TimeoutFuture::new(REDRAW_INTERVAL_MILLIS).map(|_| Event::Redraw),
-        ));
 
         for (sprite_id, sprite) in sprites.iter().enumerate() {
             for thread_id in 0..sprite.number_of_threads() {
@@ -110,30 +112,25 @@ impl VM {
         let mut paused_threads: Vec<ThreadID> = Vec::new();
 
         loop {
+            if performance.now() - last_redraw > REDRAW_INTERVAL_MILLIS {
+                VM::redraw(&sprites, context).await?;
+                TimeoutFuture::new(0).await; // Yield to render
+                last_redraw = performance.now();
+            }
+
             match futures.next().await.unwrap() {
-                Event::Thread(thread_id) => {
-                    match current_state {
-                        Control::Continue => {
-                            futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id))
-                        }
-                        Control::Pause => paused_threads.push(thread_id),
-                        Control::Step => {
-                            futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id));
-                            current_state = Control::Pause;
-                        }
-                        Control::Stop => unreachable!(),
+                Event::Thread(thread_id) => match current_state {
+                    Control::Continue => {
+                        futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id))
                     }
-                    // TODO find a way to yield to redraw
-                    // Check event stack to see if redraw is being added
-                    TimeoutFuture::new(0).await;
-                }
+                    Control::Pause => paused_threads.push(thread_id),
+                    Control::Step => {
+                        futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id));
+                        current_state = Control::Pause;
+                    }
+                    Control::Stop => unreachable!(),
+                },
                 Event::Error(e) => return Err(e),
-                Event::Redraw => {
-                    VM::redraw(&sprites, context).await?;
-                    futures.push(Box::pin(
-                        TimeoutFuture::new(REDRAW_INTERVAL_MILLIS).map(|_| Event::Redraw),
-                    ));
-                }
                 Event::Control(control) => {
                     if let Some(c) = control {
                         current_state = c;
@@ -195,7 +192,6 @@ impl Drop for VM {
 enum Event {
     Thread(ThreadID),
     Error(Error),
-    Redraw,
     Control(Option<Control>),
 }
 
