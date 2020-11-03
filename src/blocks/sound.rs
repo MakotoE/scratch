@@ -4,6 +4,8 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
     Ok(match name {
         "play" => Box::new(Play::new(id, runtime)),
         "sounds_menu" => Box::new(SoundsMenu::new(id, runtime)),
+        "playuntildone" => Box::new(PlayUntilDone::new(id, runtime)),
+        "stopallsounds" => Box::new(StopAllSounds::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -61,6 +63,70 @@ impl Block for SoundsMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SoundsMenu",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct PlayUntilDone {
+    id: String,
+}
+
+impl PlayUntilDone {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for PlayUntilDone {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "PlayUntilDone",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct StopAllSounds {
+    id: String,
+}
+
+impl StopAllSounds {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for StopAllSounds {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "StopAllSounds",
             id: self.id.clone(),
         }
     }
