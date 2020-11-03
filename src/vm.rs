@@ -20,6 +20,7 @@ enum Control {
     Continue,
     Pause,
     Step,
+    Stop,
 }
 
 impl VM {
@@ -120,6 +121,7 @@ impl VM {
                             futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id));
                             current_state = Control::Pause;
                         }
+                        Control::Stop => unreachable!(),
                     }
                     // TODO find a way to yield to redraw
                     // Check event stack to see if redraw is being added
@@ -135,6 +137,7 @@ impl VM {
                 Event::Control(control) => {
                     if let Some(c) = control {
                         current_state = c;
+                        log::info!("{:?}", c);
                         match c {
                             Control::Continue | Control::Step => {
                                 for thread_id in paused_threads.drain(..) {
@@ -144,9 +147,9 @@ impl VM {
                                     ))
                                 }
                             }
+                            Control::Stop => return Ok(()),
                             Control::Pause => {}
                         }
-                        log::info!("{:?}", c);
                     }
                     futures.push(Box::pin(control_chan.recv()));
                 }
@@ -179,6 +182,12 @@ impl VM {
 
     pub fn block_inputs(&self) -> Vec<Vec<BlockInputs>> {
         self.block_inputs.clone()
+    }
+}
+
+impl Drop for VM {
+    fn drop(&mut self) {
+        self.control_chan.blocking_send(Control::Stop).unwrap();
     }
 }
 
