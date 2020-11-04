@@ -9,8 +9,11 @@ pub fn get_block(name: &str, id: String, _runtime: Runtime) -> Result<Box<dyn Bl
         "divide" => Box::new(Divide::new(id)),
         "not" => Box::new(Not::new(id)),
         "and" => Box::new(And::new(id)),
+        "or" => Box::new(Or::new(id)),
         "lt" => Box::new(LessThan::new(id)),
         "gt" => Box::new(GreaterThan::new(id)),
+        "random" => Box::new(Random::new(id)),
+        "join" => Box::new(Join::new(id)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -371,6 +374,79 @@ impl Block for And {
 }
 
 #[derive(Debug)]
+pub struct Or {
+    id: String,
+    operand1: Option<Box<dyn Block>>,
+    operand2: Option<Box<dyn Block>>,
+}
+
+impl Or {
+    pub fn new(id: String) -> Self {
+        Self {
+            id,
+            operand1: None,
+            operand2: None,
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Or {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Or",
+            id: self.id.to_string(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: BlockInputs::inputs(hashmap! {
+                "operand1" => &self.operand1,
+                "operand2" => &self.operand2,
+            }),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "OPERAND1" => self.operand1 = Some(block),
+            "OPERAND2" => self.operand2 = Some(block),
+            _ => {}
+        }
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        let left = match &self.operand1 {
+            Some(b) => {
+                let value = b.value().await?;
+                match value {
+                    serde_json::Value::Bool(b) => b,
+                    _ => return Err(wrap_err!(format!("operand1 is not a boolean: {:?}", value))),
+                }
+            }
+            None => return Err(wrap_err!("operand1 is None")),
+        };
+
+        let right = match &self.operand2 {
+            Some(b) => {
+                let value = b.value().await?;
+                match value {
+                    serde_json::Value::Bool(b) => b,
+                    _ => return Err(wrap_err!(format!("operand2 is not a boolean: {:?}", value))),
+                }
+            }
+            None => return Err(wrap_err!("operand2 is None")),
+        };
+
+        Ok((left || right).into())
+    }
+}
+
+#[derive(Debug)]
 pub struct Not {
     id: String,
     operand: Option<Box<dyn Block>>,
@@ -546,6 +622,70 @@ impl Block for GreaterThan {
 
         Ok((left > right).into())
     }
+}
+
+#[derive(Debug)]
+pub struct Random {
+    id: String,
+}
+
+impl Random {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Random {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Random",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct Join {
+    id: String,
+}
+
+impl Join {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Join {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Join",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 }
 
 #[cfg(test)]

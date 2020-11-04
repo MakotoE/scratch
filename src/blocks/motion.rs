@@ -11,6 +11,10 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
         "sety" => Box::new(SetY::new(id, runtime)),
         "xposition" => Box::new(XPosition::new(id, runtime)),
         "yposition" => Box::new(YPosition::new(id, runtime)),
+        "direction" => Box::new(Direction::new(id, runtime)),
+        "pointindirection" => Box::new(PointingDirection::new(id, runtime)),
+        "goto" => Box::new(GoTo::new(id, runtime)),
+        "goto_menu" => Box::new(GoToMenu::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -432,6 +436,154 @@ impl Block for YPosition {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "YPosition",
+            id: self.id.to_string(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.runtime.sprite.read().await.position().y().into())
+    }
+}
+
+#[derive(Debug)]
+pub struct Direction {
+    id: String,
+    runtime: Runtime,
+}
+
+impl Direction {
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self { id, runtime }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Direction {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Direction",
+            id: self.id.to_string(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.runtime.sprite.read().await.position().y().into())
+    }
+}
+
+#[derive(Debug)]
+pub struct PointingDirection {
+    id: String,
+    runtime: Runtime,
+}
+
+impl PointingDirection {
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self { id, runtime }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for PointingDirection {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "PointingDirection",
+            id: self.id.to_string(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.runtime.sprite.read().await.position().y().into())
+    }
+}
+
+#[derive(Debug)]
+pub struct GoTo {
+    id: String,
+    runtime: Runtime,
+}
+
+impl GoTo {
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self { id, runtime }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for GoTo {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "GoTo",
+            id: self.id.to_string(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.runtime.sprite.read().await.position().y().into())
+    }
+}
+
+#[derive(Debug)]
+pub struct GoToMenu {
+    id: String,
+    runtime: Runtime,
+}
+
+impl GoToMenu {
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self { id, runtime }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for GoToMenu {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "GoToMenu",
             id: self.id.to_string(),
         }
     }

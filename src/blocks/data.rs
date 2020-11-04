@@ -5,6 +5,8 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
+        "hidevariable" => Box::new(HideVariable::new(id, runtime)),
+        "showvariable" => Box::new(ShowVariable::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -179,4 +181,70 @@ impl Block for ChangeVariable {
             .insert(variable_id.clone(), new_value.into());
         Next::continue_(self.next.clone())
     }
+}
+
+#[derive(Debug)]
+pub struct HideVariable {
+    id: String,
+    runtime: Runtime,
+}
+
+impl HideVariable {
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self { id, runtime }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for HideVariable {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "HideVariable",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct ShowVariable {
+    id: String,
+    runtime: Runtime,
+}
+
+impl ShowVariable {
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self { id, runtime }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for ShowVariable {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "ShowVariable",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 }

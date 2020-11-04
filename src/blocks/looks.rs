@@ -11,6 +11,9 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
         "seteffectto" => Box::new(SetEffectTo::new(id, runtime)),
         "nextcostume" => Box::new(NextCostume::new(id, runtime)),
         "changeeffectby" => Box::new(ChangeEffectBy::new(id, runtime)),
+        "setsizeto" => Box::new(SetSizeTo::new(id, runtime)),
+        "switchcostumeto" => Box::new(SwitchCostumeTo::new(id, runtime)),
+        "costume" => Box::new(Costume::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -349,6 +352,117 @@ impl Block for ChangeEffectBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeEffectBy",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SetSizeTo {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl SetSizeTo {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
+        Self { id, next: None }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SetSizeTo {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SetSizeTo",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SwitchCostumeTo {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl SwitchCostumeTo {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
+        Self { id, next: None }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SwitchCostumeTo {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SwitchCostumeTo",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
+        }
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Costume {
+    id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+}
+
+impl Costume {
+    pub fn new(id: String, _runtime: Runtime) -> Self {
+        Self { id, next: None }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Costume {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Costume",
             id: self.id.clone(),
         }
     }

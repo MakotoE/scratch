@@ -10,6 +10,12 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
         "wait" => Box::new(Wait::new(id, runtime)),
         "repeat_until" => Box::new(RepeatUntil::new(id)),
         "if_else" => Box::new(IfElse::new(id)),
+        "wait_until" => Box::new(WaitUntil::new(id)),
+        "start_as_clone" => Box::new(StartAsClone::new(id)),
+        "delete_this_clone" => Box::new(DeleteThisClone::new(id)),
+        "stop" => Box::new(Stop::new(id)),
+        "create_clone_of" => Box::new(CreateCloneOf::new(id)),
+        "create_clone_of_menu" => Box::new(CreateCloneOfMenu::new(id)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -419,4 +425,196 @@ impl Block for IfElse {
 
         Next::loop_(self.substack_false.clone())
     }
+}
+
+#[derive(Debug)]
+pub struct WaitUntil {
+    id: String,
+}
+
+impl WaitUntil {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for WaitUntil {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "WaitUntil",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct StartAsClone {
+    id: String,
+}
+
+impl StartAsClone {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for StartAsClone {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "StartAsClone",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct DeleteThisClone {
+    id: String,
+}
+
+impl DeleteThisClone {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for DeleteThisClone {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "DeleteThisClone",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct Stop {
+    id: String,
+}
+
+impl Stop {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Stop {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Stop",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct CreateCloneOf {
+    id: String,
+}
+
+impl CreateCloneOf {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for CreateCloneOf {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "CreateCloneOf",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+}
+
+#[derive(Debug)]
+pub struct CreateCloneOfMenu {
+    id: String,
+}
+
+impl CreateCloneOfMenu {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for CreateCloneOfMenu {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "CreateCloneOfMenu",
+            id: self.id.clone(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::new(),
+            inputs: HashMap::new(),
+            stacks: HashMap::new(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 }

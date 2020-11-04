@@ -5,6 +5,7 @@ mod looks;
 mod motion;
 mod operator;
 mod pen;
+mod sensing;
 mod sound;
 mod value;
 
@@ -24,25 +25,31 @@ fn get_block(id: String, runtime: Runtime, info: &savefile::Block) -> Result<Box
         }
     };
 
+    let id_clone = id.clone();
     match category {
-        "control" => control::get_block(name, id.clone(), runtime)
+        "control" => control::get_block(name, id_clone, runtime)
             .map_err(|e| add_error_context(id, "control", e)),
         "data" => {
             data::get_block(name, id.clone(), runtime).map_err(|e| add_error_context(id, "data", e))
         }
-        "event" => event::get_block(name, id.clone(), runtime)
-            .map_err(|e| add_error_context(id, "event", e)),
-        "looks" => looks::get_block(name, id.clone(), runtime)
-            .map_err(|e| add_error_context(id, "looks", e)),
-        "motion" => motion::get_block(name, id.clone(), runtime)
+        "event" => {
+            event::get_block(name, id_clone, runtime).map_err(|e| add_error_context(id, "event", e))
+        }
+        "looks" => {
+            looks::get_block(name, id_clone, runtime).map_err(|e| add_error_context(id, "looks", e))
+        }
+        "motion" => motion::get_block(name, id_clone, runtime)
             .map_err(|e| add_error_context(id, "motion", e)),
-        "operator" => operator::get_block(name, id.clone(), runtime)
+        "operator" => operator::get_block(name, id_clone, runtime)
             .map_err(|e| add_error_context(id, "operator", e)),
         "pen" => {
-            pen::get_block(name, id.clone(), runtime).map_err(|e| add_error_context(id, "pen", e))
+            pen::get_block(name, id_clone, runtime).map_err(|e| add_error_context(id, "pen", e))
         }
-        "sound" => sound::get_block(name, id.clone(), runtime)
-            .map_err(|e| add_error_context(id, "sound", e)),
+        "sensing" => sensing::get_block(name, id_clone, runtime)
+            .map_err(|e| add_error_context(id, "sensing", e)),
+        "sound" => {
+            sound::get_block(name, id_clone, runtime).map_err(|e| add_error_context(id, "sound", e))
+        }
         _ => Err(wrap_err!(format!(
             "block id \"{}\": opcode {} does not exist",
             id, info.opcode
