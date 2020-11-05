@@ -71,7 +71,9 @@ pub trait Block: std::fmt::Debug {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
 
     #[allow(unused_variables)]
-    fn set_field(&mut self, key: &str, value_id: String) {}
+    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
+        Ok(())
+    }
 
     async fn value(&self) -> Result<serde_json::Value> {
         Err(wrap_err!("this block does not return a value"))
@@ -201,20 +203,7 @@ pub fn block_tree(
         }
     }
     for (k, field) in &info.fields {
-        let field_string = match field.get(1) {
-            Some(s) => s,
-            None => match field.get(0) {
-                Some(s) => s,
-                None => {
-                    return Err(wrap_err!(format!(
-                        "block \"{}\": invalid field {}",
-                        top_block_id, k
-                    )));
-                }
-            },
-        };
-
-        block.set_field(k, field_string.clone());
+        block.set_field(k, field)?;
     }
     Ok(block)
 }

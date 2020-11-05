@@ -41,10 +41,7 @@ impl Broadcaster {
     }
 
     pub fn send(&self, s: String) -> Result<()> {
-        match self.sender.send(s) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e.to_string().into()),
-        }
+        Ok(self.sender.send(s)?)
     }
 
     pub fn receiver(&self) -> Receiver<String> {

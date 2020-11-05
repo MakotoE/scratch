@@ -61,10 +61,11 @@ impl Block for SetVariable {
         }
     }
 
-    fn set_field(&mut self, key: &str, value_id: String) {
+    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
         if key == "VARIABLE" {
-            self.variable_id = Some(value_id);
+            self.variable_id = field.get(1).cloned();
         }
+        Ok(())
     }
 
     async fn execute(&mut self) -> Next {
@@ -136,10 +137,11 @@ impl Block for ChangeVariable {
         }
     }
 
-    fn set_field(&mut self, key: &str, value_id: String) {
+    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
         if key == "VARIABLE" {
-            self.variable_id = Some(value_id);
+            self.variable_id = field.get(1).cloned();
         }
+        Ok(())
     }
 
     async fn execute(&mut self) -> Next {

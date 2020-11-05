@@ -11,6 +11,8 @@ error_chain::error_chain! {
         IO(std::io::Error);
         ParseFloatError(std::num::ParseFloatError);
         ParseIntError(std::num::ParseIntError);
+        WatchSendError(tokio::sync::watch::error::SendError<String>);
+        WatchRecvError(tokio::sync::watch::error::RecvError);
     }
 
     errors {

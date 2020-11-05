@@ -101,14 +101,25 @@ impl Block for WhenBroadcastReceived {
         }
     }
 
-    fn set_field(&mut self, key: &str, value_id: String) {
+    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
         if key == "BROADCAST_OPTION" {
-            self.broadcast_id = value_id;
+            self.broadcast_id = match field.get(0) {
+                Some(s) => s.clone(),
+                None => return Err("field is invalid".into()),
+            }
         }
+        Ok(())
     }
 
     async fn execute(&mut self) -> Next {
-        unimplemented!()
+        let mut recv = self.runtime.global.broadcaster.receiver();
+        loop {
+            recv.changed().await?;
+            if *recv.borrow() == self.broadcast_id {
+                break;
+            }
+        }
+        Next::continue_(self.next.clone())
     }
 }
 
