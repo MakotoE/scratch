@@ -1,6 +1,7 @@
 use super::*;
 use palette::IntoColor;
 use palette::Mix;
+use sprite_runtime::hex_to_color;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -169,7 +170,7 @@ impl Block for SetPenColorToColor {
             .write()
             .await
             .pen()
-            .set_color(&runtime::hex_to_color(color)?);
+            .set_color(&hex_to_color(color)?);
         Next::continue_(self.next.clone())
     }
 }

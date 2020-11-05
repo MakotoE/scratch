@@ -45,6 +45,10 @@ impl Block for Play {
             self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
+
+    async fn execute(&mut self) -> Next {
+        Next::continue_(self.next.clone())
+    }
 }
 
 #[derive(Debug)]
@@ -82,11 +86,12 @@ impl Block for SoundsMenu {
 #[derive(Debug)]
 pub struct PlayUntilDone {
     id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl PlayUntilDone {
     pub fn new(id: String, _runtime: Runtime) -> Self {
-        Self { id }
+        Self { id, next: None }
     }
 }
 
@@ -108,17 +113,22 @@ impl Block for PlayUntilDone {
         }
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct StopAllSounds {
     id: String,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl StopAllSounds {
     pub fn new(id: String, _runtime: Runtime) -> Self {
-        Self { id }
+        Self { id, next: None }
     }
 }
 
@@ -140,5 +150,13 @@ impl Block for StopAllSounds {
         }
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        Next::continue_(self.next.clone())
+    }
 }

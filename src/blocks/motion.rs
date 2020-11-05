@@ -1,5 +1,6 @@
 use super::*;
 use maplit::hashmap;
+use sprite_runtime::Coordinate;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {

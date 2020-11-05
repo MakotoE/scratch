@@ -1,6 +1,7 @@
 use super::*;
 use blocks::*;
-use runtime::{Coordinate, Runtime};
+use runtime::Runtime;
+use sprite_runtime::Coordinate;
 use thread::Thread;
 
 #[derive(Debug)]

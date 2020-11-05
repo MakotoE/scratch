@@ -12,7 +12,7 @@ mod value;
 use super::*;
 use async_trait::async_trait;
 use maplit::hashmap;
-use runtime::{Coordinate, Runtime};
+use runtime::Runtime;
 
 fn get_block(id: String, runtime: Runtime, info: &savefile::Block) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {

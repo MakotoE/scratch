@@ -7,6 +7,7 @@ use gloo_timers::future::TimeoutFuture;
 use runtime::{Global, Runtime};
 use savefile::ScratchFile;
 use sprite::Sprite;
+use sprite_runtime::SpriteRuntime;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 #[derive(Debug)]
@@ -32,8 +33,7 @@ impl VM {
 
         let mut sprites: Vec<Sprite> = Vec::with_capacity(scratch_file.project.targets[1..].len());
         for target in &scratch_file.project.targets[1..] {
-            let runtime =
-                runtime::SpriteRuntime::new(&target.costumes, &scratch_file.images).await?;
+            let runtime = SpriteRuntime::new(&target.costumes, &scratch_file.images).await?;
 
             let runtime = Runtime {
                 sprite: Rc::new(RwLock::new(runtime)),
