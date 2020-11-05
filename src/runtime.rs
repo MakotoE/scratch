@@ -47,7 +47,7 @@ impl Broadcaster {
     }
 
     pub fn send(&self, m: BroadcastMsg) -> Result<()> {
-        log::info!("broadcast: \"{:?}\"", &m);
+        log::info!("broadcast: {:?}", &m);
         Ok(self.sender.send(m)?)
     }
 

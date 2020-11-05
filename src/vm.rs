@@ -97,6 +97,9 @@ impl VM {
         let control_chan = ReceiverCell::new(control_chan);
         let mut futures: FuturesUnordered<LocalBoxFuture<Event>> = FuturesUnordered::new();
         futures.push(Box::pin(control_chan.recv()));
+        futures.push(Box::pin(
+            TimeoutFuture::new(REDRAW_INTERVAL_MILLIS as u32).map(|_| Event::Redraw),
+        ));
 
         for (sprite_id, sprite) in sprites.iter().enumerate() {
             for thread_id in 0..sprite.number_of_threads() {
@@ -134,7 +137,7 @@ impl VM {
                 Event::Control(control) => {
                     if let Some(c) = control {
                         current_state = c;
-                        log::info!("{:?}", c);
+                        log::info!("control: {:?}", c);
                         match c {
                             Control::Continue | Control::Step => {
                                 for thread_id in paused_threads.drain(..) {
@@ -149,6 +152,14 @@ impl VM {
                         }
                     }
                     futures.push(Box::pin(control_chan.recv()));
+                }
+                Event::Redraw => {
+                    VM::redraw(&sprites, context).await?;
+                    TimeoutFuture::new(0).await; // Yield to render
+                    last_redraw = performance.now();
+                    futures.push(Box::pin(
+                        TimeoutFuture::new(REDRAW_INTERVAL_MILLIS as u32).map(|_| Event::Redraw),
+                    ));
                 }
             };
         }
@@ -193,6 +204,7 @@ enum Event {
     Thread(ThreadID),
     Error(Error),
     Control(Option<Control>),
+    Redraw,
 }
 
 #[derive(Debug, Copy, Clone)]
