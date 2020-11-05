@@ -30,21 +30,53 @@ impl Global {
 
 #[derive(Debug)]
 pub struct Broadcaster {
-    sender: Sender<String>,
-    receiver: Receiver<String>,
+    sender: Sender<BroadcastMsg>,
+    receiver: Receiver<BroadcastMsg>,
+}
+
+#[derive(Debug, Clone, PartialOrd, PartialEq)]
+pub enum BroadcastMsg {
+    Start(String),
+    Finished(String),
 }
 
 impl Broadcaster {
     fn new() -> Self {
-        let (sender, receiver) = channel(String::new());
+        let (sender, receiver) = channel(BroadcastMsg::Start(String::new()));
         Self { sender, receiver }
     }
 
-    pub fn send(&self, s: String) -> Result<()> {
-        Ok(self.sender.send(s)?)
+    pub fn send(&self, m: BroadcastMsg) -> Result<()> {
+        log::info!("broadcast: \"{:?}\"", &m);
+        Ok(self.sender.send(m)?)
     }
 
-    pub fn receiver(&self) -> Receiver<String> {
+    pub fn receiver(&self) -> Receiver<BroadcastMsg> {
         self.receiver.clone()
+    }
+
+    pub async fn wait_until(receiver: &mut Receiver<BroadcastMsg>, msg: &str) -> Result<()> {
+        loop {
+            receiver.changed().await?;
+            if let BroadcastMsg::Start(s) = &*receiver.borrow() {
+                if s == msg {
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    pub async fn wait_until_finished(
+        receiver: &mut Receiver<BroadcastMsg>,
+        msg: &str,
+    ) -> Result<()> {
+        loop {
+            receiver.changed().await?;
+            if let BroadcastMsg::Finished(s) = &*receiver.borrow() {
+                if s == msg {
+                    return Ok(());
+                }
+            }
+        }
     }
 }

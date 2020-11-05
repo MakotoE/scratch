@@ -1,5 +1,6 @@
 use super::*;
 use maplit::hashmap;
+use runtime::{BroadcastMsg, Broadcaster};
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -64,6 +65,7 @@ pub struct WhenBroadcastReceived {
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     broadcast_id: String,
+    started: bool,
 }
 
 impl WhenBroadcastReceived {
@@ -73,6 +75,7 @@ impl WhenBroadcastReceived {
             runtime,
             next: None,
             broadcast_id: String::new(),
+            started: false,
         }
     }
 }
@@ -112,14 +115,19 @@ impl Block for WhenBroadcastReceived {
     }
 
     async fn execute(&mut self) -> Next {
-        let mut recv = self.runtime.global.broadcaster.receiver();
-        loop {
-            recv.changed().await?;
-            if *recv.borrow() == self.broadcast_id {
-                break;
-            }
+        if self.started {
+            self.runtime
+                .global
+                .broadcaster
+                .send(BroadcastMsg::Finished(self.broadcast_id.clone()))?;
+            self.started = false;
+            return Next::None;
         }
-        Next::continue_(self.next.clone())
+
+        let mut recv = self.runtime.global.broadcaster.receiver();
+        Broadcaster::wait_until(&mut recv, &self.broadcast_id).await?;
+        self.started = true;
+        Next::loop_(self.next.clone())
     }
 }
 
@@ -175,7 +183,10 @@ impl Block for Broadcast {
         };
 
         let msg = value_to_string(message_block.value().await?);
-        self.runtime.global.broadcaster.send(msg)?;
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::Start(msg))?;
         Next::continue_(self.next.clone())
     }
 }
@@ -232,8 +243,12 @@ impl Block for BroadcastAndWait {
         };
 
         let msg = value_to_string(message_block.value().await?);
-        self.runtime.global.broadcaster.send(msg)?;
-        // TODO wait for done message
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::Start(msg.clone()))?;
+        let mut recv = self.runtime.global.broadcaster.receiver();
+        Broadcaster::wait_until_finished(&mut recv, &msg).await?;
         Next::continue_(self.next.clone())
     }
 }
