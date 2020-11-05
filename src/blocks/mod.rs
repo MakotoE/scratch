@@ -268,9 +268,50 @@ fn value_to_float(value: &serde_json::Value) -> Result<f64> {
     })
 }
 
-fn value_to_string(value: serde_json::Value) -> String {
+fn value_to_string(value: Value) -> String {
     match value {
         Value::String(s) => s,
+        Value::Number(n) => n.as_f64().unwrap().to_string(),
         _ => value.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_value_to_string() {
+        struct Test {
+            value: Value,
+            expected: &'static str,
+        }
+
+        let tests = vec![
+            Test {
+                value: Value::Null,
+                expected: "null",
+            },
+            Test {
+                value: Value::String("a".into()),
+                expected: "a",
+            },
+            Test {
+                value: Value::Number(serde_json::Number::from_f64(1.0).unwrap()),
+                expected: "1",
+            },
+            Test {
+                value: Value::Number(serde_json::Number::from_f64(1.1).unwrap()),
+                expected: "1.1",
+            },
+            Test {
+                value: Value::Bool(false),
+                expected: "false",
+            },
+        ];
+
+        for (i, test) in tests.iter().enumerate() {
+            assert_eq!(value_to_string(test.value.clone()), test.expected, "{}", i);
+        }
     }
 }

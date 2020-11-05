@@ -115,6 +115,7 @@ impl VM {
         let mut paused_threads: Vec<ThreadID> = Vec::new();
 
         loop {
+            // Not having this causes unresponsive UI
             if performance.now() - last_redraw > REDRAW_INTERVAL_MILLIS {
                 VM::redraw(&sprites, context).await?;
                 TimeoutFuture::new(0).await; // Yield to render
