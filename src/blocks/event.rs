@@ -115,12 +115,19 @@ impl Block for WhenBroadcastReceived {
 #[derive(Debug)]
 pub struct Broadcast {
     id: String,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    message: Option<Box<dyn Block>>,
 }
 
 impl Broadcast {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            message: None,
+        }
     }
 }
 
@@ -137,27 +144,47 @@ impl Block for Broadcast {
         BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: HashMap::new(),
+            inputs: BlockInputs::inputs(hashmap! {"message" => &self.message}),
             stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "BROADCAST_INPUT" => self.message = Some(block),
+            _ => {}
         }
+    }
+
+    async fn execute(&mut self) -> Next {
+        let message_block = match &self.message {
+            Some(b) => b,
+            None => return Next::Err("message is None".into()),
+        };
+
+        let msg = value_to_string(message_block.value().await?);
+        self.runtime.global.broadcaster.send(msg)?;
+        Next::continue_(self.next.clone())
     }
 }
 
 #[derive(Debug)]
 pub struct BroadcastAndWait {
     id: String,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    message: Option<Box<dyn Block>>,
 }
 
 impl BroadcastAndWait {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            message: None,
+        }
     }
 }
 
@@ -174,15 +201,29 @@ impl Block for BroadcastAndWait {
         BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: HashMap::new(),
+            inputs: BlockInputs::inputs(hashmap! {"message" => &self.message}),
             stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "BROADCAST_INPUT" => self.message = Some(block),
+            _ => {}
         }
+    }
+
+    async fn execute(&mut self) -> Next {
+        let message_block = match &self.message {
+            Some(b) => b,
+            None => return Next::Err("message is None".into()),
+        };
+
+        let msg = value_to_string(message_block.value().await?);
+        self.runtime.global.broadcaster.send(msg)?;
+        // TODO wait for done message
+        Next::continue_(self.next.clone())
     }
 }
 

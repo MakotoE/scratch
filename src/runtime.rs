@@ -1,10 +1,6 @@
 use super::*;
-
-
 use sprite_runtime::SpriteRuntime;
-
-
-
+use tokio::sync::watch::{channel, Receiver, Sender};
 
 #[derive(Debug, Clone)]
 pub struct Runtime {
@@ -15,6 +11,7 @@ pub struct Runtime {
 #[derive(Debug, Clone)]
 pub struct Global {
     pub variables: Rc<RwLock<HashMap<String, serde_json::Value>>>,
+    pub broadcaster: Rc<Broadcaster>,
 }
 
 impl Global {
@@ -26,6 +23,31 @@ impl Global {
 
         Self {
             variables: Rc::new(RwLock::new(variables)),
+            broadcaster: Rc::new(Broadcaster::new()),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct Broadcaster {
+    sender: Sender<String>,
+    receiver: Receiver<String>,
+}
+
+impl Broadcaster {
+    fn new() -> Self {
+        let (sender, receiver) = channel(String::new());
+        Self { sender, receiver }
+    }
+
+    pub fn send(&self, s: String) -> Result<()> {
+        match self.sender.send(s) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_string().into()),
+        }
+    }
+
+    pub fn receiver(&self) -> Receiver<String> {
+        self.receiver.clone()
     }
 }

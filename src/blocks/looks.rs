@@ -35,14 +35,6 @@ impl Say {
             next: None,
         }
     }
-
-    fn value_to_string(value: &serde_json::Value) -> String {
-        match value {
-            serde_json::Value::String(s) => s.to_string(),
-            serde_json::Value::Number(n) => n.to_string(),
-            _ => value.to_string(),
-        }
-    }
 }
 
 #[async_trait(?Send)]
@@ -73,7 +65,7 @@ impl Block for Say {
 
     async fn execute(&mut self) -> Next {
         let message = match &self.message {
-            Some(b) => Say::value_to_string(&b.value().await?),
+            Some(b) => value_to_string(b.value().await?),
             None => return Next::Err(wrap_err!("message is None")),
         };
         self.runtime.sprite.write().await.say(Some(&message));
@@ -133,7 +125,7 @@ impl Block for SayForSecs {
 
     async fn execute(&mut self) -> Next {
         let message = match &self.message {
-            Some(b) => Say::value_to_string(&b.value().await?),
+            Some(b) => value_to_string(b.value().await?),
             None => return Next::Err(wrap_err!("message is None")),
         };
 
@@ -183,8 +175,6 @@ impl Block for GoToFrontBack {
             self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
-
-    fn set_field(&mut self, _key: &str, _value_id: String) {}
 }
 
 #[derive(Debug)]

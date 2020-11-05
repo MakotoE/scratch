@@ -13,6 +13,7 @@ use super::*;
 use async_trait::async_trait;
 use maplit::hashmap;
 use runtime::Runtime;
+use serde_json::Value;
 
 fn get_block(id: String, runtime: Runtime, info: &savefile::Block) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
@@ -276,4 +277,11 @@ fn value_to_float(value: &serde_json::Value) -> Result<f64> {
             )))
         }
     })
+}
+
+fn value_to_string(value: serde_json::Value) -> String {
+    match value {
+        Value::String(s) => s,
+        _ => value.to_string(),
+    }
 }
