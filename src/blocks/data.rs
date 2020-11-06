@@ -61,9 +61,9 @@ impl Block for SetVariable {
         }
     }
 
-    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            self.variable_id = field.get(1).cloned();
+            self.variable_id = field.get(1).cloned().flatten();
         }
         Ok(())
     }
@@ -137,9 +137,9 @@ impl Block for ChangeVariable {
         }
     }
 
-    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            self.variable_id = field.get(1).cloned();
+            self.variable_id = field.get(1).cloned().flatten();
         }
         Ok(())
     }

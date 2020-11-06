@@ -104,10 +104,10 @@ impl Block for WhenBroadcastReceived {
         }
     }
 
-    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "BROADCAST_OPTION" {
-            self.broadcast_id = match field.get(0) {
-                Some(s) => s.clone(),
+            match field.get(0).cloned().flatten() {
+                Some(s) => self.broadcast_id = s,
                 None => return Err(wrap_err!("field is invalid")),
             }
         }

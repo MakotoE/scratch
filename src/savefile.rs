@@ -51,7 +51,7 @@ pub struct Block {
     pub opcode: String,
     pub next: Option<String>,
     pub inputs: HashMap<String, Value>,
-    pub fields: HashMap<String, Vec<String>>,
+    pub fields: HashMap<String, Vec<Option<String>>>,
     pub top_level: bool,
 }
 

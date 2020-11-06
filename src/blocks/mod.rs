@@ -71,7 +71,7 @@ pub trait Block: std::fmt::Debug {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>);
 
     #[allow(unused_variables)]
-    fn set_field(&mut self, key: &str, field: &[String]) -> Result<()> {
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         Ok(())
     }
 
