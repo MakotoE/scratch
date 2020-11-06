@@ -10,7 +10,7 @@ pub struct ScratchInterface {
     canvas_ref: NodeRef,
     vm_state: VMState,
     file: Option<ScratchFile>,
-    vm: Option<Arc<RwLock<VM>>>, // TODO replace with sender
+    vm: Option<Rc<VM>>,
     debug_info: Vec<Vec<Option<BlockInfo>>>,
 }
 
@@ -41,7 +41,7 @@ pub enum Msg {
     SetDebug(DebugInfo),
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum VMState {
     Running,
     Paused,
@@ -85,7 +85,7 @@ impl Component for ScratchInterface {
                 let set_vm = self.link.callback(Msg::SetVM);
                 let set_debug = self.link.callback(Msg::SetDebug);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let (mut vm, mut debug_receiver) = match VM::start(ctx, &scratch_file).await {
+                    let (vm, mut debug_receiver) = match VM::start(ctx, &scratch_file).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);
@@ -105,7 +105,7 @@ impl Component for ScratchInterface {
                 false
             }
             Msg::SetVM(vm) => {
-                self.vm = Some(Arc::new(RwLock::new(vm)));
+                self.vm = Some(Rc::new(vm));
                 false
             }
             Msg::ContinuePause => {
@@ -115,21 +115,20 @@ impl Component for ScratchInterface {
                     VMState::Running => self.vm_state = VMState::Paused,
                 }
 
-                let vm = self.vm.clone();
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Some(vm) = vm {
+                if let Some(vm) = self.vm.clone() {
+                    wasm_bindgen_futures::spawn_local(async move {
                         match state {
-                            VMState::Paused => vm.write().await.continue_().await,
-                            VMState::Running => vm.write().await.pause().await,
+                            VMState::Paused => vm.continue_().await,
+                            VMState::Running => vm.pause().await,
                         }
-                    }
-                });
+                    });
+                }
                 true
             }
             Msg::Step => {
                 if let Some(vm) = self.vm.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
-                        vm.write().await.step().await;
+                        vm.step().await;
                     })
                 }
                 false

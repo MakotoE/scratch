@@ -70,21 +70,15 @@ impl Component for FileViewer {
     fn update(&mut self, msg: Msg) -> bool {
         match msg {
             Msg::LoadFile(file) => {
-                let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
-                let ctx: web_sys::CanvasRenderingContext2d =
-                    canvas.get_context("2d").unwrap().unwrap().unchecked_into();
-
                 let set_block_inputs = self.link.callback(Msg::SetBlockInputs);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let (vm, _) = match VM::start(ctx, &file).await {
-                        Ok(v) => v,
+                    match VM::block_inputs(&file).await {
+                        Ok(b) => set_block_inputs.emit(b),
                         Err(e) => {
                             log::error!("{}", e);
                             return;
                         }
                     };
-
-                    set_block_inputs.emit(vm.block_inputs());
                 });
 
                 false

@@ -13,7 +13,6 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 #[derive(Debug)]
 pub struct VM {
     control_sender: Sender<Control>,
-    block_inputs: Vec<Vec<BlockInputs>>,
 }
 
 impl VM {
@@ -21,6 +20,30 @@ impl VM {
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
     ) -> Result<(Self, Receiver<DebugInfo>)> {
+        let sprites = VM::sprites(scratch_file).await?;
+
+        let (control_sender, control_receiver) = channel(1);
+        let (debug_sender, debug_receiver) = channel(1);
+
+        wasm_bindgen_futures::spawn_local(async move {
+            match VM::run(sprites, control_receiver, &context, debug_sender).await {
+                Ok(_) => {}
+                Err(e) => log::error!("{}", e),
+            }
+        });
+
+        Ok((Self { control_sender }, debug_receiver))
+    }
+
+    pub async fn block_inputs(scratch_file: &ScratchFile) -> Result<Vec<Vec<BlockInputs>>> {
+        Ok(VM::sprites(scratch_file)
+            .await?
+            .iter()
+            .map(|s| s.block_inputs())
+            .collect())
+    }
+
+    async fn sprites(scratch_file: &ScratchFile) -> Result<Vec<Sprite>> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
         let mut sprites: Vec<Sprite> = Vec::with_capacity(scratch_file.project.targets[1..].len());
@@ -35,26 +58,7 @@ impl VM {
             sprites.push(Sprite::new(runtime, target).await?);
         }
 
-        let block_inputs: Vec<Vec<BlockInputs>> =
-            sprites.iter().map(|s| s.block_inputs()).collect();
-
-        let (control_sender, control_receiver) = channel(1);
-        let (debug_sender, debug_receiver) = channel(1);
-
-        wasm_bindgen_futures::spawn_local(async move {
-            match VM::run(sprites, control_receiver, &context, debug_sender).await {
-                Ok(_) => {}
-                Err(e) => log::error!("{}", e),
-            }
-        });
-
-        Ok((
-            Self {
-                control_sender,
-                block_inputs,
-            },
-            debug_receiver,
-        ))
+        Ok(sprites)
     }
 
     async fn redraw(sprites: &[Sprite], context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
@@ -188,20 +192,16 @@ impl VM {
         )
     }
 
-    pub async fn continue_(&mut self) {
+    pub async fn continue_(&self) {
         self.control_sender.send(Control::Continue).await.unwrap();
     }
 
-    pub async fn pause(&mut self) {
+    pub async fn pause(&self) {
         self.control_sender.send(Control::Pause).await.unwrap();
     }
 
-    pub async fn step(&mut self) {
+    pub async fn step(&self) {
         self.control_sender.send(Control::Step).await.unwrap();
-    }
-
-    pub fn block_inputs(&self) -> Vec<Vec<BlockInputs>> {
-        self.block_inputs.clone()
     }
 }
 
