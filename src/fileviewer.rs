@@ -10,6 +10,7 @@ pub struct FileViewer {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
     block_inputs: Vec<Vec<BlockInputs>>,
+    file_text: String,
 }
 
 pub enum Msg {
@@ -64,12 +65,14 @@ impl Component for FileViewer {
             link,
             canvas_ref: NodeRef::default(),
             block_inputs: Vec::new(),
+            file_text: String::new(),
         }
     }
 
     fn update(&mut self, msg: Msg) -> bool {
         match msg {
             Msg::LoadFile(file) => {
+                self.file_text = format!("{:#?}", &file.project);
                 let set_block_inputs = self.link.callback(Msg::SetBlockInputs);
                 wasm_bindgen_futures::spawn_local(async move {
                     match VM::block_inputs(&file).await {
@@ -110,6 +113,22 @@ impl Component for FileViewer {
                 <span style="font-family: monospace;">
                     {FileViewer::sprite(&self.block_inputs)}
                 </span>
+
+                {
+                    if self.file_text.len() > 0 {
+                        html! {
+                            <>
+                                <br />
+                                <h1 style="font-family: monospace;">{"ScratchFile structure"}</h1>
+                                <pre>
+                                    {self.file_text.clone()}
+                                </pre>
+                            </>
+                        }
+                    } else {
+                        html! {}
+                    }
+                }
             </>
         }
     }
