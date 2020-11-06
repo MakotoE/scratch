@@ -99,7 +99,10 @@ impl Component for ScratchInterface {
                     set_vm.emit(vm);
 
                     loop {
-                        set_debug.emit(debug_receiver.recv().await.unwrap());
+                        match debug_receiver.recv().await {
+                            Some(d) => set_debug.emit(d),
+                            None => return,
+                        }
                     }
                 });
                 false
