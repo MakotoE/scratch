@@ -1,6 +1,6 @@
 use super::*;
 use sprite_runtime::SpriteRuntime;
-use tokio::sync::watch::{channel, Receiver, Sender};
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 #[derive(Debug, Clone)]
 pub struct Runtime {
@@ -11,7 +11,7 @@ pub struct Runtime {
 #[derive(Debug, Clone)]
 pub struct Global {
     pub variables: Rc<RwLock<HashMap<String, serde_json::Value>>>,
-    pub broadcaster: Rc<Broadcaster>,
+    pub broadcaster: Broadcaster,
 }
 
 impl Global {
@@ -23,60 +23,35 @@ impl Global {
 
         Self {
             variables: Rc::new(RwLock::new(variables)),
-            broadcaster: Rc::new(Broadcaster::new()),
+            broadcaster: Broadcaster::new(),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Broadcaster {
     sender: Sender<BroadcastMsg>,
-    receiver: Receiver<BroadcastMsg>,
+}
+
+impl Broadcaster {
+    fn new() -> Self {
+        let (sender, _) = channel(1);
+        Self { sender }
+    }
+
+    pub fn send(&self, m: BroadcastMsg) -> Result<()> {
+        log::info!("broadcast: {:?}", &m);
+        self.sender.send(m)?;
+        Ok(())
+    }
+
+    pub fn subscribe(&self) -> Receiver<BroadcastMsg> {
+        self.sender.subscribe()
+    }
 }
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
 pub enum BroadcastMsg {
     Start(String),
     Finished(String),
-}
-
-impl Broadcaster {
-    fn new() -> Self {
-        let (sender, receiver) = channel(BroadcastMsg::Start(String::new()));
-        Self { sender, receiver }
-    }
-
-    pub fn send(&self, m: BroadcastMsg) -> Result<()> {
-        log::info!("broadcast: {:?}", &m);
-        Ok(self.sender.send(m)?)
-    }
-
-    pub fn receiver(&self) -> Receiver<BroadcastMsg> {
-        self.receiver.clone()
-    }
-
-    pub async fn wait_until(receiver: &mut Receiver<BroadcastMsg>, msg: &str) -> Result<()> {
-        loop {
-            receiver.changed().await?;
-            if let BroadcastMsg::Start(s) = &*receiver.borrow() {
-                if s == msg {
-                    return Ok(());
-                }
-            }
-        }
-    }
-
-    pub async fn wait_until_finished(
-        receiver: &mut Receiver<BroadcastMsg>,
-        msg: &str,
-    ) -> Result<()> {
-        loop {
-            receiver.changed().await?;
-            if let BroadcastMsg::Finished(s) = &*receiver.borrow() {
-                if s == msg {
-                    return Ok(());
-                }
-            }
-        }
-    }
 }

@@ -1,6 +1,6 @@
 use super::*;
 use maplit::hashmap;
-use runtime::{BroadcastMsg, Broadcaster};
+use runtime::BroadcastMsg;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -124,10 +124,15 @@ impl Block for WhenBroadcastReceived {
             return Next::None;
         }
 
-        let mut recv = self.runtime.global.broadcaster.receiver();
-        Broadcaster::wait_until(&mut recv, &self.broadcast_id).await?;
-        self.started = true;
-        Next::loop_(self.next.clone())
+        let mut recv = self.runtime.global.broadcaster.subscribe();
+        loop {
+            if let BroadcastMsg::Start(s) = recv.recv().await? {
+                if s == self.broadcast_id {
+                    self.started = true;
+                    return Next::loop_(self.next.clone());
+                }
+            }
+        }
     }
 }
 
@@ -247,9 +252,14 @@ impl Block for BroadcastAndWait {
             .global
             .broadcaster
             .send(BroadcastMsg::Start(msg.clone()))?;
-        let mut recv = self.runtime.global.broadcaster.receiver();
-        Broadcaster::wait_until_finished(&mut recv, &msg).await?;
-        Next::continue_(self.next.clone())
+        let mut recv = self.runtime.global.broadcaster.subscribe();
+        loop {
+            if let BroadcastMsg::Finished(s) = recv.recv().await? {
+                if s == msg {
+                    return Next::continue_(self.next.clone());
+                }
+            }
+        }
     }
 }
 
