@@ -1,4 +1,5 @@
 use super::*;
+use tokio::sync::{mpsc, watch};
 
 error_chain::error_chain! {
     types {
@@ -11,8 +12,9 @@ error_chain::error_chain! {
         IO(std::io::Error);
         ParseFloatError(std::num::ParseFloatError);
         ParseIntError(std::num::ParseIntError);
-        WatchSendError(tokio::sync::watch::error::SendError<runtime::BroadcastMsg>);
-        WatchRecvError(tokio::sync::watch::error::RecvError);
+        BroadcastSendError(watch::error::SendError<runtime::BroadcastMsg>);
+        RecvError(watch::error::RecvError);
+        DebugSendError(mpsc::error::SendError<vm::DebugInfo>);
     }
 
     errors {

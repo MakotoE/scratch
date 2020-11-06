@@ -1,5 +1,5 @@
 use super::*;
-use blocks::BlockInputs;
+use blocks::{BlockInfo, BlockInputs};
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
@@ -12,23 +12,15 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 #[derive(Debug)]
 pub struct VM {
-    control_chan: Sender<Control>,
+    control_sender: Sender<Control>,
     block_inputs: Vec<Vec<BlockInputs>>,
-}
-
-#[derive(Debug, Copy, Clone)]
-enum Control {
-    Continue,
-    Pause,
-    Step,
-    Stop,
 }
 
 impl VM {
     pub async fn start(
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
-    ) -> Result<Self> {
+    ) -> Result<(Self, Receiver<DebugInfo>)> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
         let mut sprites: Vec<Sprite> = Vec::with_capacity(scratch_file.project.targets[1..].len());
@@ -46,18 +38,23 @@ impl VM {
         let block_inputs: Vec<Vec<BlockInputs>> =
             sprites.iter().map(|s| s.block_inputs()).collect();
 
-        let (sender, receiver) = channel(1);
+        let (control_sender, control_receiver) = channel(1);
+        let (debug_sender, debug_receiver) = channel(1);
+
         wasm_bindgen_futures::spawn_local(async move {
-            match VM::run(sprites, receiver, &context).await {
+            match VM::run(sprites, control_receiver, &context, debug_sender).await {
                 Ok(_) => {}
                 Err(e) => log::error!("{}", e),
             }
         });
 
-        Ok(Self {
-            control_chan: sender,
-            block_inputs,
-        })
+        Ok((
+            Self {
+                control_sender,
+                block_inputs,
+            },
+            debug_receiver,
+        ))
     }
 
     async fn redraw(sprites: &[Sprite], context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
@@ -87,6 +84,7 @@ impl VM {
         sprites: Vec<Sprite>,
         control_chan: Receiver<Control>,
         context: &web_sys::CanvasRenderingContext2d,
+        debug_sender: Sender<DebugInfo>,
     ) -> Result<()> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
@@ -101,18 +99,25 @@ impl VM {
             TimeoutFuture::new(REDRAW_INTERVAL_MILLIS as u32).map(|_| Event::Redraw),
         ));
 
+        let mut paused_threads: Vec<ThreadID> = Vec::new();
         for (sprite_id, sprite) in sprites.iter().enumerate() {
             for thread_id in 0..sprite.number_of_threads() {
                 let id = ThreadID {
                     sprite_id,
                     thread_id,
                 };
-                futures.push(VM::step_sprite(&sprites[id.sprite_id], id))
+                paused_threads.push(id);
+
+                debug_sender
+                    .send(DebugInfo {
+                        thread_id: id,
+                        block_info: sprites[sprite_id].block_info(thread_id),
+                    })
+                    .await?;
             }
         }
 
-        let mut current_state = Control::Continue;
-        let mut paused_threads: Vec<ThreadID> = Vec::new();
+        let mut current_state = Control::Pause;
 
         loop {
             // Not having this causes unresponsive UI
@@ -127,9 +132,15 @@ impl VM {
                     Control::Continue => {
                         futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id))
                     }
-                    Control::Pause => paused_threads.push(thread_id),
-                    Control::Step => {
-                        futures.push(VM::step_sprite(&sprites[thread_id.sprite_id], thread_id));
+                    Control::Step | Control::Pause => {
+                        paused_threads.push(thread_id);
+                        debug_sender
+                            .send(DebugInfo {
+                                thread_id,
+                                block_info: sprites[thread_id.sprite_id]
+                                    .block_info(thread_id.thread_id),
+                            })
+                            .await?;
                         current_state = Control::Pause;
                     }
                     Control::Stop => unreachable!(),
@@ -138,19 +149,19 @@ impl VM {
                 Event::Control(control) => {
                     if let Some(c) = control {
                         current_state = c;
-                        log::info!("control: {:?}", c);
                         match c {
                             Control::Continue | Control::Step => {
                                 for thread_id in paused_threads.drain(..) {
                                     futures.push(VM::step_sprite(
                                         &sprites[thread_id.sprite_id],
                                         thread_id,
-                                    ))
+                                    ));
                                 }
                             }
                             Control::Stop => return Ok(()),
                             Control::Pause => {}
                         }
+                        log::info!("control: {:?}", c);
                     }
                     futures.push(Box::pin(control_chan.recv()));
                 }
@@ -178,15 +189,15 @@ impl VM {
     }
 
     pub async fn continue_(&mut self) {
-        self.control_chan.send(Control::Continue).await.unwrap();
+        self.control_sender.send(Control::Continue).await.unwrap();
     }
 
     pub async fn pause(&mut self) {
-        self.control_chan.send(Control::Pause).await.unwrap();
+        self.control_sender.send(Control::Pause).await.unwrap();
     }
 
     pub async fn step(&mut self) {
-        self.control_chan.send(Control::Step).await.unwrap();
+        self.control_sender.send(Control::Step).await.unwrap();
     }
 
     pub fn block_inputs(&self) -> Vec<Vec<BlockInputs>> {
@@ -196,8 +207,16 @@ impl VM {
 
 impl Drop for VM {
     fn drop(&mut self) {
-        self.control_chan.blocking_send(Control::Stop).unwrap();
+        self.control_sender.blocking_send(Control::Stop).unwrap();
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+enum Control {
+    Continue,
+    Pause,
+    Step,
+    Stop,
 }
 
 #[derive(Debug)]
@@ -209,9 +228,9 @@ enum Event {
 }
 
 #[derive(Debug, Copy, Clone)]
-struct ThreadID {
-    sprite_id: usize,
-    thread_id: usize,
+pub struct ThreadID {
+    pub sprite_id: usize,
+    pub thread_id: usize,
 }
 
 /// Resolves a lifetime issue with Receiver and FuturesUnordered.
@@ -230,4 +249,10 @@ impl ReceiverCell {
     async fn recv(&self) -> Event {
         Event::Control(self.receiver.borrow_mut().recv().await)
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct DebugInfo {
+    pub thread_id: ThreadID,
+    pub block_info: BlockInfo,
 }

@@ -1,5 +1,5 @@
 use super::*;
-use blocks::{Block, BlockInputs, Next};
+use blocks::{Block, BlockInfo, BlockInputs, Next};
 use runtime::Runtime;
 
 #[derive(Debug)]
@@ -57,10 +57,8 @@ impl Thread {
     pub fn block_inputs(&self) -> BlockInputs {
         self.hat.borrow().block_inputs()
     }
-}
 
-#[derive(Debug, Default, Clone)]
-pub struct DebugInfo {
-    pub block_id: String,
-    pub block_name: String,
+    pub fn block_info(&self) -> BlockInfo {
+        self.curr_block.borrow().block_info()
+    }
 }

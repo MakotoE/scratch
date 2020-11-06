@@ -2,7 +2,6 @@ use super::*;
 use palette::IntoColor;
 use pen::Pen;
 use savefile::Image;
-use thread::DebugInfo;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
@@ -14,8 +13,6 @@ pub struct SpriteRuntime {
     current_costume: usize,
     text: Option<String>,
     pen: Pen,
-    draw_debug_info: bool,
-    debug_info: Vec<DebugInfo>,
 }
 
 #[allow(dead_code)]
@@ -31,8 +28,6 @@ impl SpriteRuntime {
             current_costume: 0,
             text: None,
             pen: Pen::new(),
-            draw_debug_info: false,
-            debug_info: Vec::new(),
         };
 
         for costume in costumes {
@@ -71,10 +66,6 @@ impl SpriteRuntime {
             )?;
             SpriteRuntime::draw_text_bubble(context, text)?;
             context.restore();
-        }
-
-        if self.draw_debug_info {
-            SpriteRuntime::draw_debug_info(context, &self.debug_info)?;
         }
 
         self.need_redraw = false;
@@ -161,29 +152,6 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    fn draw_debug_info(
-        context: &web_sys::CanvasRenderingContext2d,
-        debug_info: &[DebugInfo],
-    ) -> Result<()> {
-        context.set_font("10px monospace");
-        context.set_fill_style(&"#080808".into());
-        for (thread_id, debug_info) in debug_info.iter().enumerate() {
-            let y_start = 16.0 + (thread_id as f64 * 42.0);
-            context.fill_text(&format!("thread_id: {}", &thread_id), 8.0, y_start)?;
-            context.fill_text(
-                &format!("block_id: {}", &debug_info.block_id),
-                8.0,
-                y_start + 13.0,
-            )?;
-            context.fill_text(
-                &format!("block_name: {}", &debug_info.block_name),
-                8.0,
-                y_start + 26.0,
-            )?;
-        }
-        Ok(())
-    }
-
     async fn load_costume(&mut self, file: &Image, rotation_center: Coordinate) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = match file {
@@ -242,20 +210,6 @@ impl SpriteRuntime {
     pub fn pen(&mut self) -> &mut Pen {
         self.need_redraw = true;
         &mut self.pen
-    }
-
-    pub fn set_draw_debug_info(&mut self, draw_debug_info: bool) {
-        self.draw_debug_info = draw_debug_info;
-    }
-
-    pub fn set_debug_info(&mut self, thread_id: usize, debug_info: DebugInfo) {
-        self.need_redraw = true;
-
-        if self.debug_info.len() <= thread_id {
-            self.debug_info.resize(thread_id + 1, DebugInfo::default());
-        }
-
-        self.debug_info[thread_id] = debug_info;
     }
 }
 

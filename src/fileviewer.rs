@@ -76,7 +76,7 @@ impl Component for FileViewer {
 
                 let set_block_inputs = self.link.callback(Msg::SetBlockInputs);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let vm = match VM::start(ctx, &file).await {
+                    let (vm, _) = match VM::start(ctx, &file).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);

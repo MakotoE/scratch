@@ -1,7 +1,8 @@
 use super::*;
+use blocks::BlockInfo;
 use fileinput::FileInput;
 use savefile::ScratchFile;
-use vm::VM;
+use vm::{DebugInfo, VM};
 use yew::prelude::*;
 
 pub struct ScratchInterface {
@@ -9,7 +10,26 @@ pub struct ScratchInterface {
     canvas_ref: NodeRef,
     vm_state: VMState,
     file: Option<ScratchFile>,
-    vm: Option<Arc<RwLock<VM>>>,
+    vm: Option<Arc<RwLock<VM>>>, // TODO replace with sender
+    debug_info: Vec<Vec<Option<BlockInfo>>>,
+}
+
+impl ScratchInterface {
+    fn debug_output(debug_info: &[Vec<Option<BlockInfo>>]) -> String {
+        let mut result = String::new();
+        for (sprite_id, sprite) in debug_info.iter().enumerate() {
+            result.push_str(&format!("sprite: {}\n", sprite_id));
+            for (thread_id, block_info) in sprite.iter().enumerate() {
+                result.push_str(&format!("\t{}: ", thread_id));
+                match block_info {
+                    Some(info) => result.push_str(&format!("name: {}, id: {}", info.name, info.id)),
+                    None => result.push_str("None"),
+                }
+                result.push('\n');
+            }
+        }
+        result
+    }
 }
 
 pub enum Msg {
@@ -18,6 +38,7 @@ pub enum Msg {
     Run,
     ContinuePause,
     Step,
+    SetDebug(DebugInfo),
 }
 
 #[derive(Copy, Clone)]
@@ -43,6 +64,7 @@ impl Component for ScratchInterface {
             vm_state: VMState::Running,
             file: None,
             vm: None,
+            debug_info: Vec::new(),
         }
     }
 
@@ -61,8 +83,9 @@ impl Component for ScratchInterface {
                 let scratch_file = self.file.as_ref().unwrap().clone();
                 let start_state = self.vm_state;
                 let set_vm = self.link.callback(Msg::SetVM);
+                let set_debug = self.link.callback(Msg::SetDebug);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let mut vm = match VM::start(ctx, &scratch_file).await {
+                    let (mut vm, mut debug_receiver) = match VM::start(ctx, &scratch_file).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);
@@ -70,10 +93,14 @@ impl Component for ScratchInterface {
                         }
                     };
                     match start_state {
-                        VMState::Paused => vm.pause().await,
                         VMState::Running => vm.continue_().await,
+                        VMState::Paused => vm.step().await,
                     }
                     set_vm.emit(vm);
+
+                    loop {
+                        set_debug.emit(debug_receiver.recv().await.unwrap());
+                    }
                 });
                 false
             }
@@ -107,6 +134,17 @@ impl Component for ScratchInterface {
                 }
                 false
             }
+            Msg::SetDebug(debug) => {
+                let id = &debug.thread_id;
+                if self.debug_info.len() <= id.sprite_id {
+                    self.debug_info.resize(id.sprite_id + 1, Vec::new());
+                }
+                if self.debug_info[id.sprite_id].len() <= id.thread_id {
+                    self.debug_info[id.sprite_id].resize(id.thread_id + 1, None);
+                }
+                self.debug_info[id.sprite_id][id.thread_id] = Some(debug.block_info);
+                true
+            }
         }
     }
 
@@ -116,38 +154,50 @@ impl Component for ScratchInterface {
 
     fn view(&self) -> Html {
         html! {
-            <div style="font-family: sans-serif;">
-                <canvas
-                    ref={self.canvas_ref.clone()}
-                    width="960"
-                    height="720"
-                    style="width: 480px; height: 360px; border: 1px solid black;"
-                /><br />
-                <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
-                <br />
-                <button onclick={self.link.callback(|_| Msg::ContinuePause)} style="width: 120px;">
+            <div style="font-family: sans-serif; display: flex;">
+                <div>
+                    <canvas
+                        ref={self.canvas_ref.clone()}
+                        width="960"
+                        height="720"
+                        style="width: 480px; height: 360px; border: 1px solid black;"
+                    /><br />
+                    <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
+                    <br />
+                    <button onclick={self.link.callback(|_| Msg::ContinuePause)} style="width: 120px;">
+                        {
+                            match self.vm_state {
+                                VMState::Paused => "Continue",
+                                VMState::Running => "Pause",
+                            }
+                        }
+                    </button>{"\u{00a0}"}
                     {
                         match self.vm_state {
-                            VMState::Paused => "Continue",
-                            VMState::Running => "Pause",
+                            VMState::Paused => html! {
+                                <button onclick={self.link.callback(|_| Msg::Step)}>
+                                    {"Step"}
+                                </button>
+                            },
+                            VMState::Running => html! {
+                                <select>
+                                    <option>{"Normal speed"}</option>
+                                </select>
+                            },
                         }
-                    }
-                </button>{"\u{00a0}"}
-                {
-                    match self.vm_state {
-                        VMState::Paused => html! {
-                            <button onclick={self.link.callback(|_| Msg::Step)}>
-                                {"Step"}
-                            </button>
-                        },
-                        VMState::Running => html! {
-                            <select>
-                                <option>{"Normal speed"}</option>
-                            </select>
-                        },
-                    }
-                }{"\u{00a0}"}
-                <button onclick={self.link.callback(|_| Msg::Run)}>{"Restart"}</button>{"\u{00a0}"}
+                    }{"\u{00a0}"}
+                    <button onclick={self.link.callback(|_| Msg::Run)}>{"Restart"}</button>{"\u{00a0}"}
+                </div>
+                <div style="margin-left: 20px; font-family: monospace;">
+                    <pre style="tab-size: 2; -moz-tab-size: 2;">
+                        {
+                            match self.vm_state {
+                                VMState::Paused => ScratchInterface::debug_output(&self.debug_info),
+                                VMState::Running => String::new(),
+                            }
+                        }
+                    </pre>
+                </div>
             </div>
         }
     }

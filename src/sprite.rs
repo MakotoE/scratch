@@ -36,6 +36,10 @@ impl Sprite {
         self.threads.len()
     }
 
+    pub fn block_info(&self, thread_id: usize) -> BlockInfo {
+        self.threads[thread_id].borrow().block_info()
+    }
+
     pub async fn step(&self, thread_id: usize) -> Result<()> {
         self.threads[thread_id].borrow_mut().step().await
     }

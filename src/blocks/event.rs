@@ -108,7 +108,7 @@ impl Block for WhenBroadcastReceived {
         if key == "BROADCAST_OPTION" {
             self.broadcast_id = match field.get(0) {
                 Some(s) => s.clone(),
-                None => return Err("field is invalid".into()),
+                None => return Err(wrap_err!("field is invalid")),
             }
         }
         Ok(())
@@ -179,7 +179,7 @@ impl Block for Broadcast {
     async fn execute(&mut self) -> Next {
         let message_block = match &self.message {
             Some(b) => b,
-            None => return Next::Err("message is None".into()),
+            None => return Next::Err(wrap_err!("message is None")),
         };
 
         let msg = value_to_string(message_block.value().await?);
@@ -239,7 +239,7 @@ impl Block for BroadcastAndWait {
     async fn execute(&mut self) -> Next {
         let message_block = match &self.message {
             Some(b) => b,
-            None => return Next::Err("message is None".into()),
+            None => return Next::Err(wrap_err!("message is None")),
         };
 
         let msg = value_to_string(message_block.value().await?);
