@@ -55,7 +55,11 @@ impl Block for WhenFlagClicked {
     }
 
     async fn execute(&mut self) -> Next {
-        Next::continue_(self.next.clone())
+        if self.runtime.sprite.read().await.is_a_clone() {
+            Next::None
+        } else {
+            Next::continue_(self.next.clone())
+        }
     }
 }
 

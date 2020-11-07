@@ -1,6 +1,7 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
 use maplit::hashmap;
+use runtime::BroadcastMsg;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -11,10 +12,10 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
         "repeat_until" => Box::new(RepeatUntil::new(id)),
         "if_else" => Box::new(IfElse::new(id)),
         "wait_until" => Box::new(WaitUntil::new(id)),
-        "start_as_clone" => Box::new(StartAsClone::new(id)),
+        "start_as_clone" => Box::new(StartAsClone::new(id, runtime)),
         "delete_this_clone" => Box::new(DeleteThisClone::new(id)),
         "stop" => Box::new(Stop::new(id)),
-        "create_clone_of" => Box::new(CreateCloneOf::new(id)),
+        "create_clone_of" => Box::new(CreateCloneOf::new(id, runtime)),
         "create_clone_of_menu" => Box::new(CreateCloneOfMenu::new(id)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
@@ -462,11 +463,17 @@ impl Block for WaitUntil {
 #[derive(Debug)]
 pub struct StartAsClone {
     id: String,
+    runtime: Runtime,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl StartAsClone {
-    pub fn new(id: String) -> Self {
-        Self { id }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+        }
     }
 }
 
@@ -484,11 +491,23 @@ impl Block for StartAsClone {
             info: self.block_info(),
             fields: HashMap::new(),
             inputs: HashMap::new(),
-            stacks: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        if self.runtime.sprite.read().await.is_a_clone() {
+            Next::continue_(self.next.clone())
+        } else {
+            Next::None
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -558,11 +577,19 @@ impl Block for Stop {
 #[derive(Debug)]
 pub struct CreateCloneOf {
     id: String,
+    runtime: Runtime,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    clone_option: Option<Box<dyn Block>>,
 }
 
 impl CreateCloneOf {
-    pub fn new(id: String) -> Self {
-        Self { id }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            clone_option: None,
+        }
     }
 }
 
@@ -579,12 +606,27 @@ impl Block for CreateCloneOf {
         BlockInputs {
             info: self.block_info(),
             fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
+            inputs: BlockInputs::inputs(hashmap! {"clone_option" => &self.clone_option}),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "CLONE_OPTION" => self.clone_option = Some(block),
+            _ => {}
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        let sprite_id = self.runtime.sprite.read().await.sprite_id();
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::Clone(sprite_id))?;
+        Next::continue_(self.next.clone())
+    }
 }
 
 #[derive(Debug)]

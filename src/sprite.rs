@@ -1,22 +1,37 @@
 use super::*;
 use blocks::*;
+use runtime::Global;
 use runtime::Runtime;
-use sprite_runtime::Coordinate;
+use savefile::Image;
+use savefile::Target;
+use sprite_runtime::{Coordinate, SpriteRuntime};
 use thread::Thread;
 
 #[derive(Debug)]
 pub struct Sprite {
     threads: Vec<RefCell<Thread>>,
     runtime: Runtime,
+    target: Target,
+    images: HashMap<String, Image>,
 }
 
 impl Sprite {
-    pub async fn new(runtime: Runtime, target: &savefile::Target) -> Result<Self> {
-        runtime
-            .sprite
-            .write()
-            .await
-            .set_position(&Coordinate::new(target.x, target.y));
+    pub async fn new(
+        global: Global,
+        target: Target,
+        images: HashMap<String, Image>,
+        sprite_id: usize,
+        is_a_clone: bool,
+    ) -> Result<Self> {
+        let mut sprite_runtime =
+            SpriteRuntime::new(&target.costumes, &images, sprite_id, is_a_clone).await?;
+
+        sprite_runtime.set_position(&Coordinate::new(target.x, target.y));
+
+        let runtime = Runtime {
+            sprite: Rc::new(RwLock::new(sprite_runtime)),
+            global,
+        };
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
@@ -29,7 +44,12 @@ impl Sprite {
             threads.push(RefCell::new(thread));
         }
 
-        Ok(Self { threads, runtime })
+        Ok(Self {
+            threads,
+            runtime,
+            target,
+            images,
+        })
     }
 
     pub fn number_of_threads(&self) -> usize {
@@ -57,6 +77,17 @@ impl Sprite {
             .iter()
             .map(|t| t.borrow().block_inputs())
             .collect()
+    }
+
+    pub async fn clone_sprite(&self, sprite_id: usize) -> Result<Sprite> {
+        Sprite::new(
+            self.runtime.global.clone(),
+            self.target.clone(),
+            self.images.clone(),
+            sprite_id,
+            true,
+        )
+        .await
     }
 }
 
