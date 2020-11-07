@@ -7,7 +7,7 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
-    sprite_id: usize, // TODO should be a hash
+    sprite_id: usize,
     is_a_clone: bool,
     need_redraw: bool,
     position: Coordinate,

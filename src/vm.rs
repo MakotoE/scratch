@@ -117,7 +117,7 @@ impl VM {
         futures.push(Box::pin(
             TimeoutFuture::new(REDRAW_INTERVAL_MILLIS as u32).map(|_| Event::Redraw),
         ));
-        futures.push(Box::pin(broadcaster_recv.recv_clone()));
+        futures.push(Box::pin(broadcaster_recv.recv()));
 
         let mut paused_threads: Vec<ThreadID> = Vec::new();
         for (sprite_id, sprite) in sprites.sprites().iter().enumerate() {
@@ -209,7 +209,10 @@ impl VM {
                         }
                     }
                     sprites.push(new_sprite);
-                    futures.push(Box::pin(broadcaster_recv.recv_clone()));
+                    futures.push(Box::pin(broadcaster_recv.recv()));
+                }
+                Event::DeleteClone(sprite_id) => {
+                    sprites.remove(sprite_id);
                 }
             };
         }
@@ -250,6 +253,7 @@ enum Event {
     Control(Option<Control>),
     Redraw,
     Clone(usize),
+    DeleteClone(usize),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -294,10 +298,11 @@ impl BroadcastCell {
         }
     }
 
-    async fn recv_clone(&self) -> Event {
+    async fn recv(&self) -> Event {
         match self.receiver.borrow_mut().recv().await {
             Ok(msg) => match msg {
                 BroadcastMsg::Clone(id) => Event::Clone(id),
+                BroadcastMsg::DeleteClone(id) => Event::DeleteClone(id),
                 _ => Event::None,
             },
             Err(e) => Event::Err(e.into()),
@@ -322,6 +327,7 @@ impl SpritesCell {
     }
 
     async fn step(&self, thread_id: ThreadID) -> Event {
+        // TODO out of bounds due to removed sprite
         let result = self.sprites.borrow()[thread_id.sprite_id]
             .step(thread_id.thread_id)
             .await;
@@ -333,5 +339,9 @@ impl SpritesCell {
 
     fn push(&self, sprite: Sprite) {
         self.sprites.borrow_mut().push(sprite)
+    }
+
+    fn remove(&self, sprite_id: usize) {
+        self.sprites.borrow_mut().remove(sprite_id);
     }
 }

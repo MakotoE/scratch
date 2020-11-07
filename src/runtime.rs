@@ -55,4 +55,5 @@ pub enum BroadcastMsg {
     Start(String),
     Finished(String),
     Clone(usize),
+    DeleteClone(usize),
 }

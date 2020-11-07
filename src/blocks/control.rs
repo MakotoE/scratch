@@ -13,7 +13,7 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
         "if_else" => Box::new(IfElse::new(id)),
         "wait_until" => Box::new(WaitUntil::new(id)),
         "start_as_clone" => Box::new(StartAsClone::new(id, runtime)),
-        "delete_this_clone" => Box::new(DeleteThisClone::new(id)),
+        "delete_this_clone" => Box::new(DeleteThisClone::new(id, runtime)),
         "stop" => Box::new(Stop::new(id)),
         "create_clone_of" => Box::new(CreateCloneOf::new(id, runtime)),
         "create_clone_of_menu" => Box::new(CreateCloneOfMenu::new(id)),
@@ -513,11 +513,12 @@ impl Block for StartAsClone {
 #[derive(Debug)]
 pub struct DeleteThisClone {
     id: String,
+    runtime: Runtime,
 }
 
 impl DeleteThisClone {
-    pub fn new(id: String) -> Self {
-        Self { id }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self { id, runtime }
     }
 }
 
@@ -540,6 +541,15 @@ impl Block for DeleteThisClone {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+
+    async fn execute(&mut self) -> Next {
+        let sprite_id = self.runtime.sprite.read().await.sprite_id();
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::DeleteClone(sprite_id))?;
+        Next::None
+    }
 }
 
 #[derive(Debug)]
