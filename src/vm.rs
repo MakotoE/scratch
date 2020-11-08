@@ -61,13 +61,14 @@ impl VM {
         scratch_file: &ScratchFile,
     ) -> Result<(HashMap<SpriteID, Sprite>, Broadcaster)> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
+        let images = Rc::new(scratch_file.images.clone());
 
         let mut futures = FuturesUnordered::new();
         for target in &scratch_file.project.targets[1..] {
             futures.push(Sprite::new(
                 global.clone(),
-                target.clone(),
-                scratch_file.images.clone(),
+                Rc::new(target.clone()),
+                images.clone(),
                 false,
             ));
         }

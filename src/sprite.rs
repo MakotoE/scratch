@@ -5,7 +5,7 @@ use runtime::Runtime;
 use savefile::Image;
 use savefile::Target;
 use sprite_runtime::{Coordinate, SpriteRuntime};
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
 use wasm_bindgen::__rt::core::fmt::Formatter;
@@ -14,15 +14,15 @@ use wasm_bindgen::__rt::core::fmt::Formatter;
 pub struct Sprite {
     threads: Vec<RefCell<Thread>>,
     runtime: Runtime,
-    target: Target,
-    images: HashMap<String, Image>,
+    target: Rc<Target>,
+    images: Rc<HashMap<String, Image>>,
 }
 
 impl Sprite {
     pub async fn new(
         global: Global,
-        target: Target,
-        images: HashMap<String, Image>,
+        target: Rc<Target>,
+        images: Rc<HashMap<String, Image>>,
         is_a_clone: bool,
     ) -> Result<(SpriteID, Self)> {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -60,8 +60,8 @@ impl Sprite {
             Self {
                 threads,
                 runtime,
-                target,
-                images,
+                target: target,
+                images: images,
             },
         ))
     }
@@ -116,7 +116,7 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
     hats
 }
 
-#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct SpriteID {
     hash: [u8; 8],
 }
@@ -126,6 +126,14 @@ impl From<u64> for SpriteID {
         Self {
             hash: n.to_le_bytes(),
         }
+    }
+}
+
+impl Debug for SpriteID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SpriteID {{ ")?;
+        Display::fmt(&self, f)?;
+        write!(f, " }}")
     }
 }
 
