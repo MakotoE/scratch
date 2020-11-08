@@ -36,7 +36,7 @@ impl Sprite {
         )
         .await?;
 
-        sprite_runtime.set_position(&Coordinate::from_float(target.x, target.y)?);
+        sprite_runtime.set_position(&Coordinate::new(target.x as i16, target.y as i16));
 
         let runtime = Runtime {
             sprite: Rc::new(RwLock::new(sprite_runtime)),

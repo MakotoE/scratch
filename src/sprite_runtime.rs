@@ -28,7 +28,7 @@ impl SpriteRuntime {
     ) -> Result<Self> {
         let mut runtime = Self {
             need_redraw: true,
-            position: Coordinate::default(),
+            position: Coordinate::new(0, 0),
             costumes: Vec::new(),
             current_costume: 0,
             text: None,
@@ -40,11 +40,11 @@ impl SpriteRuntime {
         for costume in costumes {
             match images.get(&costume.md5ext) {
                 Some(file) => {
-                    let rotation_center = Coordinate::from_float(
-                        costume.rotation_center_x,
-                        costume.rotation_center_y,
-                    )?;
-                    runtime.load_costume(file, rotation_center).await?
+                    let size = Coordinate::new(
+                        (costume.rotation_center_x * 2.0) as i16,
+                        (costume.rotation_center_y * 2.0) as i16,
+                    );
+                    runtime.load_costume(file, size).await?
                 }
                 None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
             }
@@ -56,22 +56,14 @@ impl SpriteRuntime {
     pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         self.pen.draw(context);
 
-        let costume = match self.costumes.get(self.current_costume) {
-            Some(c) => c,
-            None => {
-                return Err(wrap_err!(format!(
-                    "current_costume is out of range: {}",
-                    self.current_costume
-                )));
-            }
-        };
+        let costume = &self.costumes[self.current_costume];
         SpriteRuntime::draw_costume(context, costume, &self.position)?;
 
         if let Some(text) = &self.text {
             context.save();
             context.translate(
-                240.0 + costume.rotation_center.x as f64 / 2.0 + self.position.x as f64,
-                (130 - costume.rotation_center.y - self.position.y) as f64,
+                240.0 + costume.size.x() as f64 / 4.0 + self.position.x as f64,
+                130.0 - costume.size.y() as f64 / 2.0 - self.position.y as f64,
             )?;
             SpriteRuntime::draw_text_bubble(context, text)?;
             context.restore();
@@ -88,8 +80,8 @@ impl SpriteRuntime {
     ) -> Result<()> {
         context.draw_image_with_html_image_element(
             &costume.image,
-            (240 - costume.rotation_center.x + position.x) as f64,
-            (180 - costume.rotation_center.y - position.y) as f64,
+            (240 - costume.size.x / 2 + position.x) as f64,
+            (180 - costume.size.y / 2 - position.y) as f64,
         )?;
         Ok(())
     }
@@ -161,7 +153,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    async fn load_costume(&mut self, file: &Image, rotation_center: Coordinate) -> Result<()> {
+    async fn load_costume(&mut self, file: &Image, size: Coordinate) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = match file {
             Image::SVG(b) => b.as_slice().into(),
@@ -185,10 +177,7 @@ impl SpriteRuntime {
 
         Url::revoke_object_url(&url)?;
 
-        self.costumes.push(Costume {
-            image,
-            rotation_center,
-        });
+        self.costumes.push(Costume { image, size });
         Ok(())
     }
 
@@ -196,6 +185,7 @@ impl SpriteRuntime {
         self.need_redraw
     }
 
+    // TODO replace with rect()
     pub fn position(&self) -> &Coordinate {
         &self.position
     }
@@ -206,9 +196,17 @@ impl SpriteRuntime {
         self.pen().set_position(position);
     }
 
-    pub fn set_costume_index(&mut self, index: usize) {
+    pub fn set_costume_index(&mut self, index: usize) -> Result<()> {
+        if index >= self.costumes.len() {
+            return Err(wrap_err!(format!(
+                "current_costume is out of range: {}",
+                self.current_costume
+            )));
+        }
+
         self.need_redraw = true;
         self.current_costume = index;
+        Ok(())
     }
 
     pub fn say(&mut self, text: Option<&str>) {
@@ -228,27 +226,26 @@ impl SpriteRuntime {
     pub fn is_a_clone(&self) -> bool {
         self.is_a_clone
     }
+
+    pub fn rectangle(&self) -> Rectangle {
+        let size = self.costumes[self.current_costume].size;
+        let offset = Coordinate::new(size.x / -2, size.y / -2);
+        Rectangle::new(self.position.add(&offset), size)
+    }
 }
 
-#[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
+/// Center = 0, 0
+/// Left = -x, right = +x
+/// Top = -y, bottom = +y
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Coordinate {
-    pub x: u16,
-    pub y: u16,
+    pub x: i16,
+    pub y: i16,
 }
 
 impl Coordinate {
-    pub fn new(x: u16, y: u16) -> Self {
+    pub fn new(x: i16, y: i16) -> Self {
         Self { x, y }
-    }
-
-    pub fn from_float(x: f64, y: f64) -> Result<Self> {
-        if x < 0.0 || y < 0.0 {
-            return Err("negative coordinate".into());
-        }
-        Ok(Self {
-            x: x as u16,
-            y: y as u16,
-        })
     }
 
     pub fn add(&self, other: &Self) -> Self {
@@ -258,19 +255,38 @@ impl Coordinate {
         }
     }
 
-    pub fn x(&self) -> u16 {
+    pub fn x(&self) -> i16 {
         self.x
     }
 
-    pub fn y(&self) -> u16 {
+    pub fn y(&self) -> i16 {
         self.y
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Rectangle {
+    top_left: Coordinate,
+    size: Coordinate,
+}
+
+impl Rectangle {
+    pub fn new(top_left: Coordinate, size: Coordinate) -> Self {
+        Self { top_left, size }
+    }
+
+    pub fn contains(&self, coordinate: &Coordinate) -> bool {
+        coordinate.x >= self.top_left.x
+            && coordinate.y >= self.top_left.y
+            && coordinate.x <= self.top_left.x + self.size.x
+            && coordinate.y <= self.top_left.y + self.size.y
     }
 }
 
 #[derive(Debug)]
 pub struct Costume {
     image: HtmlImageElement,
-    rotation_center: Coordinate,
+    size: Coordinate,
 }
 
 pub fn hex_to_color(s: &str) -> Result<palette::Hsv> {
@@ -348,5 +364,55 @@ mod tests {
     #[test]
     fn test_color_to_hex() {
         assert_eq!(color_to_hex(&palette::Hsv::new(0.0, 1.0, 1.0)), "#ff0000");
+    }
+
+    mod rectangle {
+        use super::*;
+
+        #[test]
+        fn test_contains() {
+            struct Test {
+                rect: Rectangle,
+                coordinate: Coordinate,
+                expected: bool,
+            }
+
+            let tests = vec![
+                Test {
+                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(0, 0)),
+                    coordinate: Coordinate::new(0, 0),
+                    expected: true,
+                },
+                Test {
+                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    coordinate: Coordinate::new(0, 0),
+                    expected: true,
+                },
+                Test {
+                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    coordinate: Coordinate::new(1, 1),
+                    expected: true,
+                },
+                Test {
+                    rect: Rectangle::new(Coordinate::new(1, 1), Coordinate::new(1, 1)),
+                    coordinate: Coordinate::new(0, 0),
+                    expected: false,
+                },
+                Test {
+                    rect: Rectangle::new(Coordinate::new(1, 1), Coordinate::new(1, 1)),
+                    coordinate: Coordinate::new(1, 0),
+                    expected: false,
+                },
+                Test {
+                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    coordinate: Coordinate::new(1, 2),
+                    expected: false,
+                },
+            ];
+
+            for (i, test) in tests.iter().enumerate() {
+                assert_eq!(test.rect.contains(&test.coordinate), test.expected, "{}", i);
+            }
+        }
     }
 }

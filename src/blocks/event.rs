@@ -270,12 +270,17 @@ impl Block for BroadcastAndWait {
 #[derive(Debug)]
 pub struct WhenThisSpriteClicked {
     id: String,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl WhenThisSpriteClicked {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+        }
     }
 }
 
@@ -300,6 +305,17 @@ impl Block for WhenThisSpriteClicked {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "next" {
             self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        loop {
+            let msg = self.runtime.global.broadcaster.subscribe().recv().await?;
+            if let BroadcastMsg::Click(c) = msg {
+                if self.runtime.sprite.read().await.rectangle().contains(&c) {
+                    return Next::continue_(self.next.clone());
+                }
+            }
         }
     }
 }
