@@ -11,13 +11,13 @@ pub struct ScratchInterface {
     vm_state: VMState,
     file: Option<ScratchFile>,
     vm: Option<Rc<VM>>,
-    debug_info: Vec<Vec<Option<BlockInfo>>>,
+    debug_info: HashMap<u64, Vec<Option<BlockInfo>>>,
 }
 
 impl ScratchInterface {
-    fn debug_output(debug_info: &[Vec<Option<BlockInfo>>]) -> String {
+    fn debug_output(debug_info: &HashMap<u64, Vec<Option<BlockInfo>>>) -> String {
         let mut result = String::new();
-        for (sprite_id, sprite) in debug_info.iter().enumerate() {
+        for (sprite_id, sprite) in debug_info {
             result.push_str(&format!("sprite: {}\n", sprite_id));
             for (thread_id, block_info) in sprite.iter().enumerate() {
                 result.push_str(&format!("\t{}: ", thread_id));
@@ -64,7 +64,7 @@ impl Component for ScratchInterface {
             vm_state: VMState::Running,
             file: None,
             vm: None,
-            debug_info: Vec::new(),
+            debug_info: HashMap::new(),
         }
     }
 
@@ -138,13 +138,15 @@ impl Component for ScratchInterface {
             }
             Msg::SetDebug(debug) => {
                 let id = &debug.thread_id;
-                if self.debug_info.len() <= id.sprite_id {
-                    self.debug_info.resize(id.sprite_id + 1, Vec::new());
+                if !self.debug_info.contains_key(&id.sprite_id) {
+                    self.debug_info.insert(id.sprite_id.clone(), Vec::new());
                 }
-                if self.debug_info[id.sprite_id].len() <= id.thread_id {
-                    self.debug_info[id.sprite_id].resize(id.thread_id + 1, None);
+
+                let thread = self.debug_info.get_mut(&id.sprite_id).unwrap();
+                if thread.len() <= id.thread_id {
+                    thread.resize(id.thread_id + 1, None);
                 }
-                self.debug_info[id.sprite_id][id.thread_id] = Some(debug.block_info);
+                thread[id.thread_id] = Some(debug.block_info);
                 true
             }
         }

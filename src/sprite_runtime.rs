@@ -7,7 +7,7 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
-    sprite_id: usize,
+    sprite_id: u64,
     is_a_clone: bool,
     need_redraw: bool,
     position: Coordinate,
@@ -22,7 +22,7 @@ impl SpriteRuntime {
     pub async fn new(
         costumes: &[savefile::Costume],
         images: &HashMap<String, Image>,
-        sprite_id: usize,
+        sprite_id: u64,
         is_a_clone: bool,
     ) -> Result<Self> {
         let mut runtime = Self {
@@ -218,7 +218,7 @@ impl SpriteRuntime {
         &mut self.pen
     }
 
-    pub fn sprite_id(&self) -> usize {
+    pub fn sprite_id(&self) -> u64 {
         self.sprite_id
     }
 

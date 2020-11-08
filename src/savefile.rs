@@ -1,6 +1,7 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::hash::{Hash, Hasher};
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -36,6 +37,19 @@ pub struct Target {
     pub size: f64,
 }
 
+impl Hash for Target {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.is_stage.hash(state);
+        self.name.hash(state);
+        sorted_entries(&self.variables).hash(state);
+        sorted_entries(&self.blocks).hash(state);
+        self.costumes.hash(state);
+        self.x.to_bits().hash(state);
+        self.y.to_bits().hash(state);
+        self.size.to_bits().hash(state);
+    }
+}
+
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Variable {
@@ -43,6 +57,14 @@ pub struct Variable {
     pub value: Value,
     #[serde(default)]
     pub i_dont_know_what_this_does: bool,
+}
+
+impl Hash for Variable {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        hash_value(&self.value, state);
+        self.i_dont_know_what_this_does.hash(state);
+    }
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
@@ -55,6 +77,38 @@ pub struct Block {
     pub top_level: bool,
 }
 
+impl Hash for Block {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.opcode.hash(state);
+        self.next.hash(state);
+
+        for entry in sorted_entries(&self.inputs) {
+            entry.0.hash(state);
+            hash_value(&entry.1, state);
+        }
+
+        sorted_entries(&self.fields).hash(state);
+
+        self.top_level.hash(state);
+    }
+}
+
+fn sorted_entries<K, V>(map: &HashMap<K, V>) -> Vec<(&K, &V)>
+where
+    K: std::cmp::Ord,
+{
+    let mut result: Vec<(&K, &V)> = map.iter().collect();
+    result.sort_unstable_by(|a, b| a.0.cmp(b.0));
+    result
+}
+
+fn hash_value<H>(value: &Value, state: &mut H)
+where
+    H: Hasher,
+{
+    value.to_string().hash(state)
+}
+
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Costume {
@@ -62,6 +116,15 @@ pub struct Costume {
     pub md5ext: String,
     pub rotation_center_x: f64,
     pub rotation_center_y: f64,
+}
+
+impl Hash for Costume {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.md5ext.hash(state);
+        self.rotation_center_x.to_bits().hash(state);
+        self.rotation_center_y.to_bits().hash(state);
+    }
 }
 
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]

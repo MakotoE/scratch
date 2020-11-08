@@ -9,20 +9,19 @@ use yew::virtual_dom::VNode;
 pub struct FileViewer {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
-    block_inputs: Vec<Vec<BlockInputs>>,
+    block_inputs: HashMap<u64, Vec<BlockInputs>>,
     file_text: String,
 }
 
 pub enum Msg {
     LoadFile(ScratchFile),
-    SetBlockInputs(Vec<Vec<BlockInputs>>),
+    SetBlockInputs(HashMap<u64, Vec<BlockInputs>>),
 }
 
 impl FileViewer {
-    fn sprite(block_inputs: &[Vec<BlockInputs>]) -> Vec<VNode> {
+    fn sprite(block_inputs: &HashMap<u64, Vec<BlockInputs>>) -> Vec<VNode> {
         block_inputs
             .iter()
-            .enumerate()
             .map(|(sprite_id, thread)| {
                 html! {
                     <>
@@ -64,7 +63,7 @@ impl Component for FileViewer {
         Self {
             link,
             canvas_ref: NodeRef::default(),
-            block_inputs: Vec::new(),
+            block_inputs: HashMap::new(),
             file_text: String::new(),
         }
     }

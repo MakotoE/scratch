@@ -54,6 +54,6 @@ impl Broadcaster {
 pub enum BroadcastMsg {
     Start(String),
     Finished(String),
-    Clone(usize),
-    DeleteClone(usize),
+    Clone(u64),
+    DeleteClone(u64),
 }

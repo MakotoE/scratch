@@ -136,6 +136,7 @@ impl Block for SayForSecs {
 
         self.runtime.sprite.write().await.say(Some(&message));
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
+        self.runtime.sprite.write().await.say(None);
         Next::continue_(self.next.clone())
     }
 }

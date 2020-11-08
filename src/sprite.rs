@@ -5,6 +5,7 @@ use runtime::Runtime;
 use savefile::Image;
 use savefile::Target;
 use sprite_runtime::{Coordinate, SpriteRuntime};
+use std::hash::{Hash, Hasher};
 use thread::Thread;
 
 #[derive(Debug)]
@@ -20,11 +21,14 @@ impl Sprite {
         global: Global,
         target: Target,
         images: HashMap<String, Image>,
-        sprite_id: usize,
         is_a_clone: bool,
-    ) -> Result<Self> {
+    ) -> Result<(u64, Self)> {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        target.hash(&mut hasher);
+        is_a_clone.hash(&mut hasher);
+
         let mut sprite_runtime =
-            SpriteRuntime::new(&target.costumes, &images, sprite_id, is_a_clone).await?;
+            SpriteRuntime::new(&target.costumes, &images, hasher.finish(), is_a_clone).await?;
 
         sprite_runtime.set_position(&Coordinate::new(target.x, target.y));
 
@@ -44,12 +48,15 @@ impl Sprite {
             threads.push(RefCell::new(thread));
         }
 
-        Ok(Self {
-            threads,
-            runtime,
-            target,
-            images,
-        })
+        Ok((
+            hasher.finish(),
+            Self {
+                threads,
+                runtime,
+                target,
+                images,
+            },
+        ))
     }
 
     pub fn number_of_threads(&self) -> usize {
@@ -79,12 +86,11 @@ impl Sprite {
             .collect()
     }
 
-    pub async fn clone_sprite(&self, sprite_id: usize) -> Result<Sprite> {
+    pub async fn clone_sprite(&self) -> Result<(u64, Sprite)> {
         Sprite::new(
             self.runtime.global.clone(),
             self.target.clone(),
             self.images.clone(),
-            sprite_id,
             true,
         )
         .await
