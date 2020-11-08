@@ -7,6 +7,7 @@ use gloo_timers::future::TimeoutFuture;
 use runtime::{BroadcastMsg, Broadcaster, Global};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
+use sprite_runtime::Coordinate;
 use std::cell::Ref;
 use std::iter::FromIterator;
 use tokio::sync::{broadcast, mpsc};
@@ -14,6 +15,7 @@ use tokio::sync::{broadcast, mpsc};
 #[derive(Debug)]
 pub struct VM {
     control_sender: mpsc::Sender<Control>,
+    broadcaster: Broadcaster,
 }
 
 impl VM {
@@ -26,13 +28,14 @@ impl VM {
         let (control_sender, control_receiver) = mpsc::channel(1);
         let (debug_sender, debug_receiver) = mpsc::channel(1);
 
+        let broadcaster_clone = broadcaster.clone();
         wasm_bindgen_futures::spawn_local(async move {
             match VM::run(
                 sprites,
                 control_receiver,
                 &context,
                 debug_sender,
-                broadcaster,
+                broadcaster_clone,
             )
             .await
             {
@@ -41,7 +44,13 @@ impl VM {
             }
         });
 
-        Ok((Self { control_sender }, debug_receiver))
+        Ok((
+            Self {
+                control_sender,
+                broadcaster,
+            },
+            debug_receiver,
+        ))
     }
 
     pub async fn block_inputs(
@@ -262,6 +271,12 @@ impl VM {
 
     pub async fn step(&self) {
         self.control_sender.send(Control::Step).await.unwrap();
+    }
+
+    pub fn click(&self, coordinate: Coordinate) {
+        self.broadcaster
+            .send(BroadcastMsg::Click(coordinate))
+            .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)))
     }
 }
 

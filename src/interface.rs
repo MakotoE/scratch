@@ -1,4 +1,5 @@
 use super::*;
+use crate::sprite_runtime::Coordinate;
 use blocks::BlockInfo;
 use fileinput::FileInput;
 use savefile::ScratchFile;
@@ -13,6 +14,7 @@ pub struct ScratchInterface {
     file: Option<ScratchFile>,
     vm: Option<Rc<VM>>,
     debug_info: HashMap<SpriteID, Vec<Option<BlockInfo>>>,
+    canvas_position: Option<Coordinate>,
 }
 
 impl ScratchInterface {
@@ -31,6 +33,14 @@ impl ScratchInterface {
         }
         result
     }
+
+    fn canvas_position(&mut self) -> &Coordinate {
+        let canvas: web_sys::Element = self.canvas_ref.cast().unwrap();
+        self.canvas_position.get_or_insert_with(|| {
+            let rect = canvas.get_bounding_client_rect();
+            Coordinate::from_float(rect.left(), rect.top()).unwrap()
+        })
+    }
 }
 
 pub enum Msg {
@@ -40,6 +50,7 @@ pub enum Msg {
     ContinuePause,
     Step,
     SetDebug(DebugInfo),
+    OnCanvasClick(MouseEvent),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -66,6 +77,7 @@ impl Component for ScratchInterface {
             file: None,
             vm: None,
             debug_info: HashMap::new(),
+            canvas_position: None,
         }
     }
 
@@ -146,6 +158,16 @@ impl Component for ScratchInterface {
                 thread[id.thread_id] = Some(debug.block_info);
                 true
             }
+            Msg::OnCanvasClick(e) => {
+                let canvas_position = *self.canvas_position();
+                if let Some(vm) = &self.vm {
+                    vm.click(Coordinate::new(
+                        e.client_x() as u16 - canvas_position.x(),
+                        e.client_y() as u16 - canvas_position.y(),
+                    ));
+                }
+                false
+            }
         }
     }
 
@@ -162,6 +184,7 @@ impl Component for ScratchInterface {
                         width="960"
                         height="720"
                         style="width: 480px; height: 360px; border: 1px solid black;"
+                        onclick={self.link.callback(Msg::OnCanvasClick)}
                     /><br />
                     <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                     <br />

@@ -45,4 +45,6 @@ features = [
     "TextMetrics",
     "Path2d",
     "Performance",
+    "DomRect",
+    "DomRectReadOnly",
 ]

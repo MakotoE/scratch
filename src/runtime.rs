@@ -1,6 +1,6 @@
 use super::*;
 use sprite::SpriteID;
-use sprite_runtime::SpriteRuntime;
+use sprite_runtime::{Coordinate, SpriteRuntime};
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 #[derive(Debug, Clone)]
@@ -36,8 +36,9 @@ pub struct Broadcaster {
 
 impl Broadcaster {
     fn new() -> Self {
-        let (sender, _) = channel(1);
-        Self { sender }
+        Self {
+            sender: channel(1).0,
+        }
     }
 
     pub fn send(&self, m: BroadcastMsg) -> Result<()> {
@@ -57,4 +58,5 @@ pub enum BroadcastMsg {
     Finished(String),
     Clone(SpriteID),
     DeleteClone(SpriteID),
+    Click(Coordinate),
 }
