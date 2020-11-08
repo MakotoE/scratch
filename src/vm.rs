@@ -62,21 +62,27 @@ impl VM {
     ) -> Result<(HashMap<SpriteID, Sprite>, Broadcaster)> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
-        // TODO FuturesUnbound
-        let mut sprites: HashMap<SpriteID, Sprite> =
-            HashMap::with_capacity(scratch_file.project.targets.len() - 1);
+        let mut futures = FuturesUnordered::new();
         for target in &scratch_file.project.targets[1..] {
-            let sprite = Sprite::new(
+            futures.push(Sprite::new(
                 global.clone(),
                 target.clone(),
                 scratch_file.images.clone(),
                 false,
-            )
-            .await?;
-            sprites.insert(sprite.0, sprite.1);
+            ));
         }
 
-        Ok((sprites, global.broadcaster))
+        let mut sprites: HashMap<SpriteID, Sprite> =
+            HashMap::with_capacity(scratch_file.project.targets.len() - 1);
+        loop {
+            match futures.next().await {
+                Some(r) => {
+                    let sprite = r?;
+                    sprites.insert(sprite.0, sprite.1);
+                }
+                None => return Ok((sprites, global.broadcaster)),
+            }
+        }
     }
 
     async fn redraw(
