@@ -73,7 +73,7 @@ impl Block for MoveSteps {
 
         let steps = value_to_float(&steps_value)?;
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime.position().add(&Coordinate::new(steps, 0.0));
+        let position = runtime.position().add(&Coordinate::from_float(steps, 0.0)?);
         runtime.set_position(&position);
         Next::continue_(self.next.clone())
     }
@@ -141,7 +141,7 @@ impl Block for GoToXY {
             .sprite
             .write()
             .await
-            .set_position(&Coordinate::new(x, y));
+            .set_position(&Coordinate::from_float(x, y)?);
         Next::continue_(self.next.clone())
     }
 }
@@ -198,7 +198,7 @@ impl Block for ChangeXBy {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime.position().add(&Coordinate::new(x, 0.0));
+        let position = runtime.position().add(&Coordinate::from_float(x, 0.0)?);
         runtime.set_position(&position);
         Next::continue_(self.next.clone())
     }
@@ -256,7 +256,7 @@ impl Block for ChangeYBy {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime.position().add(&Coordinate::new(0.0, y));
+        let position = runtime.position().add(&Coordinate::from_float(0.0, y)?);
         runtime.set_position(&position);
         Next::continue_(self.next.clone())
     }
@@ -319,7 +319,7 @@ impl Block for SetX {
             .sprite
             .write()
             .await
-            .set_position(&Coordinate::new(x, curr_y));
+            .set_position(&Coordinate::from_float(x, curr_y as f64)?);
         Next::continue_(self.next.clone())
     }
 }
@@ -378,7 +378,7 @@ impl Block for SetY {
         let mut runtime = self.runtime.sprite.write().await;
         let curr_x = runtime.position().x();
 
-        runtime.set_position(&Coordinate::new(curr_x, y));
+        runtime.set_position(&Coordinate::from_float(curr_x as f64, y)?);
         Next::continue_(self.next.clone())
     }
 }

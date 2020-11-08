@@ -5,10 +5,9 @@ use runtime::Runtime;
 use savefile::Image;
 use savefile::Target;
 use sprite_runtime::{Coordinate, SpriteRuntime};
-use std::fmt::{Debug, Display};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
-use wasm_bindgen::__rt::core::fmt::Formatter;
 
 #[derive(Debug)]
 pub struct Sprite {
@@ -37,7 +36,7 @@ impl Sprite {
         )
         .await?;
 
-        sprite_runtime.set_position(&Coordinate::new(target.x, target.y));
+        sprite_runtime.set_position(&Coordinate::from_float(target.x, target.y)?);
 
         let runtime = Runtime {
             sprite: Rc::new(RwLock::new(sprite_runtime)),

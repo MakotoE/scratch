@@ -40,8 +40,10 @@ impl SpriteRuntime {
         for costume in costumes {
             match images.get(&costume.md5ext) {
                 Some(file) => {
-                    let rotation_center =
-                        Coordinate::new(costume.rotation_center_x, costume.rotation_center_y);
+                    let rotation_center = Coordinate::from_float(
+                        costume.rotation_center_x,
+                        costume.rotation_center_y,
+                    )?;
                     runtime.load_costume(file, rotation_center).await?
                 }
                 None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
@@ -68,8 +70,8 @@ impl SpriteRuntime {
         if let Some(text) = &self.text {
             context.save();
             context.translate(
-                240.0 + costume.rotation_center.x / 2.0 + self.position.x,
-                130.0 - costume.rotation_center.y - self.position.y,
+                240.0 + costume.rotation_center.x as f64 / 2.0 + self.position.x as f64,
+                (130 - costume.rotation_center.y - self.position.y) as f64,
             )?;
             SpriteRuntime::draw_text_bubble(context, text)?;
             context.restore();
@@ -86,8 +88,8 @@ impl SpriteRuntime {
     ) -> Result<()> {
         context.draw_image_with_html_image_element(
             &costume.image,
-            240.0 - costume.rotation_center.x + position.x,
-            180.0 - costume.rotation_center.y - position.y,
+            (240 - costume.rotation_center.x + position.x) as f64,
+            (180 - costume.rotation_center.y - position.y) as f64,
         )?;
         Ok(())
     }
@@ -230,13 +232,23 @@ impl SpriteRuntime {
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct Coordinate {
-    pub x: f64,
-    pub y: f64,
+    pub x: u16,
+    pub y: u16,
 }
 
 impl Coordinate {
-    pub fn new(x: f64, y: f64) -> Self {
+    pub fn new(x: u16, y: u16) -> Self {
         Self { x, y }
+    }
+
+    pub fn from_float(x: f64, y: f64) -> Result<Self> {
+        if x < 0.0 || y < 0.0 {
+            return Err("negative coordinate".into());
+        }
+        Ok(Self {
+            x: x as u16,
+            y: y as u16,
+        })
     }
 
     pub fn add(&self, other: &Self) -> Self {
@@ -246,11 +258,11 @@ impl Coordinate {
         }
     }
 
-    pub fn x(&self) -> f64 {
+    pub fn x(&self) -> u16 {
         self.x
     }
 
-    pub fn y(&self) -> f64 {
+    pub fn y(&self) -> u16 {
         self.y
     }
 }

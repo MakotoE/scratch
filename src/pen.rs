@@ -130,18 +130,18 @@ impl Line {
         context.begin_path();
         for (i, point) in self.points.iter().enumerate() {
             if i == 0 {
-                context.move_to(240.0 + point.x, 180.0 - point.y);
+                context.move_to((240 + point.x) as f64, (180 - point.y) as f64);
 
                 if self.points.len() == 1 {
-                    context.line_to(240.0 + point.x, 180.0 - point.y);
+                    context.line_to((240 + point.x) as f64, (180 - point.y) as f64);
                 }
             } else {
-                context.line_to(240.0 + point.x, 180.0 - point.y);
+                context.line_to((240 + point.x) as f64, (180 - point.y) as f64);
             }
         }
 
         if let Some(extra_point) = extra_point {
-            context.line_to(240.0 + extra_point.x, 180.0 - extra_point.y);
+            context.line_to((240 + extra_point.x) as f64, (180 - extra_point.y) as f64);
         }
 
         let color_hex = color_to_hex(&self.color);
