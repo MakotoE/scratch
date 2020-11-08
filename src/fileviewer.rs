@@ -2,6 +2,7 @@ use super::*;
 use blocks::BlockInputs;
 use fileinput::FileInput;
 use savefile::ScratchFile;
+use sprite::SpriteID;
 use vm::VM;
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
@@ -9,17 +10,17 @@ use yew::virtual_dom::VNode;
 pub struct FileViewer {
     link: ComponentLink<Self>,
     canvas_ref: NodeRef,
-    block_inputs: HashMap<u64, Vec<BlockInputs>>,
+    block_inputs: HashMap<SpriteID, Vec<BlockInputs>>,
     file_text: String,
 }
 
 pub enum Msg {
     LoadFile(ScratchFile),
-    SetBlockInputs(HashMap<u64, Vec<BlockInputs>>),
+    SetBlockInputs(HashMap<SpriteID, Vec<BlockInputs>>),
 }
 
 impl FileViewer {
-    fn sprite(block_inputs: &HashMap<u64, Vec<BlockInputs>>) -> Vec<VNode> {
+    fn sprite(block_inputs: &HashMap<SpriteID, Vec<BlockInputs>>) -> Vec<VNode> {
         block_inputs
             .iter()
             .map(|(sprite_id, thread)| {

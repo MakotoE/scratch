@@ -7,7 +7,7 @@ use gloo_timers::future::TimeoutFuture;
 use runtime::BroadcastMsg;
 use runtime::{Broadcaster, Global};
 use savefile::ScratchFile;
-use sprite::Sprite;
+use sprite::{Sprite, SpriteID};
 use std::cell::Ref;
 use std::iter::FromIterator;
 use tokio::sync::{broadcast, mpsc};
@@ -47,7 +47,7 @@ impl VM {
 
     pub async fn block_inputs(
         scratch_file: &ScratchFile,
-    ) -> Result<HashMap<u64, Vec<BlockInputs>>> {
+    ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
         Ok(HashMap::from_iter(
             VM::sprites(scratch_file)
                 .await?
@@ -57,11 +57,13 @@ impl VM {
         ))
     }
 
-    async fn sprites(scratch_file: &ScratchFile) -> Result<(HashMap<u64, Sprite>, Broadcaster)> {
+    async fn sprites(
+        scratch_file: &ScratchFile,
+    ) -> Result<(HashMap<SpriteID, Sprite>, Broadcaster)> {
         let global = Global::new(&scratch_file.project.targets[0].variables);
 
         // TODO FuturesUnbound
-        let mut sprites: HashMap<u64, Sprite> =
+        let mut sprites: HashMap<SpriteID, Sprite> =
             HashMap::with_capacity(scratch_file.project.targets.len() - 1);
         for target in &scratch_file.project.targets[1..] {
             let sprite = Sprite::new(
@@ -78,7 +80,7 @@ impl VM {
     }
 
     async fn redraw(
-        sprites: &HashMap<u64, Sprite>,
+        sprites: &HashMap<SpriteID, Sprite>,
         context: &web_sys::CanvasRenderingContext2d,
     ) -> Result<()> {
         let mut need_redraw = false;
@@ -97,7 +99,7 @@ impl VM {
     }
 
     async fn force_redraw(
-        sprites: &HashMap<u64, Sprite>,
+        sprites: &HashMap<SpriteID, Sprite>,
         context: &web_sys::CanvasRenderingContext2d,
     ) -> Result<()> {
         context.reset_transform().unwrap();
@@ -111,7 +113,7 @@ impl VM {
     }
 
     async fn run(
-        sprites_map: HashMap<u64, Sprite>,
+        sprites_map: HashMap<SpriteID, Sprite>,
         control_chan: mpsc::Receiver<Control>,
         context: &web_sys::CanvasRenderingContext2d,
         debug_sender: mpsc::Sender<DebugInfo>,
@@ -278,13 +280,13 @@ enum Event {
     Err(Error),
     Control(Option<Control>),
     Redraw,
-    Clone(u64),
-    DeleteClone(u64),
+    Clone(SpriteID),
+    DeleteClone(SpriteID),
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct ThreadID {
-    pub sprite_id: u64,
+    pub sprite_id: SpriteID,
     pub thread_id: usize,
 }
 
@@ -338,17 +340,17 @@ impl BroadcastCell {
 
 #[derive(Debug)]
 struct SpritesCell {
-    sprites: RefCell<HashMap<u64, Sprite>>,
+    sprites: RefCell<HashMap<SpriteID, Sprite>>,
 }
 
 impl SpritesCell {
-    fn new(sprites: HashMap<u64, Sprite>) -> Self {
+    fn new(sprites: HashMap<SpriteID, Sprite>) -> Self {
         Self {
             sprites: RefCell::new(sprites),
         }
     }
 
-    fn sprites(&self) -> Ref<HashMap<u64, Sprite>> {
+    fn sprites(&self) -> Ref<HashMap<SpriteID, Sprite>> {
         self.sprites.borrow()
     }
 
@@ -362,11 +364,11 @@ impl SpritesCell {
         }
     }
 
-    fn insert(&self, sprite_id: u64, sprite: Sprite) {
+    fn insert(&self, sprite_id: SpriteID, sprite: Sprite) {
         self.sprites.borrow_mut().insert(sprite_id, sprite);
     }
 
-    fn remove(&self, sprite_id: u64) {
+    fn remove(&self, sprite_id: SpriteID) {
         self.sprites.borrow_mut().remove(&sprite_id);
     }
 }

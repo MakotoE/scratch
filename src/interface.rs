@@ -2,6 +2,7 @@ use super::*;
 use blocks::BlockInfo;
 use fileinput::FileInput;
 use savefile::ScratchFile;
+use sprite::SpriteID;
 use vm::{DebugInfo, VM};
 use yew::prelude::*;
 
@@ -11,11 +12,11 @@ pub struct ScratchInterface {
     vm_state: VMState,
     file: Option<ScratchFile>,
     vm: Option<Rc<VM>>,
-    debug_info: HashMap<u64, Vec<Option<BlockInfo>>>,
+    debug_info: HashMap<SpriteID, Vec<Option<BlockInfo>>>,
 }
 
 impl ScratchInterface {
-    fn debug_output(debug_info: &HashMap<u64, Vec<Option<BlockInfo>>>) -> String {
+    fn debug_output(debug_info: &HashMap<SpriteID, Vec<Option<BlockInfo>>>) -> String {
         let mut result = String::new();
         for (sprite_id, sprite) in debug_info {
             result.push_str(&format!("sprite: {}\n", sprite_id));

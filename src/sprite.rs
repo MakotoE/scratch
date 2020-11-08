@@ -5,8 +5,10 @@ use runtime::Runtime;
 use savefile::Image;
 use savefile::Target;
 use sprite_runtime::{Coordinate, SpriteRuntime};
+use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use thread::Thread;
+use wasm_bindgen::__rt::core::fmt::Formatter;
 
 #[derive(Debug)]
 pub struct Sprite {
@@ -22,13 +24,18 @@ impl Sprite {
         target: Target,
         images: HashMap<String, Image>,
         is_a_clone: bool,
-    ) -> Result<(u64, Self)> {
+    ) -> Result<(SpriteID, Self)> {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         target.hash(&mut hasher);
         is_a_clone.hash(&mut hasher);
 
-        let mut sprite_runtime =
-            SpriteRuntime::new(&target.costumes, &images, hasher.finish(), is_a_clone).await?;
+        let mut sprite_runtime = SpriteRuntime::new(
+            &target.costumes,
+            &images,
+            hasher.finish().into(),
+            is_a_clone,
+        )
+        .await?;
 
         sprite_runtime.set_position(&Coordinate::new(target.x, target.y));
 
@@ -49,7 +56,7 @@ impl Sprite {
         }
 
         Ok((
-            hasher.finish(),
+            hasher.finish().into(),
             Self {
                 threads,
                 runtime,
@@ -86,7 +93,7 @@ impl Sprite {
             .collect()
     }
 
-    pub async fn clone_sprite(&self) -> Result<(u64, Sprite)> {
+    pub async fn clone_sprite(&self) -> Result<(SpriteID, Sprite)> {
         Sprite::new(
             self.runtime.global.clone(),
             self.target.clone(),
@@ -107,4 +114,26 @@ pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
     hats.sort_unstable();
 
     hats
+}
+
+#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+pub struct SpriteID {
+    hash: [u8; 8],
+}
+
+impl From<u64> for SpriteID {
+    fn from(n: u64) -> Self {
+        Self {
+            hash: n.to_le_bytes(),
+        }
+    }
+}
+
+impl Display for SpriteID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for b in &self.hash[..4] {
+            write!(f, "{:x}", b)?;
+        }
+        Ok(())
+    }
 }

@@ -1,4 +1,5 @@
 use super::*;
+use sprite::SpriteID;
 use sprite_runtime::SpriteRuntime;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
@@ -54,6 +55,6 @@ impl Broadcaster {
 pub enum BroadcastMsg {
     Start(String),
     Finished(String),
-    Clone(u64),
-    DeleteClone(u64),
+    Clone(SpriteID),
+    DeleteClone(SpriteID),
 }

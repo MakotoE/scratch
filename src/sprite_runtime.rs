@@ -2,12 +2,13 @@ use super::*;
 use palette::IntoColor;
 use pen::Pen;
 use savefile::Image;
+use sprite::SpriteID;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
-    sprite_id: u64,
+    sprite_id: SpriteID,
     is_a_clone: bool,
     need_redraw: bool,
     position: Coordinate,
@@ -22,7 +23,7 @@ impl SpriteRuntime {
     pub async fn new(
         costumes: &[savefile::Costume],
         images: &HashMap<String, Image>,
-        sprite_id: u64,
+        sprite_id: SpriteID,
         is_a_clone: bool,
     ) -> Result<Self> {
         let mut runtime = Self {
@@ -218,7 +219,7 @@ impl SpriteRuntime {
         &mut self.pen
     }
 
-    pub fn sprite_id(&self) -> u64 {
+    pub fn sprite_id(&self) -> SpriteID {
         self.sprite_id
     }
 
