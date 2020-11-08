@@ -4,7 +4,7 @@ use runtime::Global;
 use runtime::Runtime;
 use savefile::Image;
 use savefile::Target;
-use sprite_runtime::{Coordinate, SpriteRuntime};
+use sprite_runtime::{Coordinate, Rectangle, SpriteRuntime};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
@@ -36,7 +36,11 @@ impl Sprite {
         )
         .await?;
 
-        sprite_runtime.set_position(&Coordinate::new(target.x as i16, target.y as i16));
+        let rectangle = Rectangle::new(
+            Coordinate::new(target.x as i16, target.y as i16),
+            *sprite_runtime.rectangle().size(),
+        );
+        sprite_runtime.set_rectangle(&rectangle);
 
         let runtime = Runtime {
             sprite: Rc::new(RwLock::new(sprite_runtime)),

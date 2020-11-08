@@ -1,6 +1,6 @@
 use super::*;
 use maplit::hashmap;
-use sprite_runtime::Coordinate;
+use sprite_runtime::{Coordinate, Rectangle};
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -73,8 +73,10 @@ impl Block for MoveSteps {
 
         let steps = value_to_float(&steps_value)?;
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime.position().add(&Coordinate::new(steps as i16, 0));
-        runtime.set_position(&position);
+        let position = runtime
+            .rectangle()
+            .translate(&Coordinate::new(steps as i16, 0));
+        runtime.set_rectangle(&position);
         Next::continue_(self.next.clone())
     }
 }
@@ -137,11 +139,12 @@ impl Block for GoToXY {
             None => return Next::Err(wrap_err!("y is None")),
         };
 
-        self.runtime
-            .sprite
-            .write()
-            .await
-            .set_position(&Coordinate::new(x as i16, y as i16));
+        let mut runtime = self.runtime.sprite.write().await;
+        let new_rectangle = Rectangle::new(
+            Coordinate::new(x as i16, y as i16),
+            *runtime.rectangle().size(),
+        );
+        runtime.set_rectangle(&new_rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -198,8 +201,8 @@ impl Block for ChangeXBy {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime.position().add(&Coordinate::new(x as i16, 0));
-        runtime.set_position(&position);
+        let rectangle = runtime.rectangle().translate(&Coordinate::new(x as i16, 0));
+        runtime.set_rectangle(&rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -256,8 +259,8 @@ impl Block for ChangeYBy {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime.position().add(&Coordinate::new(0, y as i16));
-        runtime.set_position(&position);
+        let rectangle = runtime.rectangle().translate(&Coordinate::new(0, y as i16));
+        runtime.set_rectangle(&rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -313,13 +316,14 @@ impl Block for SetX {
             None => return Next::Err(wrap_err!("x is None")),
         };
 
-        let curr_y = self.runtime.sprite.write().await.position().y();
+        let mut runtime = self.runtime.sprite.write().await;
+        let curr_rectangle = runtime.rectangle();
+        let rectangle = Rectangle::new(
+            Coordinate::new(x as i16, curr_rectangle.center().y()),
+            *curr_rectangle.size(),
+        );
 
-        self.runtime
-            .sprite
-            .write()
-            .await
-            .set_position(&Coordinate::new(x as i16, curr_y));
+        runtime.set_rectangle(&rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -376,9 +380,13 @@ impl Block for SetY {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let curr_x = runtime.position().x();
+        let curr_rectangle = runtime.rectangle();
+        let rectangle = Rectangle::new(
+            Coordinate::new(curr_rectangle.center().x(), y as i16),
+            *curr_rectangle.size(),
+        );
 
-        runtime.set_position(&Coordinate::new(curr_x, y as i16));
+        runtime.set_rectangle(&rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -416,7 +424,8 @@ impl Block for XPosition {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.sprite.read().await.position().x().into())
+        let runtime = self.runtime.sprite.read().await;
+        Ok(runtime.rectangle().center().x().into())
     }
 }
 
@@ -453,7 +462,8 @@ impl Block for YPosition {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.sprite.read().await.position().y().into())
+        let runtime = self.runtime.sprite.read().await;
+        Ok(runtime.rectangle().center().y().into())
     }
 }
 
@@ -490,7 +500,7 @@ impl Block for Direction {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.sprite.read().await.position().y().into())
+        unimplemented!()
     }
 }
 
@@ -527,7 +537,7 @@ impl Block for PointingDirection {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.sprite.read().await.position().y().into())
+        unimplemented!()
     }
 }
 
@@ -562,10 +572,6 @@ impl Block for GoTo {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-
-    async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.sprite.read().await.position().y().into())
-    }
 }
 
 #[derive(Debug)]
@@ -599,8 +605,4 @@ impl Block for GoToMenu {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-
-    async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.runtime.sprite.read().await.position().y().into())
-    }
 }

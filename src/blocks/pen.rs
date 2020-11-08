@@ -59,8 +59,8 @@ impl Block for PenDown {
 
     async fn execute(&mut self) -> Next {
         let mut runtime = self.runtime.sprite.write().await;
-        let position = *runtime.position();
-        runtime.pen().pen_down(&position);
+        let center = *runtime.rectangle().center();
+        runtime.pen().pen_down(&center);
         Next::continue_(self.next.clone())
     }
 }

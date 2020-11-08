@@ -185,17 +185,6 @@ impl SpriteRuntime {
         self.need_redraw
     }
 
-    // TODO replace with rect()
-    pub fn position(&self) -> &Coordinate {
-        &self.position
-    }
-
-    pub fn set_position(&mut self, position: &Coordinate) {
-        self.need_redraw = true;
-        self.position = *position;
-        self.pen().set_position(position);
-    }
-
     pub fn set_costume_index(&mut self, index: usize) -> Result<()> {
         if index >= self.costumes.len() {
             return Err(wrap_err!(format!(
@@ -228,9 +217,14 @@ impl SpriteRuntime {
     }
 
     pub fn rectangle(&self) -> Rectangle {
-        let size = self.costumes[self.current_costume].size;
-        let offset = Coordinate::new(size.x / -2, size.y / -2);
-        Rectangle::new(self.position.add(&offset), size)
+        Rectangle::new(self.position, self.costumes[self.current_costume].size)
+    }
+
+    /// Can't do scaling yet
+    pub fn set_rectangle(&mut self, rectangle: &Rectangle) {
+        self.need_redraw = true;
+        self.position = *rectangle.center();
+        self.pen().set_position(&rectangle.center);
     }
 }
 
@@ -266,20 +260,38 @@ impl Coordinate {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Rectangle {
-    top_left: Coordinate,
-    size: Coordinate,
+    center: Coordinate,
+    size: Coordinate, // TODO create UnsignedCoordinate
 }
 
 impl Rectangle {
-    pub fn new(top_left: Coordinate, size: Coordinate) -> Self {
-        Self { top_left, size }
+    pub fn new(center: Coordinate, size: Coordinate) -> Self {
+        Self { center, size }
+    }
+
+    pub fn center(&self) -> &Coordinate {
+        &self.center
+    }
+
+    pub fn size(&self) -> &Coordinate {
+        &self.size
     }
 
     pub fn contains(&self, coordinate: &Coordinate) -> bool {
-        coordinate.x >= self.top_left.x
-            && coordinate.y >= self.top_left.y
-            && coordinate.x <= self.top_left.x + self.size.x
-            && coordinate.y <= self.top_left.y + self.size.y
+        let top_left = self
+            .center
+            .add(&Coordinate::new(-self.size.x / 2, -self.size.y / 2));
+        coordinate.x >= top_left.x
+            && coordinate.y >= top_left.y
+            && coordinate.x <= top_left.x + self.size.x
+            && coordinate.y <= top_left.y + self.size.y
+    }
+
+    pub fn translate(&self, coordinate: &Coordinate) -> Rectangle {
+        Rectangle {
+            center: self.center.add(coordinate),
+            size: self.size,
+        }
     }
 }
 
@@ -389,13 +401,23 @@ mod tests {
                     expected: true,
                 },
                 Test {
+                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(2, 2)),
+                    coordinate: Coordinate::new(1, 1),
+                    expected: true,
+                },
+                Test {
                     rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
                     coordinate: Coordinate::new(1, 1),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(1, 1), Coordinate::new(1, 1)),
-                    coordinate: Coordinate::new(0, 0),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    coordinate: Coordinate::new(-1, -1),
+                    expected: false,
+                },
+                Test {
+                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    coordinate: Coordinate::new(-2, 0),
                     expected: false,
                 },
                 Test {
