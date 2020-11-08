@@ -4,8 +4,7 @@ use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use gloo_timers::future::TimeoutFuture;
-use runtime::BroadcastMsg;
-use runtime::{Broadcaster, Global};
+use runtime::{BroadcastMsg, Broadcaster, Global};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
 use std::cell::Ref;
@@ -113,7 +112,7 @@ impl VM {
         context.scale(2.0, 2.0).unwrap();
         context.clear_rect(0.0, 0.0, 480.0, 360.0);
 
-        for (_, sprite) in sprites {
+        for sprite in sprites.values() {
             sprite.redraw(&context).await?;
         }
         Ok(())
@@ -146,10 +145,10 @@ impl VM {
         for (sprite_id, sprite) in sprites.sprites().iter() {
             for thread_id in 0..sprite.number_of_threads() {
                 let id = ThreadID {
-                    sprite_id: sprite_id.clone(),
+                    sprite_id: *sprite_id,
                     thread_id,
                 };
-                paused_threads.push(id.clone());
+                paused_threads.push(id);
 
                 debug_sender
                     .send(DebugInfo {
@@ -179,10 +178,10 @@ impl VM {
                 Event::Thread(thread_id) => match current_state {
                     Control::Continue => futures.push(Box::pin(sprites.step(thread_id))),
                     Control::Step | Control::Pause => {
-                        paused_threads.push(thread_id.clone());
+                        paused_threads.push(thread_id);
                         debug_sender
                             .send(DebugInfo {
-                                thread_id: thread_id.clone(),
+                                thread_id,
                                 block_info: sprites
                                     .sprites()
                                     .get(&thread_id.sprite_id)
@@ -228,7 +227,7 @@ impl VM {
                         .await?;
                     for thread_id in 0..new_sprite.number_of_threads() {
                         let id = ThreadID {
-                            sprite_id: sprite_id.clone(),
+                            sprite_id,
                             thread_id,
                         };
 

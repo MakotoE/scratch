@@ -60,8 +60,8 @@ impl Sprite {
             Self {
                 threads,
                 runtime,
-                target: target,
-                images: images,
+                target,
+                images,
             },
         ))
     }

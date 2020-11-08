@@ -9,7 +9,6 @@ use yew::virtual_dom::VNode;
 
 pub struct FileViewer {
     link: ComponentLink<Self>,
-    canvas_ref: NodeRef,
     block_inputs: HashMap<SpriteID, Vec<BlockInputs>>,
     file_text: String,
 }
@@ -63,7 +62,6 @@ impl Component for FileViewer {
 
         Self {
             link,
-            canvas_ref: NodeRef::default(),
             block_inputs: HashMap::new(),
             file_text: String::new(),
         }
@@ -101,12 +99,6 @@ impl Component for FileViewer {
         html! {
             <>
                 <FileInput onchange={self.link.callback(Msg::LoadFile)} />
-                <canvas // Dummy canvas for Sprite
-                    ref={self.canvas_ref.clone()}
-                    width="0"
-                    height="0"
-                    hidden={true}
-                />
                 <style>
                     {"br { margin-bottom: 2px; }"}
                 </style>

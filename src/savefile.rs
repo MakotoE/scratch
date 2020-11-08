@@ -1,6 +1,7 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format
@@ -21,7 +22,7 @@ pub struct Project {
     pub meta: Meta,
 }
 
-#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Target {
     pub is_stage: bool,
@@ -50,7 +51,13 @@ impl Hash for Target {
     }
 }
 
-#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+impl PartialEq for Target {
+    fn eq(&self, other: &Self) -> bool {
+        compare(&self, other)
+    }
+}
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Variable {
     pub id: String,
@@ -67,7 +74,25 @@ impl Hash for Variable {
     }
 }
 
-#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+impl PartialEq for Variable {
+    fn eq(&self, other: &Self) -> bool {
+        compare(&self, other)
+    }
+}
+
+fn compare<A, B>(a: A, b: B) -> bool
+where
+    A: Hash,
+    B: Hash,
+{
+    let mut hasher_a = DefaultHasher::new();
+    a.hash(&mut hasher_a);
+    let mut hasher_b = DefaultHasher::new();
+    b.hash(&mut hasher_b);
+    hasher_a.finish() == hasher_b.finish()
+}
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Block {
     pub opcode: String,
@@ -93,6 +118,12 @@ impl Hash for Block {
     }
 }
 
+impl PartialEq for Block {
+    fn eq(&self, other: &Self) -> bool {
+        compare(&self, other)
+    }
+}
+
 fn sorted_entries<K, V>(map: &HashMap<K, V>) -> Vec<(&K, &V)>
 where
     K: std::cmp::Ord,
@@ -109,7 +140,7 @@ where
     value.to_string().hash(state)
 }
 
-#[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Costume {
     pub name: String,
@@ -124,6 +155,12 @@ impl Hash for Costume {
         self.md5ext.hash(state);
         self.rotation_center_x.to_bits().hash(state);
         self.rotation_center_y.to_bits().hash(state);
+    }
+}
+
+impl PartialEq for Costume {
+    fn eq(&self, other: &Self) -> bool {
+        compare(&self, other)
     }
 }
 

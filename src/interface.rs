@@ -139,11 +139,7 @@ impl Component for ScratchInterface {
             }
             Msg::SetDebug(debug) => {
                 let id = &debug.thread_id;
-                if !self.debug_info.contains_key(&id.sprite_id) {
-                    self.debug_info.insert(id.sprite_id.clone(), Vec::new());
-                }
-
-                let thread = self.debug_info.get_mut(&id.sprite_id).unwrap();
+                let thread = self.debug_info.entry(id.sprite_id).or_default();
                 if thread.len() <= id.thread_id {
                     thread.resize(id.thread_id + 1, None);
                 }
