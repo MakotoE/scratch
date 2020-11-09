@@ -40,10 +40,10 @@ impl SpriteRuntime {
         for costume in costumes {
             match images.get(&costume.md5ext) {
                 Some(file) => {
-                    let size = Coordinate::new(
-                        (costume.rotation_center_x * 2.0) as i16,
-                        (costume.rotation_center_y * 2.0) as i16,
-                    );
+                    let size = Size::from_float(
+                        costume.rotation_center_x * 2.0,
+                        costume.rotation_center_y * 2.0,
+                    )?;
                     runtime.load_costume(file, size).await?
                 }
                 None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
@@ -62,8 +62,8 @@ impl SpriteRuntime {
         if let Some(text) = &self.text {
             context.save();
             context.translate(
-                240.0 + costume.size.x() as f64 / 4.0 + self.position.x as f64,
-                130.0 - costume.size.y() as f64 / 2.0 - self.position.y as f64,
+                240.0 + costume.size.width() as f64 / 4.0 + self.position.x as f64,
+                130.0 - costume.size.length() as f64 / 2.0 - self.position.y as f64,
             )?;
             SpriteRuntime::draw_text_bubble(context, text)?;
             context.restore();
@@ -80,8 +80,8 @@ impl SpriteRuntime {
     ) -> Result<()> {
         context.draw_image_with_html_image_element(
             &costume.image,
-            (240 - costume.size.x / 2 + position.x) as f64,
-            (180 - costume.size.y / 2 - position.y) as f64,
+            240.0 - costume.size.width() as f64 / 2.0 + position.x as f64,
+            180.0 - costume.size.length() as f64 / 2.0 - position.y as f64,
         )?;
         Ok(())
     }
@@ -153,7 +153,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    async fn load_costume(&mut self, file: &Image, size: Coordinate) -> Result<()> {
+    async fn load_costume(&mut self, file: &Image, size: Size) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = match file {
             Image::SVG(b) => b.as_slice().into(),
@@ -259,13 +259,45 @@ impl Coordinate {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Size {
+    pub width: u16,
+    pub length: u16,
+}
+
+impl Size {
+    #[allow(dead_code)]
+    pub fn new(width: u16, length: u16) -> Self {
+        Self { width, length }
+    }
+
+    pub fn from_float(width: f64, length: f64) -> Result<Self> {
+        if width < 0.0 || length < 0.0 {
+            Err(wrap_err!("width or length is invalid"))
+        } else {
+            Ok(Self {
+                width: width as u16,
+                length: length as u16,
+            })
+        }
+    }
+
+    pub fn width(&self) -> u16 {
+        self.width
+    }
+
+    pub fn length(&self) -> u16 {
+        self.length
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Rectangle {
     center: Coordinate,
-    size: Coordinate, // TODO create UnsignedCoordinate
+    size: Size,
 }
 
 impl Rectangle {
-    pub fn new(center: Coordinate, size: Coordinate) -> Self {
+    pub fn new(center: Coordinate, size: Size) -> Self {
         Self { center, size }
     }
 
@@ -273,18 +305,19 @@ impl Rectangle {
         &self.center
     }
 
-    pub fn size(&self) -> &Coordinate {
+    pub fn size(&self) -> &Size {
         &self.size
     }
 
     pub fn contains(&self, coordinate: &Coordinate) -> bool {
-        let top_left = self
-            .center
-            .add(&Coordinate::new(-self.size.x / 2, -self.size.y / 2));
+        let top_left = self.center.add(&Coordinate::new(
+            self.size.width() as i16 / -2,
+            self.size.length() as i16 / -2,
+        ));
         coordinate.x >= top_left.x
             && coordinate.y >= top_left.y
-            && coordinate.x <= top_left.x + self.size.x
-            && coordinate.y <= top_left.y + self.size.y
+            && coordinate.x <= top_left.x + self.size.width() as i16
+            && coordinate.y <= top_left.y + self.size.length() as i16
     }
 
     pub fn translate(&self, coordinate: &Coordinate) -> Rectangle {
@@ -298,7 +331,7 @@ impl Rectangle {
 #[derive(Debug)]
 pub struct Costume {
     image: HtmlImageElement,
-    size: Coordinate,
+    size: Size,
 }
 
 pub fn hex_to_color(s: &str) -> Result<palette::Hsv> {
@@ -391,42 +424,42 @@ mod tests {
 
             let tests = vec![
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(0, 0)),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(0, 0)),
                     coordinate: Coordinate::new(0, 0),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
                     coordinate: Coordinate::new(0, 0),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(2, 2)),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(2, 2)),
                     coordinate: Coordinate::new(1, 1),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
                     coordinate: Coordinate::new(1, 1),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
                     coordinate: Coordinate::new(-1, -1),
                     expected: false,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
                     coordinate: Coordinate::new(-2, 0),
                     expected: false,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(1, 1), Coordinate::new(1, 1)),
+                    rect: Rectangle::new(Coordinate::new(1, 1), Size::new(1, 1)),
                     coordinate: Coordinate::new(1, 0),
                     expected: false,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Coordinate::new(1, 1)),
+                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
                     coordinate: Coordinate::new(1, 2),
                     expected: false,
                 },
