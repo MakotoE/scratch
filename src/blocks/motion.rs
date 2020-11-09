@@ -76,7 +76,7 @@ impl Block for MoveSteps {
         let position = runtime
             .rectangle()
             .translate(&Coordinate::new(steps as i16, 0));
-        runtime.set_rectangle(&position);
+        runtime.set_rectangle(position);
         Next::continue_(self.next.clone())
     }
 }
@@ -142,9 +142,9 @@ impl Block for GoToXY {
         let mut runtime = self.runtime.sprite.write().await;
         let new_rectangle = Rectangle::new(
             Coordinate::new(x as i16, y as i16),
-            *runtime.rectangle().size(),
+            runtime.rectangle().size(),
         );
-        runtime.set_rectangle(&new_rectangle);
+        runtime.set_rectangle(new_rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -202,7 +202,7 @@ impl Block for ChangeXBy {
 
         let mut runtime = self.runtime.sprite.write().await;
         let rectangle = runtime.rectangle().translate(&Coordinate::new(x as i16, 0));
-        runtime.set_rectangle(&rectangle);
+        runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -260,7 +260,7 @@ impl Block for ChangeYBy {
 
         let mut runtime = self.runtime.sprite.write().await;
         let rectangle = runtime.rectangle().translate(&Coordinate::new(0, y as i16));
-        runtime.set_rectangle(&rectangle);
+        runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -320,10 +320,10 @@ impl Block for SetX {
         let curr_rectangle = runtime.rectangle();
         let rectangle = Rectangle::new(
             Coordinate::new(x as i16, curr_rectangle.center().y()),
-            *curr_rectangle.size(),
+            curr_rectangle.size(),
         );
 
-        runtime.set_rectangle(&rectangle);
+        runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
 }
@@ -383,10 +383,10 @@ impl Block for SetY {
         let curr_rectangle = runtime.rectangle();
         let rectangle = Rectangle::new(
             Coordinate::new(curr_rectangle.center().x(), y as i16),
-            *curr_rectangle.size(),
+            curr_rectangle.size(),
         );
 
-        runtime.set_rectangle(&rectangle);
+        runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
 }

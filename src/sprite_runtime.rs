@@ -215,9 +215,9 @@ impl SpriteRuntime {
     }
 
     /// Can't do scaling yet
-    pub fn set_rectangle(&mut self, rectangle: &Rectangle) {
+    pub fn set_rectangle(&mut self, rectangle: Rectangle) {
         self.need_redraw = true;
-        self.position = *rectangle.center();
+        self.position = rectangle.center();
         self.pen().set_position(&rectangle.center);
     }
 }
@@ -296,13 +296,12 @@ impl Rectangle {
         Self { center, size }
     }
 
-    pub fn center(&self) -> &Coordinate {
-        // TODO remove reference
-        &self.center
+    pub fn center(&self) -> Coordinate {
+        self.center
     }
 
-    pub fn size(&self) -> &Size {
-        &self.size
+    pub fn size(&self) -> Size {
+        self.size
     }
 
     pub fn contains(&self, coordinate: &Coordinate) -> bool {
