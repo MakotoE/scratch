@@ -1,10 +1,8 @@
 use super::*;
 use blocks::*;
-use runtime::Global;
-use runtime::Runtime;
-use savefile::Image;
-use savefile::Target;
-use sprite_runtime::{Coordinate, Rectangle, SpriteRuntime};
+use runtime::{Global, Runtime};
+use savefile::{Image, Target};
+use sprite_runtime::SpriteRuntime;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
@@ -28,19 +26,8 @@ impl Sprite {
         target.hash(&mut hasher);
         is_a_clone.hash(&mut hasher);
 
-        let mut sprite_runtime = SpriteRuntime::new(
-            &target.costumes,
-            &images,
-            hasher.finish().into(),
-            is_a_clone,
-        )
-        .await?;
-
-        let rectangle = Rectangle::new(
-            Coordinate::new(target.x as i16, target.y as i16),
-            *sprite_runtime.rectangle().size(),
-        );
-        sprite_runtime.set_rectangle(&rectangle);
+        let sprite_runtime =
+            SpriteRuntime::new(&target, &images, hasher.finish().into(), is_a_clone).await?;
 
         let runtime = Runtime {
             sprite: Rc::new(RwLock::new(sprite_runtime)),

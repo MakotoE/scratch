@@ -1,7 +1,7 @@
 use super::*;
 use palette::IntoColor;
 use pen::Pen;
-use savefile::Image;
+use savefile::{Image, Target};
 use sprite::SpriteID;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
@@ -21,14 +21,14 @@ pub struct SpriteRuntime {
 #[allow(dead_code)]
 impl SpriteRuntime {
     pub async fn new(
-        costumes: &[savefile::Costume],
+        target: &Rc<Target>,
         images: &HashMap<String, Image>,
         sprite_id: SpriteID,
         is_a_clone: bool,
     ) -> Result<Self> {
         let mut runtime = Self {
             need_redraw: true,
-            position: Coordinate::new(0, 0),
+            position: Coordinate::new(target.x as i16, target.y as i16),
             costumes: Vec::new(),
             current_costume: 0,
             text: None,
@@ -37,7 +37,7 @@ impl SpriteRuntime {
             is_a_clone,
         };
 
-        for costume in costumes {
+        for costume in &target.costumes {
             match images.get(&costume.md5ext) {
                 Some(file) => {
                     let size = Size::from_float(
