@@ -16,6 +16,7 @@ pub struct SpriteRuntime {
     current_costume: usize,
     text: Option<String>,
     pen: Pen,
+    hide: HideStatus,
 }
 
 #[allow(dead_code)]
@@ -35,6 +36,7 @@ impl SpriteRuntime {
             pen: Pen::new(),
             sprite_id,
             is_a_clone,
+            hide: HideStatus::Show,
         };
 
         for costume in &target.costumes {
@@ -48,6 +50,13 @@ impl SpriteRuntime {
     }
 
     pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+        self.need_redraw = false;
+
+        match self.hide {
+            HideStatus::Hide => return Ok(()),
+            _ => {}
+        }
+
         self.pen.draw(context);
 
         let costume = &self.costumes[self.current_costume];
@@ -62,8 +71,6 @@ impl SpriteRuntime {
             SpriteRuntime::draw_text_bubble(context, text)?;
             context.restore();
         }
-
-        self.need_redraw = false;
         Ok(())
     }
 
@@ -220,6 +227,10 @@ impl SpriteRuntime {
         self.position = rectangle.center();
         self.pen().set_position(&rectangle.center);
     }
+
+    pub fn set_hide(&mut self, hide: HideStatus) {
+        self.hide = hide;
+    }
 }
 
 /// Center = 0, 0
@@ -361,6 +372,12 @@ pub fn color_to_hex(color: &palette::Hsv) -> String {
         (rgb.green * 255.0).round() as u8,
         (rgb.blue * 255.0).round() as u8
     )
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum HideStatus {
+    Hide,
+    Show,
 }
 
 #[cfg(test)]

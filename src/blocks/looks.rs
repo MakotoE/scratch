@@ -1,5 +1,6 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
+use sprite_runtime::HideStatus;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -181,12 +182,17 @@ impl Block for GoToFrontBack {
 #[derive(Debug)]
 pub struct Hide {
     id: String,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Hide {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+        }
     }
 }
 
@@ -213,17 +219,27 @@ impl Block for Hide {
             self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
+
+    async fn execute(&mut self) -> Next {
+        self.runtime.sprite.write().await.set_hide(HideStatus::Hide);
+        Next::continue_(self.next.clone())
+    }
 }
 
 #[derive(Debug)]
 pub struct Show {
     id: String,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Show {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+        }
     }
 }
 
@@ -249,6 +265,11 @@ impl Block for Show {
         if key == "next" {
             self.next = Some(Rc::new(RefCell::new(block)));
         }
+    }
+
+    async fn execute(&mut self) -> Next {
+        self.runtime.sprite.write().await.set_hide(HideStatus::Show);
+        Next::continue_(self.next.clone())
     }
 }
 
