@@ -282,7 +282,7 @@ impl VM {
 
 impl Drop for VM {
     fn drop(&mut self) {
-        self.control_sender.blocking_send(Control::Stop).unwrap();
+        let _ = self.control_sender.blocking_send(Control::Stop);
     }
 }
 

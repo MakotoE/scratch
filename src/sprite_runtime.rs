@@ -39,13 +39,7 @@ impl SpriteRuntime {
 
         for costume in &target.costumes {
             match images.get(&costume.md5ext) {
-                Some(file) => {
-                    let size = Size::from_float(
-                        costume.rotation_center_x * 2.0,
-                        costume.rotation_center_y * 2.0,
-                    )?;
-                    runtime.load_costume(file, size).await?
-                }
+                Some(file) => runtime.load_costume(file).await?,
                 None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
             }
         }
@@ -62,8 +56,8 @@ impl SpriteRuntime {
         if let Some(text) = &self.text {
             context.save();
             context.translate(
-                240.0 + costume.size.width() as f64 / 4.0 + self.position.x as f64,
-                130.0 - costume.size.length() as f64 / 2.0 - self.position.y as f64,
+                240.0 + costume.size().width() as f64 / 4.0 + self.position.x as f64,
+                130.0 - costume.size().length() as f64 / 2.0 - self.position.y as f64,
             )?;
             SpriteRuntime::draw_text_bubble(context, text)?;
             context.restore();
@@ -80,8 +74,8 @@ impl SpriteRuntime {
     ) -> Result<()> {
         context.draw_image_with_html_image_element(
             &costume.image,
-            240.0 - costume.size.width() as f64 / 2.0 + position.x as f64,
-            180.0 - costume.size.length() as f64 / 2.0 - position.y as f64,
+            240.0 - costume.size().width() as f64 / 2.0 + position.x as f64,
+            180.0 - costume.size().length() as f64 / 2.0 - position.y as f64,
         )?;
         Ok(())
     }
@@ -153,7 +147,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    async fn load_costume(&mut self, file: &Image, size: Size) -> Result<()> {
+    async fn load_costume(&mut self, file: &Image) -> Result<()> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = match file {
             Image::SVG(b) => b.as_slice().into(),
@@ -177,7 +171,7 @@ impl SpriteRuntime {
 
         Url::revoke_object_url(&url)?;
 
-        self.costumes.push(Costume { image, size });
+        self.costumes.push(Costume::new(image));
         Ok(())
     }
 
@@ -270,6 +264,7 @@ impl Size {
         Self { width, length }
     }
 
+    #[allow(dead_code)]
     pub fn from_float(width: f64, length: f64) -> Result<Self> {
         if width < 0.0 || length < 0.0 {
             Err(wrap_err!("width or length is invalid"))
@@ -302,6 +297,7 @@ impl Rectangle {
     }
 
     pub fn center(&self) -> &Coordinate {
+        // TODO remove reference
         &self.center
     }
 
@@ -328,10 +324,21 @@ impl Rectangle {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Costume {
     image: HtmlImageElement,
     size: Size,
+}
+
+impl Costume {
+    pub fn new(image: HtmlImageElement) -> Self {
+        let size = Size::new(image.width() as u16, image.height() as u16);
+        Self { image, size }
+    }
+
+    pub fn size(&self) -> Size {
+        self.size
+    }
 }
 
 pub fn hex_to_color(s: &str) -> Result<palette::Hsv> {
