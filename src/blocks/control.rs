@@ -2,6 +2,8 @@ use super::*;
 use gloo_timers::future::TimeoutFuture;
 use maplit::hashmap;
 use runtime::BroadcastMsg;
+use std::str::FromStr;
+use vm::ThreadID;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -14,7 +16,7 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
         "wait_until" => Box::new(WaitUntil::new(id)),
         "start_as_clone" => Box::new(StartAsClone::new(id, runtime)),
         "delete_this_clone" => Box::new(DeleteThisClone::new(id, runtime)),
-        "stop" => Box::new(Stop::new(id)),
+        "stop" => Box::new(Stop::new(id, runtime)),
         "create_clone_of" => Box::new(CreateCloneOf::new(id, runtime)),
         "create_clone_of_menu" => Box::new(CreateCloneOfMenu::new(id)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
@@ -555,11 +557,19 @@ impl Block for DeleteThisClone {
 #[derive(Debug)]
 pub struct Stop {
     id: String,
+    runtime: Runtime,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    stop_option: Option<StopOption>,
 }
 
 impl Stop {
-    pub fn new(id: String) -> Self {
-        Self { id }
+    pub fn new(id: String, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            stop_option: None,
+        }
     }
 }
 
@@ -575,13 +585,74 @@ impl Block for Stop {
     fn block_inputs(&self) -> BlockInputs {
         BlockInputs {
             info: self.block_info(),
-            fields: HashMap::new(),
+            fields: match self.stop_option {
+                Some(o) => hashmap! {"stop_option" => format!("{:?}", o)},
+                None => HashMap::new(),
+            },
             inputs: HashMap::new(),
-            stacks: HashMap::new(),
+            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
         }
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            _ => {}
+        }
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "STOP_OPTION" {
+            if let Some(o) = field.get(0) {
+                if let Some(s) = o {
+                    self.stop_option = Some(StopOption::from_str(s)?);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn execute(&mut self) -> Next {
+        match self.stop_option {
+            Some(s) => self
+                .runtime
+                .global
+                .broadcaster
+                .send(BroadcastMsg::Stop(s.into_stop(self.runtime.thread_id())))?,
+            None => return Next::Err(wrap_err!("stop_option is None")),
+        };
+        Next::continue_(self.next.clone())
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+enum StopOption {
+    All,
+    ThisThread,
+    OtherThreads,
+}
+
+impl StopOption {
+    fn into_stop(self, thread_id: ThreadID) -> runtime::Stop {
+        match self {
+            StopOption::All => runtime::Stop::All,
+            StopOption::ThisThread => runtime::Stop::ThisThread(thread_id),
+            StopOption::OtherThreads => runtime::Stop::OtherThreads(thread_id),
+        }
+    }
+}
+
+impl FromStr for StopOption {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
+            "all" => StopOption::All,
+            "this script" => StopOption::ThisThread,
+            "other scripts in sprite" => StopOption::OtherThreads,
+            _ => return Err(wrap_err!(format!("s is invalid: {}", s))),
+        })
+    }
 }
 
 #[derive(Debug)]

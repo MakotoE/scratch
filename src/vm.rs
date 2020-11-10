@@ -4,7 +4,7 @@ use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use gloo_timers::future::TimeoutFuture;
-use runtime::{BroadcastMsg, Broadcaster, Global};
+use runtime::{BroadcastMsg, Broadcaster, Global, Stop};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
 use sprite_runtime::Coordinate;
@@ -252,11 +252,22 @@ impl VM {
                     futures.push(Box::pin(broadcaster_recv.recv()));
                 }
                 Event::DeleteClone(sprite_id) => {
-                    sprites.remove(sprite_id);
+                    sprites.remove(&sprite_id);
                     VM::force_redraw(&sprites.sprites(), context).await?;
                     TimeoutFuture::new(0).await;
                     last_redraw = performance.now();
                 }
+                Event::Stop(s) => match s {
+                    Stop::All => {
+                        let ids: Vec<SpriteID> = sprites.sprites().keys().copied().collect();
+                        for id in &ids {
+                            // TODO fix BorrowMutError
+                            // Probably due to step() already borrowing sprites
+                            sprites.remove(id);
+                        }
+                    }
+                    _ => todo!(),
+                },
             };
         }
     }
@@ -303,9 +314,10 @@ enum Event {
     Redraw,
     Clone(SpriteID),
     DeleteClone(SpriteID),
+    Stop(Stop),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ThreadID {
     pub sprite_id: SpriteID,
     pub thread_id: usize,
@@ -352,6 +364,7 @@ impl BroadcastCell {
             Ok(msg) => match msg {
                 BroadcastMsg::Clone(id) => Event::Clone(id),
                 BroadcastMsg::DeleteClone(id) => Event::DeleteClone(id),
+                BroadcastMsg::Stop(s) => Event::Stop(s),
                 _ => Event::None,
             },
             Err(e) => Event::Err(e.into()),
@@ -389,7 +402,7 @@ impl SpritesCell {
         self.sprites.borrow_mut().insert(sprite_id, sprite);
     }
 
-    fn remove(&self, sprite_id: SpriteID) {
-        self.sprites.borrow_mut().remove(&sprite_id);
+    fn remove(&self, sprite_id: &SpriteID) {
+        self.sprites.borrow_mut().remove(sprite_id);
     }
 }

@@ -143,6 +143,19 @@ pub struct BlockInputs {
 }
 
 impl BlockInputs {
+    // TODO combine into constructor
+    fn fields<'a>(
+        fields: HashMap<&'static str, &'a Option<String>>,
+    ) -> HashMap<&'static str, String> {
+        let mut result: HashMap<&'static str, String> = HashMap::new();
+        for (id, str) in fields {
+            if let Some(s) = str {
+                result.insert(id, s.clone());
+            }
+        }
+        result
+    }
+
     fn inputs<'a>(
         inputs: HashMap<&'static str, &'a Option<Box<dyn Block>>>,
     ) -> HashMap<&'static str, BlockInputs> {

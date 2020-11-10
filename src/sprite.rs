@@ -6,6 +6,7 @@ use sprite_runtime::SpriteRuntime;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
+use vm::ThreadID;
 
 #[derive(Debug)]
 pub struct Sprite {
@@ -26,17 +27,21 @@ impl Sprite {
         target.hash(&mut hasher);
         is_a_clone.hash(&mut hasher);
 
-        let sprite_runtime =
-            SpriteRuntime::new(&target, &images, hasher.finish().into(), is_a_clone).await?;
-
-        let runtime = Runtime {
-            sprite: Rc::new(RwLock::new(sprite_runtime)),
-            global,
-        };
+        let sprite_runtime = Rc::new(RwLock::new(
+            SpriteRuntime::new(&target, &images, hasher.finish().into(), is_a_clone).await?,
+        ));
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
         for (thread_id, hat_id) in find_hats(&target.blocks).iter().enumerate() {
+            let runtime = Runtime::new(
+                sprite_runtime.clone(),
+                global.clone(),
+                ThreadID {
+                    sprite_id: hasher.finish().into(),
+                    thread_id,
+                },
+            );
             let block = match block_tree(hat_id.to_string(), runtime.clone(), &target.blocks) {
                 Ok(b) => b,
                 Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
@@ -49,7 +54,14 @@ impl Sprite {
             hasher.finish().into(),
             Self {
                 threads,
-                runtime,
+                runtime: Runtime::new(
+                    sprite_runtime.clone(),
+                    global.clone(),
+                    ThreadID {
+                        sprite_id: SpriteID::from(0),
+                        thread_id: 0,
+                    },
+                ),
                 target,
                 images,
             },
@@ -113,6 +125,7 @@ pub struct SpriteID {
 
 impl From<u64> for SpriteID {
     fn from(n: u64) -> Self {
+        // TODO take hasher
         Self {
             hash: n.to_le_bytes(),
         }
