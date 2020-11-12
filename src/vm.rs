@@ -8,6 +8,7 @@ use runtime::{BroadcastMsg, Broadcaster, Global, Stop};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
 use sprite_runtime::Coordinate;
+use std::collections::HashSet;
 use std::iter::FromIterator;
 use tokio::sync::{broadcast, mpsc};
 
@@ -203,7 +204,9 @@ impl VM {
                 }
                 Event::Stop(s) => match s {
                     Stop::All => {
-                        sprites.clear();
+                        for thread_id in sprites.all_thread_ids() {
+                            sprites.stop(thread_id);
+                        }
                     }
                     _ => todo!(),
                 },
@@ -256,7 +259,7 @@ enum Event {
     Stop(Stop),
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ThreadID {
     pub sprite_id: SpriteID,
     pub thread_id: usize,
@@ -314,16 +317,22 @@ impl BroadcastCell {
 #[derive(Debug)]
 struct SpritesCell {
     sprites: RefCell<HashMap<SpriteID, Sprite>>,
+    threads_to_stop: RefCell<HashSet<ThreadID>>,
 }
 
 impl SpritesCell {
     fn new(sprites: HashMap<SpriteID, Sprite>) -> Self {
         Self {
             sprites: RefCell::new(sprites),
+            threads_to_stop: RefCell::default(),
         }
     }
 
     async fn step(&self, thread_id: ThreadID) -> Event {
+        if self.threads_to_stop.borrow().contains(&thread_id) {
+            return Event::None;
+        }
+
         match self.sprites.borrow().get(&thread_id.sprite_id) {
             Some(sprite) => match sprite.step(thread_id.thread_id).await {
                 Ok(_) => Event::Thread(thread_id),
@@ -334,6 +343,7 @@ impl SpritesCell {
     }
 
     fn remove(&self, sprite_id: &SpriteID) {
+        // TODO this can panic; should change sprites to HashMap<SpriteID, RefCell<Sprite>>
         self.sprites.borrow_mut().remove(sprite_id);
     }
 
@@ -402,7 +412,7 @@ impl SpritesCell {
             .number_of_threads()
     }
 
-    fn clear(&self) {
-        self.sprites.borrow_mut().clear()
+    fn stop(&self, thread_id: ThreadID) {
+        self.threads_to_stop.borrow_mut().insert(thread_id);
     }
 }
