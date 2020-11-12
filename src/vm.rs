@@ -203,13 +203,7 @@ impl VM {
                 }
                 Event::Stop(s) => match s {
                     Stop::All => {
-                        log::debug!("stop");
-                        // let ids: Vec<SpriteID> = sprites.sprites().keys().copied().collect();
-                        // for id in &ids {
-                        //     // TODO fix BorrowMutError
-                        //     // Probably due to step() already borrowing sprites
-                        //     sprites.remove(id);
-                        // }
+                        sprites.clear();
                     }
                     _ => todo!(),
                 },
@@ -339,10 +333,6 @@ impl SpritesCell {
         }
     }
 
-    fn insert(&self, sprite_id: SpriteID, sprite: Sprite) {
-        self.sprites.borrow_mut().insert(sprite_id, sprite);
-    }
-
     fn remove(&self, sprite_id: &SpriteID) {
         self.sprites.borrow_mut().remove(sprite_id);
     }
@@ -410,5 +400,9 @@ impl SpritesCell {
             .get(&sprite_id)
             .unwrap()
             .number_of_threads()
+    }
+
+    fn clear(&self) {
+        self.sprites.borrow_mut().clear()
     }
 }
