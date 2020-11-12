@@ -135,7 +135,9 @@ impl From<u64> for SpriteID {
 impl Debug for SpriteID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "SpriteID {{ ")?;
-        Display::fmt(&self, f)?;
+        for b in &self.hash {
+            write!(f, "{:x}", b)?;
+        }
         write!(f, " }}")
     }
 }

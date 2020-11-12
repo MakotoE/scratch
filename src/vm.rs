@@ -94,39 +94,6 @@ impl VM {
         }
     }
 
-    async fn redraw(
-        sprites: &HashMap<SpriteID, Sprite>,
-        context: &web_sys::CanvasRenderingContext2d,
-    ) -> Result<()> {
-        let mut need_redraw = false;
-        for (_, sprite) in sprites.iter() {
-            if sprite.need_redraw().await {
-                need_redraw = true;
-                break;
-            }
-        }
-
-        if !need_redraw {
-            return Ok(());
-        }
-
-        VM::force_redraw(sprites, context).await
-    }
-
-    async fn force_redraw(
-        sprites: &HashMap<SpriteID, Sprite>,
-        context: &web_sys::CanvasRenderingContext2d,
-    ) -> Result<()> {
-        context.reset_transform().unwrap();
-        context.scale(2.0, 2.0).unwrap();
-        context.clear_rect(0.0, 0.0, 480.0, 360.0);
-
-        for sprite in sprites.values() {
-            sprite.redraw(&context).await?;
-        }
-        Ok(())
-    }
-
     async fn run(
         sprites_map: HashMap<SpriteID, Sprite>,
         control_chan: mpsc::Receiver<Control>,
@@ -177,7 +144,7 @@ impl VM {
         loop {
             // Not having this causes unresponsive UI
             if performance.now() - last_redraw > REDRAW_INTERVAL_MILLIS {
-                VM::redraw(&sprites.sprites(), context).await?;
+                sprites.redraw(context).await?;
                 TimeoutFuture::new(0).await; // Yield to render
                 last_redraw = performance.now();
             }
@@ -220,7 +187,7 @@ impl VM {
                     futures.push(Box::pin(control_chan.recv()));
                 }
                 Event::Redraw => {
-                    VM::redraw(&sprites.sprites(), context).await?;
+                    sprites.redraw(context).await?;
                     TimeoutFuture::new(0).await; // Yield to render
                     last_redraw = performance.now();
                     futures.push(Box::pin(
@@ -253,7 +220,7 @@ impl VM {
                 }
                 Event::DeleteClone(sprite_id) => {
                     sprites.remove(&sprite_id);
-                    VM::force_redraw(&sprites.sprites(), context).await?;
+                    sprites.force_redraw(context).await?;
                     TimeoutFuture::new(0).await;
                     last_redraw = performance.now();
                 }
@@ -404,5 +371,34 @@ impl SpritesCell {
 
     fn remove(&self, sprite_id: &SpriteID) {
         self.sprites.borrow_mut().remove(sprite_id);
+    }
+
+    async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+        let mut need_redraw = false;
+        for sprite in self.sprites.borrow().values() {
+            if sprite.need_redraw().await {
+                need_redraw = true;
+                break;
+            }
+        }
+
+        if !need_redraw {
+            return Ok(());
+        }
+
+        self.force_redraw(context).await
+    }
+
+    /// TODO probably don't need this because remove() is in same scope
+    async fn force_redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+        context.reset_transform().unwrap();
+        context.scale(2.0, 2.0).unwrap();
+        context.clear_rect(0.0, 0.0, 480.0, 360.0);
+
+        let sprites = self.sprites.borrow();
+        for sprite in sprites.values() {
+            sprite.redraw(&context).await?;
+        }
+        Ok(())
     }
 }
