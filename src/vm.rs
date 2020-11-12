@@ -8,7 +8,6 @@ use runtime::{BroadcastMsg, Broadcaster, Global, Stop};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
 use sprite_runtime::Coordinate;
-use std::cell::Ref;
 use std::iter::FromIterator;
 use tokio::sync::{broadcast, mpsc};
 
@@ -180,18 +179,12 @@ impl VM {
                     ));
                 }
                 Event::Clone(from_sprite) => {
-                    let (sprite_id, new_sprite) = sprites
-                        .sprites()
-                        .get(&from_sprite)
-                        .unwrap()
-                        .clone_sprite()
-                        .await?;
-                    for thread_id in 0..new_sprite.number_of_threads() {
+                    let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
+                    for thread_id in 0..sprites.number_of_threads(new_sprite_id) {
                         let id = ThreadID {
-                            sprite_id,
+                            sprite_id: new_sprite_id,
                             thread_id,
                         };
-
                         match current_state {
                             Control::Continue | Control::Step => {
                                 futures.push(Box::pin(sprites.step(id)))
@@ -200,7 +193,6 @@ impl VM {
                             Control::Stop => unreachable!(),
                         }
                     }
-                    sprites.insert(sprite_id, new_sprite);
                     futures.push(Box::pin(broadcaster_recv.recv()));
                 }
                 Event::DeleteClone(sprite_id) => {
@@ -211,12 +203,13 @@ impl VM {
                 }
                 Event::Stop(s) => match s {
                     Stop::All => {
-                        let ids: Vec<SpriteID> = sprites.sprites().keys().copied().collect();
-                        for id in &ids {
-                            // TODO fix BorrowMutError
-                            // Probably due to step() already borrowing sprites
-                            sprites.remove(id);
-                        }
+                        log::debug!("stop");
+                        // let ids: Vec<SpriteID> = sprites.sprites().keys().copied().collect();
+                        // for id in &ids {
+                        //     // TODO fix BorrowMutError
+                        //     // Probably due to step() already borrowing sprites
+                        //     sprites.remove(id);
+                        // }
                     }
                     _ => todo!(),
                 },
@@ -336,10 +329,6 @@ impl SpritesCell {
         }
     }
 
-    fn sprites(&self) -> Ref<HashMap<SpriteID, Sprite>> {
-        self.sprites.borrow()
-    }
-
     async fn step(&self, thread_id: ThreadID) -> Event {
         match self.sprites.borrow().get(&thread_id.sprite_id) {
             Some(sprite) => match sprite.step(thread_id.thread_id).await {
@@ -406,5 +395,20 @@ impl SpritesCell {
             .get(&thread_id.sprite_id)
             .unwrap()
             .block_info(thread_id.thread_id)
+    }
+
+    async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
+        let mut sprites = self.sprites.borrow_mut();
+        let (new_sprite_id, new_sprite) = sprites.get(&sprite_id).unwrap().clone_sprite().await?;
+        sprites.insert(new_sprite_id, new_sprite);
+        Ok(new_sprite_id)
+    }
+
+    fn number_of_threads(&self, sprite_id: SpriteID) -> usize {
+        self.sprites
+            .borrow()
+            .get(&sprite_id)
+            .unwrap()
+            .number_of_threads()
     }
 }

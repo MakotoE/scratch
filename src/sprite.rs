@@ -55,7 +55,7 @@ impl Sprite {
             Self {
                 threads,
                 runtime: Runtime::new(
-                    sprite_runtime.clone(),
+                    sprite_runtime,
                     global.clone(),
                     ThreadID {
                         sprite_id: SpriteID::from(0),

@@ -595,9 +595,8 @@ impl Block for Stop {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
         }
     }
 

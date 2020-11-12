@@ -52,9 +52,8 @@ impl SpriteRuntime {
     pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         self.need_redraw = false;
 
-        match self.hide {
-            HideStatus::Hide => return Ok(()),
-            _ => {}
+        if let HideStatus::Hide = self.hide {
+            return Ok(());
         }
 
         self.pen.draw(context);
