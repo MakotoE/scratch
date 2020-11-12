@@ -118,25 +118,14 @@ impl VM {
         futures.push(Box::pin(broadcaster_recv.recv()));
 
         let mut paused_threads: Vec<ThreadID> = Vec::new();
-        for (sprite_id, sprite) in sprites.sprites().iter() {
-            for thread_id in 0..sprite.number_of_threads() {
-                let id = ThreadID {
-                    sprite_id: *sprite_id,
+        for thread_id in sprites.all_thread_ids() {
+            paused_threads.push(thread_id);
+            debug_sender
+                .send(DebugInfo {
                     thread_id,
-                };
-                paused_threads.push(id);
-
-                debug_sender
-                    .send(DebugInfo {
-                        thread_id: id,
-                        block_info: sprites
-                            .sprites()
-                            .get(sprite_id)
-                            .unwrap()
-                            .block_info(thread_id),
-                    })
-                    .await?;
-            }
+                    block_info: sprites.block_info(thread_id),
+                })
+                .await?;
         }
 
         let mut current_state = Control::Pause;
@@ -158,11 +147,7 @@ impl VM {
                         debug_sender
                             .send(DebugInfo {
                                 thread_id,
-                                block_info: sprites
-                                    .sprites()
-                                    .get(&thread_id.sprite_id)
-                                    .unwrap()
-                                    .block_info(thread_id.thread_id),
+                                block_info: sprites.block_info(thread_id),
                             })
                             .await?;
                         current_state = Control::Pause;
@@ -400,5 +385,26 @@ impl SpritesCell {
             sprite.redraw(&context).await?;
         }
         Ok(())
+    }
+
+    fn all_thread_ids(&self) -> Vec<ThreadID> {
+        let mut result: Vec<ThreadID> = Vec::new();
+        for (sprite_id, sprite) in self.sprites.borrow().iter() {
+            for thread_id in 0..sprite.number_of_threads() {
+                result.push(ThreadID {
+                    sprite_id: *sprite_id,
+                    thread_id,
+                });
+            }
+        }
+        result
+    }
+
+    fn block_info(&self, thread_id: ThreadID) -> BlockInfo {
+        self.sprites
+            .borrow()
+            .get(&thread_id.sprite_id)
+            .unwrap()
+            .block_info(thread_id.thread_id)
     }
 }
