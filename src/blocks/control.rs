@@ -545,7 +545,7 @@ impl Block for DeleteThisClone {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn execute(&mut self) -> Next {
-        let sprite_id = self.runtime.sprite.read().await.sprite_id();
+        let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
             .global
             .broadcaster
@@ -700,7 +700,7 @@ impl Block for CreateCloneOf {
     }
 
     async fn execute(&mut self) -> Next {
-        let sprite_id = self.runtime.sprite.read().await.sprite_id();
+        let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
             .global
             .broadcaster

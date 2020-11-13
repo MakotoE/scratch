@@ -8,7 +8,6 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
-    sprite_id: SpriteID, // TODO remove
     is_a_clone: bool,
     need_redraw: bool,
     position: Coordinate,
@@ -34,7 +33,6 @@ impl SpriteRuntime {
             current_costume: 0,
             text: None,
             pen: Pen::new(),
-            sprite_id,
             is_a_clone,
             hide: HideStatus::Show,
         };
@@ -207,10 +205,6 @@ impl SpriteRuntime {
     pub fn pen(&mut self) -> &mut Pen {
         self.need_redraw = true;
         &mut self.pen
-    }
-
-    pub fn sprite_id(&self) -> SpriteID {
-        self.sprite_id
     }
 
     pub fn is_a_clone(&self) -> bool {
