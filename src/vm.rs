@@ -208,7 +208,18 @@ impl VM {
                             sprites.stop(thread_id);
                         }
                     }
-                    _ => todo!(),
+                    Stop::ThisThread(thread_id) => {
+                        sprites.stop(thread_id);
+                    }
+                    Stop::OtherThreads(thread_id) => {
+                        for id in sprites.all_thread_ids() {
+                            if id.sprite_id == thread_id.sprite_id
+                                && id.thread_id != thread_id.thread_id
+                            {
+                                sprites.stop(thread_id);
+                            }
+                        }
+                    }
                 },
             };
         }
@@ -329,7 +340,7 @@ impl SpritesCell {
     }
 
     async fn step(&self, thread_id: ThreadID) -> Event {
-        if self.threads_to_stop.borrow().contains(&thread_id) {
+        if self.threads_to_stop.borrow_mut().remove(&thread_id) {
             return Event::None;
         }
 
