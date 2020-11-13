@@ -354,8 +354,7 @@ impl SpritesCell {
     }
 
     fn remove(&self, sprite_id: &SpriteID) {
-        // TODO this can panic; should change sprites to HashMap<SpriteID, RefCell<Sprite>>
-        self.sprites.borrow_mut().remove(sprite_id);
+        self.sprites.borrow().get(&sprite_id).map(|s| s.remove());
     }
 
     async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
@@ -374,7 +373,7 @@ impl SpritesCell {
         self.force_redraw(context).await
     }
 
-    /// TODO probably don't need this because remove() is in same scope
+    // TODO probably don't need this because remove() is in same scope
     async fn force_redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         context.reset_transform().unwrap();
         context.scale(2.0, 2.0).unwrap();

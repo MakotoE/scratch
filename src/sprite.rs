@@ -4,6 +4,7 @@ use runtime::{Global, Runtime};
 use savefile::{Image, Target};
 use sprite_runtime::SpriteRuntime;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
@@ -15,6 +16,7 @@ pub struct Sprite {
     runtime: Runtime,
     target: Rc<Target>,
     images: Rc<HashMap<String, Image>>,
+    sprite_removed: RefCell<bool>,
 }
 
 impl Sprite {
@@ -66,6 +68,7 @@ impl Sprite {
                 ),
                 target,
                 images,
+                sprite_removed: RefCell::new(false),
             },
         ))
     }
@@ -79,7 +82,11 @@ impl Sprite {
     }
 
     pub async fn step(&self, thread_id: usize) -> Result<()> {
-        self.threads[thread_id].borrow_mut().step().await
+        if *self.sprite_removed.borrow() {
+            Ok(())
+        } else {
+            self.threads[thread_id].borrow_mut().step().await
+        }
     }
 
     pub async fn need_redraw(&self) -> bool {
@@ -87,7 +94,11 @@ impl Sprite {
     }
 
     pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
-        self.runtime.sprite.write().await.redraw(context)
+        if *self.sprite_removed.borrow() {
+            Ok(())
+        } else {
+            self.runtime.sprite.write().await.redraw(context)
+        }
     }
 
     pub fn block_inputs(&self) -> Vec<BlockInputs> {
@@ -105,6 +116,10 @@ impl Sprite {
             true,
         )
         .await
+    }
+
+    pub fn remove(&self) {
+        self.sprite_removed.replace(true);
     }
 }
 
