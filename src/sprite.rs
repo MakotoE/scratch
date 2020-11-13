@@ -3,6 +3,7 @@ use blocks::*;
 use runtime::{Global, Runtime};
 use savefile::{Image, Target};
 use sprite_runtime::SpriteRuntime;
+use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
@@ -23,12 +24,13 @@ impl Sprite {
         images: Rc<HashMap<String, Image>>,
         is_a_clone: bool,
     ) -> Result<(SpriteID, Self)> {
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        let mut hasher = DefaultHasher::new();
         target.hash(&mut hasher);
         is_a_clone.hash(&mut hasher);
+        let sprite_id = SpriteID::from(hasher);
 
         let sprite_runtime = Rc::new(RwLock::new(
-            SpriteRuntime::new(&target, &images, hasher.finish().into(), is_a_clone).await?,
+            SpriteRuntime::new(&target, &images, sprite_id, is_a_clone).await?,
         ));
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
@@ -38,7 +40,7 @@ impl Sprite {
                 sprite_runtime.clone(),
                 global.clone(),
                 ThreadID {
-                    sprite_id: hasher.finish().into(),
+                    sprite_id,
                     thread_id,
                 },
             );
@@ -51,14 +53,14 @@ impl Sprite {
         }
 
         Ok((
-            hasher.finish().into(),
+            sprite_id,
             Self {
                 threads,
                 runtime: Runtime::new(
                     sprite_runtime,
                     global.clone(),
                     ThreadID {
-                        sprite_id: SpriteID::from(0),
+                        sprite_id,
                         thread_id: 0,
                     },
                 ),
@@ -123,11 +125,13 @@ pub struct SpriteID {
     hash: [u8; 8],
 }
 
-impl From<u64> for SpriteID {
-    fn from(n: u64) -> Self {
-        // TODO take hasher
+impl<H> From<H> for SpriteID
+where
+    H: Hasher,
+{
+    fn from(hasher: H) -> Self {
         Self {
-            hash: n.to_le_bytes(),
+            hash: hasher.finish().to_le_bytes(),
         }
     }
 }
