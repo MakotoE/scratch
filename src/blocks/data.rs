@@ -1,5 +1,4 @@
 use super::*;
-use maplit::hashmap;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -15,7 +14,7 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 pub struct SetVariable {
     id: String,
     runtime: Runtime,
-    variable_id: Option<String>,
+    variable_id: String,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
@@ -25,7 +24,7 @@ impl SetVariable {
         Self {
             id,
             runtime,
-            variable_id: None,
+            variable_id: String::new(),
             value: None,
             next: None,
         }
@@ -42,15 +41,12 @@ impl Block for SetVariable {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: match &self.variable_id {
-                Some(s) => hashmap! {"variable_id" => s.clone()},
-                None => HashMap::new(),
-            },
-            inputs: BlockInputs::inputs(hashmap! {"value" => &self.value}),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![("variable_id", self.variable_id.clone())],
+            vec![("value", &self.value)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -63,16 +59,14 @@ impl Block for SetVariable {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            self.variable_id = field.get(1).cloned().flatten();
+            if let Some(s) = field.get(1).cloned().flatten() {
+                self.variable_id = s;
+            }
         }
         Ok(())
     }
 
     async fn execute(&mut self) -> Next {
-        let variable_id = match &self.variable_id {
-            Some(id) => id,
-            None => return Next::Err(wrap_err!("variable_id is None")),
-        };
         let value = match &self.value {
             Some(v) => v.value().await?,
             None => return Next::Err(wrap_err!("value is None")),
@@ -82,7 +76,7 @@ impl Block for SetVariable {
             .variables
             .write()
             .await
-            .insert(variable_id.clone(), value);
+            .insert(self.variable_id.clone(), value);
         Next::continue_(self.next.clone())
     }
 }
@@ -91,7 +85,7 @@ impl Block for SetVariable {
 pub struct ChangeVariable {
     id: String,
     runtime: Runtime,
-    variable_id: Option<String>,
+    variable_id: String,
     value: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
@@ -101,7 +95,7 @@ impl ChangeVariable {
         Self {
             id,
             runtime,
-            variable_id: None,
+            variable_id: String::new(),
             value: None,
             next: None,
         }
@@ -118,15 +112,12 @@ impl Block for ChangeVariable {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: match &self.variable_id {
-                Some(s) => hashmap! {"variable_id" => s.clone()},
-                None => HashMap::new(),
-            },
-            inputs: BlockInputs::inputs(hashmap! {"value" => &self.value}),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![("variable_id", self.variable_id.clone())],
+            vec![("value", &self.value)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -139,30 +130,27 @@ impl Block for ChangeVariable {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            self.variable_id = field.get(1).cloned().flatten();
+            if let Some(s) = field.get(1).cloned().flatten() {
+                self.variable_id = s;
+            }
         }
         Ok(())
     }
 
     async fn execute(&mut self) -> Next {
-        let variable_id = match &self.variable_id {
-            Some(id) => id,
-            None => return Next::Err(wrap_err!("variable_id is None")),
-        };
-
         let previous_value = match self
             .runtime
             .global
             .variables
             .write()
             .await
-            .remove(variable_id)
+            .remove(&self.variable_id)
         {
             Some(v) => v,
             None => {
                 return Next::Err(wrap_err!(format!(
                     "variable {} does not exist",
-                    variable_id
+                    &self.variable_id
                 )))
             }
         };
@@ -180,7 +168,7 @@ impl Block for ChangeVariable {
             .variables
             .write()
             .await
-            .insert(variable_id.clone(), new_value.into());
+            .insert(self.variable_id.clone(), new_value.into());
         Next::continue_(self.next.clone())
     }
 }
@@ -207,12 +195,7 @@ impl Block for HideVariable {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -240,12 +223,7 @@ impl Block for ShowVariable {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}

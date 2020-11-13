@@ -48,12 +48,12 @@ impl Block for Say {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"message" => &self.message}),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("message", &self.message)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -105,14 +105,12 @@ impl Block for SayForSecs {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(
-                hashmap! {"message" => &self.message, "secs" => &self.secs},
-            ),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("message", &self.message), ("secs", &self.secs)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -164,12 +162,12 @@ impl Block for GoToFrontBack {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -206,12 +204,12 @@ impl Block for Hide {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -253,12 +251,12 @@ impl Block for Show {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -295,12 +293,12 @@ impl Block for SetEffectTo {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -332,12 +330,12 @@ impl Block for NextCostume {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -369,12 +367,12 @@ impl Block for ChangeEffectBy {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -406,12 +404,12 @@ impl Block for SetSizeTo {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -443,12 +441,12 @@ impl Block for SwitchCostumeTo {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -480,12 +478,12 @@ impl Block for Costume {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

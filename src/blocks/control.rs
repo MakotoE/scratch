@@ -1,6 +1,5 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
-use maplit::hashmap;
 use runtime::BroadcastMsg;
 use std::str::FromStr;
 use vm::ThreadID;
@@ -54,14 +53,12 @@ impl Block for If {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"condition" => &self.condition}),
-            stacks: BlockInputs::stacks(
-                hashmap! {"next" => &self.next, "substack" => &self.substack},
-            ),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("condition", &self.condition)],
+            vec![("next", &self.next), ("substack", &self.substack)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -134,12 +131,12 @@ impl Block for Wait {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"duration" => &self.duration}),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("duration", &self.duration)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -183,12 +180,12 @@ impl Block for Forever {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"substack" => &self.substack}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("substack", &self.substack)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -236,14 +233,12 @@ impl Block for Repeat {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"times" => &self.times}),
-            stacks: BlockInputs::stacks(
-                hashmap! {"next" => &self.next, "substack" => &self.substack},
-            ),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("times", &self.times)],
+            vec![("next", &self.next), ("substack", &self.substack)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -301,14 +296,12 @@ impl Block for RepeatUntil {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"condition" => &self.condition}),
-            stacks: BlockInputs::stacks(
-                hashmap! {"next" => &self.next, "substack" => &self.substack},
-            ),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("condition", &self.condition)],
+            vec![("next", &self.next), ("substack", &self.substack)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -377,16 +370,16 @@ impl Block for IfElse {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"condition" => &self.condition}),
-            stacks: BlockInputs::stacks(hashmap! {
-                "next" => &self.next,
-                "substack_true" => &self.substack_true,
-                "substack_false" => &self.substack_false,
-            }),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("condition", &self.condition)],
+            vec![
+                ("next", &self.next),
+                ("substack_true", &self.substack_true),
+                ("substack_false", &self.substack_false),
+            ],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -451,12 +444,7 @@ impl Block for WaitUntil {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -489,12 +477,12 @@ impl Block for StartAsClone {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -534,12 +522,7 @@ impl Block for DeleteThisClone {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -559,7 +542,7 @@ pub struct Stop {
     id: String,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    stop_option: Option<StopOption>,
+    stop_option: StopOption,
 }
 
 impl Stop {
@@ -568,7 +551,7 @@ impl Stop {
             id,
             runtime,
             next: None,
-            stop_option: None,
+            stop_option: StopOption::All,
         }
     }
 }
@@ -583,15 +566,12 @@ impl Block for Stop {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: match self.stop_option {
-                Some(o) => hashmap! {"stop_option" => format!("{:?}", o)},
-                None => HashMap::new(),
-            },
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![("stop_option", format!("{:?}", self.stop_option))],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -604,7 +584,7 @@ impl Block for Stop {
         if key == "STOP_OPTION" {
             if let Some(o) = field.get(0) {
                 if let Some(s) = o {
-                    self.stop_option = Some(StopOption::from_str(s)?);
+                    self.stop_option = StopOption::from_str(s)?;
                 }
             }
         }
@@ -612,14 +592,9 @@ impl Block for Stop {
     }
 
     async fn execute(&mut self) -> Next {
-        match self.stop_option {
-            Some(s) => self
-                .runtime
-                .global
-                .broadcaster
-                .send(BroadcastMsg::Stop(s.into_stop(self.runtime.thread_id())))?,
-            None => return Next::Err(wrap_err!("stop_option is None")),
-        };
+        self.runtime.global.broadcaster.send(BroadcastMsg::Stop(
+            self.stop_option.into_stop(self.runtime.thread_id()),
+        ))?;
         Next::continue_(self.next.clone())
     }
 }
@@ -683,12 +658,12 @@ impl Block for CreateCloneOf {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"clone_option" => &self.clone_option}),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("clone_option", &self.clone_option)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -730,12 +705,7 @@ impl Block for CreateCloneOfMenu {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}

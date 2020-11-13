@@ -1,5 +1,4 @@
 use super::*;
-use maplit::hashmap;
 use runtime::BroadcastMsg;
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
@@ -40,12 +39,12 @@ impl Block for WhenFlagClicked {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -94,12 +93,12 @@ impl Block for WhenBroadcastReceived {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: hashmap! {"BROADCAST_OPTION" => self.broadcast_id.clone()},
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![("BROADCAST_OPTION", self.broadcast_id.clone())],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -169,12 +168,12 @@ impl Block for Broadcast {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"message" => &self.message}),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("message", &self.message)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -229,12 +228,12 @@ impl Block for BroadcastAndWait {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"message" => &self.message}),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("message", &self.message)],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -294,12 +293,12 @@ impl Block for WhenThisSpriteClicked {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

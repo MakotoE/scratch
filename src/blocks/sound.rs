@@ -32,12 +32,12 @@ impl Block for Play {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: BlockInputs::stacks(hashmap! {"next" => &self.next}),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -72,12 +72,7 @@ impl Block for SoundsMenu {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -105,12 +100,7 @@ impl Block for PlayUntilDone {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -142,12 +132,7 @@ impl Block for StopAllSounds {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {

@@ -56,15 +56,12 @@ impl Block for Equals {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {
-                "operand1" => &self.operand1,
-                "operand2" => &self.operand2,
-            }),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -131,12 +128,12 @@ impl Block for Add {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("num1", &self.num1), ("num2", &self.num2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -180,12 +177,12 @@ impl Block for Subtract {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("num1", &self.num1), ("num2", &self.num2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -229,12 +226,12 @@ impl Block for Multiply {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("num1", &self.num1), ("num2", &self.num2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -278,12 +275,12 @@ impl Block for Divide {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"num1" => &self.num1, "num2" => &self.num2}),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("num1", &self.num1), ("num2", &self.num2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -327,15 +324,12 @@ impl Block for And {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {
-                "operand1" => &self.operand1,
-                "operand2" => &self.operand2,
-            }),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -400,15 +394,12 @@ impl Block for Or {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {
-                "operand1" => &self.operand1,
-                "operand2" => &self.operand2,
-            }),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -468,12 +459,12 @@ impl Block for Not {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {"operand1" => &self.operand}),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("operand", &self.operand)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -529,15 +520,12 @@ impl Block for LessThan {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {
-                "operand1" => &self.operand1,
-                "operand2" => &self.operand2,
-            }),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -590,15 +578,12 @@ impl Block for GreaterThan {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: BlockInputs::inputs(hashmap! {
-                "operand1" => &self.operand1,
-                "operand2" => &self.operand2,
-            }),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(
+            self.block_info(),
+            vec![],
+            vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -645,12 +630,7 @@ impl Block for Random {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -677,12 +657,7 @@ impl Block for Join {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
-            info: self.block_info(),
-            fields: HashMap::new(),
-            inputs: HashMap::new(),
-            stacks: HashMap::new(),
-        }
+        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}

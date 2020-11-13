@@ -11,7 +11,6 @@ mod value;
 
 use super::*;
 use async_trait::async_trait;
-use maplit::hashmap;
 use runtime::Runtime;
 use serde_json::Value;
 
@@ -143,41 +142,37 @@ pub struct BlockInputs {
 }
 
 impl BlockInputs {
-    // TODO combine into constructor
-    fn fields<'a>(
-        fields: HashMap<&'static str, &'a Option<String>>,
-    ) -> HashMap<&'static str, String> {
-        let mut result: HashMap<&'static str, String> = HashMap::new();
-        for (id, str) in fields {
-            if let Some(s) = str {
-                result.insert(id, s.clone());
-            }
+    #[allow(clippy::type_complexity)]
+    fn new<'a>(
+        info: BlockInfo,
+        mut fields: Vec<(&'static str, String)>,
+        inputs: Vec<(&'static str, &'a Option<Box<dyn Block>>)>,
+        stacks: Vec<(&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>)>,
+    ) -> Self {
+        Self {
+            info,
+            fields: fields.drain(..).collect(),
+            inputs: inputs
+                .iter()
+                .filter_map(|(id, b)| {
+                    if let Some(block) = b {
+                        Some((*id, block.block_inputs()))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            stacks: stacks
+                .iter()
+                .filter_map(|(id, b)| {
+                    if let Some(block) = b {
+                        Some((*id, block.borrow().block_inputs()))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
         }
-        result
-    }
-
-    fn inputs<'a>(
-        inputs: HashMap<&'static str, &'a Option<Box<dyn Block>>>,
-    ) -> HashMap<&'static str, BlockInputs> {
-        let mut result: HashMap<&'static str, BlockInputs> = HashMap::new();
-        for (id, b) in inputs {
-            if let Some(block) = b {
-                result.insert(id, block.block_inputs());
-            }
-        }
-        result
-    }
-
-    fn stacks<'a>(
-        stacks: HashMap<&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>>,
-    ) -> HashMap<&'static str, BlockInputs> {
-        let mut result: HashMap<&'static str, BlockInputs> = HashMap::new();
-        for (id, b) in stacks {
-            if let Some(block) = b {
-                result.insert(id, block.borrow().block_inputs());
-            }
-        }
-        result
     }
 }
 

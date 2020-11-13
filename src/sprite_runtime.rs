@@ -2,7 +2,6 @@ use super::*;
 use palette::IntoColor;
 use pen::Pen;
 use savefile::{Image, Target};
-use sprite::SpriteID;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
@@ -23,7 +22,6 @@ impl SpriteRuntime {
     pub async fn new(
         target: &Rc<Target>,
         images: &HashMap<String, Image>,
-        sprite_id: SpriteID,
         is_a_clone: bool,
     ) -> Result<Self> {
         let mut runtime = Self {

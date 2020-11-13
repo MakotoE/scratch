@@ -4,7 +4,6 @@ use runtime::{Global, Runtime};
 use savefile::{Image, Target};
 use sprite_runtime::SpriteRuntime;
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use thread::Thread;
@@ -32,7 +31,7 @@ impl Sprite {
         let sprite_id = SpriteID::from(hasher);
 
         let sprite_runtime = Rc::new(RwLock::new(
-            SpriteRuntime::new(&target, &images, sprite_id, is_a_clone).await?,
+            SpriteRuntime::new(&target, &images, is_a_clone).await?,
         ));
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
