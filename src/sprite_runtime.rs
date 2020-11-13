@@ -198,11 +198,10 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    // TODO take string
     // TODO this needs to take an ID for multiple threads to display text
-    pub fn say(&mut self, text: Option<&str>) {
+    pub fn say(&mut self, text: Option<String>) {
         self.need_redraw = true;
-        self.text = text.map(|s| s.to_string());
+        self.text = text;
     }
 
     pub fn pen(&mut self) -> &mut Pen {
