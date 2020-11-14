@@ -1,6 +1,6 @@
 use super::*;
 use gloo_timers::future::TimeoutFuture;
-use sprite_runtime::HideStatus;
+use sprite_runtime::{HideStatus, Text};
 
 pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -69,7 +69,10 @@ impl Block for Say {
             Some(b) => value_to_string(b.value().await?),
             None => return Next::Err(wrap_err!("message is None")),
         };
-        self.runtime.sprite.write().await.say(Some(message));
+        self.runtime.sprite.write().await.say(Text {
+            id: self.id.clone(),
+            text: Some(message),
+        });
         Next::continue_(self.next.clone())
     }
 }
@@ -133,9 +136,15 @@ impl Block for SayForSecs {
             None => return Next::Err(wrap_err!("secs is None")),
         };
 
-        self.runtime.sprite.write().await.say(Some(message));
+        self.runtime.sprite.write().await.say(Text {
+            id: self.id.clone(),
+            text: Some(message),
+        });
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
-        self.runtime.sprite.write().await.say(None);
+        self.runtime.sprite.write().await.say(Text {
+            id: self.id.clone(),
+            text: None,
+        });
         Next::continue_(self.next.clone())
     }
 }

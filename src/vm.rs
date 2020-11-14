@@ -273,7 +273,7 @@ enum Event {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ThreadID {
     pub sprite_id: SpriteID,
-    pub thread_id: usize,
+    pub thread_id: usize, // TODO should match with id in file
 }
 
 /// Resolves a lifetime issue with Receiver and FuturesUnordered.
@@ -354,7 +354,9 @@ impl SpritesCell {
     }
 
     fn remove(&self, sprite_id: &SpriteID) {
-        if let Some(s) = self.sprites.borrow().get(&sprite_id) { s.remove() }
+        if let Some(s) = self.sprites.borrow().get(&sprite_id) {
+            s.remove()
+        }
     }
 
     async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {

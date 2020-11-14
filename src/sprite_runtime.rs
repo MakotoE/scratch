@@ -12,7 +12,7 @@ pub struct SpriteRuntime {
     position: Coordinate,
     costumes: Vec<Costume>,
     current_costume: usize,
-    text: Option<String>,
+    text: Text,
     pen: Pen,
     hide: HideStatus,
 }
@@ -29,7 +29,10 @@ impl SpriteRuntime {
             position: Coordinate::new(target.x as i16, target.y as i16),
             costumes: Vec::new(),
             current_costume: 0,
-            text: None,
+            text: Text {
+                id: String::new(),
+                text: None,
+            },
             pen: Pen::new(),
             is_a_clone,
             hide: HideStatus::Show,
@@ -57,7 +60,7 @@ impl SpriteRuntime {
         let costume = &self.costumes[self.current_costume];
         SpriteRuntime::draw_costume(context, costume, &self.position)?;
 
-        if let Some(text) = &self.text {
+        if let Some(text) = &self.text.text {
             context.save();
             context.translate(
                 240.0 + costume.size().width() as f64 / 4.0 + self.position.x as f64,
@@ -194,10 +197,9 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    // TODO this needs to take an ID for multiple threads to display text
-    pub fn say(&mut self, text: Option<String>) {
+    pub fn say(&mut self, text: Text) {
         self.need_redraw = true;
-        self.text = text;
+        self.text.replace(text);
     }
 
     pub fn pen(&mut self) -> &mut Pen {
@@ -370,6 +372,22 @@ pub fn color_to_hex(color: &palette::Hsv) -> String {
 pub enum HideStatus {
     Hide,
     Show,
+}
+
+#[derive(Debug, Clone)]
+/// Text only be hidden by the thread that posted it. It can be replaced with new text by any
+/// thread.
+pub struct Text {
+    pub id: String,
+    pub text: Option<String>,
+}
+
+impl Text {
+    fn replace(&mut self, other: Text) {
+        if other.text.is_some() || self.id == other.id {
+            *self = other;
+        }
+    }
 }
 
 #[cfg(test)]
