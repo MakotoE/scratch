@@ -1,4 +1,5 @@
 use super::*;
+use savefile::BlockID;
 
 error_chain::error_chain! {
     types {
@@ -14,6 +15,7 @@ error_chain::error_chain! {
         BroadcastSendError(tokio::sync::broadcast::error::SendError<runtime::BroadcastMsg>);
         RecvError(tokio::sync::broadcast::error::RecvError);
         DebugSendError(tokio::sync::mpsc::error::SendError<vm::DebugInfo>);
+        FromHexError(hex::FromHexError);
     }
 
     errors {
@@ -27,7 +29,7 @@ error_chain::error_chain! {
             display("error during initialization: {}", error)
         }
 
-        Block(block_name: &'static str, block_id: String, error: Box<Error>) {
+        Block(block_name: &'static str, block_id: BlockID, error: Box<Error>) {
             description("block error")
             display(
                 r#"block "{}" of type {} returned error during execution: {}"#,
@@ -42,12 +44,12 @@ error_chain::error_chain! {
             display("{}: {}", file, error)
         }
 
-        BlockInitialization(block_id: String, category: String, error: Box<Error>) {
+        BlockInitialization(block_id: BlockID, category: String, error: Box<Error>) {
             description("block initialization error")
             display("block id \"{}\", category {}: {}", block_id, category, error)
         }
 
-        BlockInput(block_id: String, input_id: String, error: Box<Error>) {
+        BlockInput(block_id: BlockID, input_id: String, error: Box<Error>) {
             description("block input error")
             display(r#"block id "{}", input "{}": {}"#, block_id, input_id, error)
         }

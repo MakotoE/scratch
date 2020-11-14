@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "play" => Box::new(Play::new(id, runtime)),
         "sounds_menu" => Box::new(SoundsMenu::new(id, runtime)),
@@ -12,12 +12,12 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct Play {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Play {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -27,7 +27,7 @@ impl Block for Play {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Play",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -53,11 +53,11 @@ impl Block for Play {
 
 #[derive(Debug)]
 pub struct SoundsMenu {
-    id: String,
+    id: BlockID,
 }
 
 impl SoundsMenu {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id }
     }
 }
@@ -67,7 +67,7 @@ impl Block for SoundsMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SoundsMenu",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -80,12 +80,12 @@ impl Block for SoundsMenu {
 
 #[derive(Debug)]
 pub struct PlayUntilDone {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl PlayUntilDone {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -95,7 +95,7 @@ impl Block for PlayUntilDone {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PlayUntilDone",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -112,12 +112,12 @@ impl Block for PlayUntilDone {
 
 #[derive(Debug)]
 pub struct StopAllSounds {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl StopAllSounds {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -127,7 +127,7 @@ impl Block for StopAllSounds {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "StopAllSounds",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 

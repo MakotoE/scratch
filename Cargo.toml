@@ -26,6 +26,7 @@ lazy_static = "1.4"
 tokio =  { version = "0.3", features = ["sync", "rt-multi-thread", "macros", "time"] }
 yew-router = "0.14"
 futures = "0.3"
+hex = "0.4"
 
 [dependencies.web-sys]
 version = "0.3"

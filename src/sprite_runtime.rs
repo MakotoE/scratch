@@ -1,7 +1,7 @@
 use super::*;
 use palette::IntoColor;
 use pen::Pen;
-use savefile::{Image, Target};
+use savefile::{BlockID, Image, Target};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
@@ -30,7 +30,7 @@ impl SpriteRuntime {
             costumes: Vec::new(),
             current_costume: 0,
             text: Text {
-                id: String::new(),
+                id: BlockID::default(),
                 text: None,
             },
             pen: Pen::new(),
@@ -378,7 +378,7 @@ pub enum HideStatus {
 /// Text only be hidden by the thread that posted it. It can be replaced with new text by any
 /// thread.
 pub struct Text {
-    pub id: String,
+    pub id: BlockID,
     pub text: Option<String>,
 }
 

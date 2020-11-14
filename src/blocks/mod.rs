@@ -12,9 +12,11 @@ mod value;
 use super::*;
 use async_trait::async_trait;
 use runtime::Runtime;
+use savefile::BlockID;
 use serde_json::Value;
+use std::convert::TryInto;
 
-fn get_block(id: String, runtime: Runtime, info: &savefile::Block) -> Result<Box<dyn Block>> {
+fn get_block(id: BlockID, runtime: Runtime, info: &savefile::Block) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
         Some(s) => s,
         None => {
@@ -25,12 +27,12 @@ fn get_block(id: String, runtime: Runtime, info: &savefile::Block) -> Result<Box
         }
     };
 
-    let id_clone = id.clone();
+    let id_clone = id;
     match category {
         "control" => control::get_block(name, id_clone, runtime)
             .map_err(|e| add_error_context(id, "control", e)),
         "data" => {
-            data::get_block(name, id.clone(), runtime).map_err(|e| add_error_context(id, "data", e))
+            data::get_block(name, id, runtime).map_err(|e| add_error_context(id, "data", e))
         }
         "event" => {
             event::get_block(name, id_clone, runtime).map_err(|e| add_error_context(id, "event", e))
@@ -57,7 +59,7 @@ fn get_block(id: String, runtime: Runtime, info: &savefile::Block) -> Result<Box
     }
 }
 
-fn add_error_context(id: String, category: &str, e: Error) -> Error {
+fn add_error_context(id: BlockID, category: &str, e: Error) -> Error {
     ErrorKind::BlockInitialization(id, category.to_string(), Box::new(e)).into()
 }
 
@@ -130,7 +132,7 @@ impl Next {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct BlockInfo {
     pub name: &'static str,
-    pub id: String,
+    pub id: BlockID,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -177,24 +179,24 @@ impl BlockInputs {
 }
 
 pub fn block_tree(
-    top_block_id: String,
+    top_block_id: BlockID,
     runtime: Runtime,
-    infos: &HashMap<String, savefile::Block>,
+    infos: &HashMap<BlockID, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,
         None => return Err(wrap_err!(format!("could not find block: {}", top_block_id))),
     };
-    let mut block = get_block(top_block_id.clone(), runtime.clone(), &info)?;
+    let mut block = get_block(top_block_id, runtime.clone(), &info)?;
     if let Some(next_id) = &info.next {
-        block.set_input("next", block_tree(next_id.clone(), runtime.clone(), infos)?);
+        block.set_input("next", block_tree(*next_id, runtime.clone(), infos)?);
     }
     for (k, input) in &info.inputs {
         let input_arr = match input.as_array() {
             Some(a) => a,
             None => {
                 let e = ErrorKind::BlockInput(
-                    top_block_id.clone(),
+                    top_block_id,
                     k.clone(),
                     Box::new("invalid type".into()),
                 );
@@ -205,7 +207,7 @@ pub fn block_tree(
         match input_block(input_arr, runtime.clone(), infos) {
             Ok(b) => block.set_input(k, b),
             Err(e) => {
-                let e = ErrorKind::BlockInput(top_block_id.clone(), k.clone(), Box::new(e));
+                let e = ErrorKind::BlockInput(top_block_id, k.clone(), Box::new(e));
                 return Err(e.into());
             }
         }
@@ -219,7 +221,7 @@ pub fn block_tree(
 fn input_block(
     input_arr: &[serde_json::Value],
     runtime: Runtime,
-    infos: &HashMap<String, savefile::Block>,
+    infos: &HashMap<BlockID, savefile::Block>,
 ) -> Result<Box<dyn Block>> {
     let input_arr1 = match input_arr.get(1) {
         Some(v) => v,
@@ -227,7 +229,9 @@ fn input_block(
     };
 
     match input_arr1 {
-        serde_json::Value::String(block_id) => block_tree(block_id.clone(), runtime, infos),
+        serde_json::Value::String(block_id) => {
+            block_tree(block_id.as_str().try_into()?, runtime, infos)
+        }
         serde_json::Value::Array(arr) => {
             let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
                 Some(n) => n,

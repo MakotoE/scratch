@@ -1,7 +1,7 @@
 use super::*;
 use runtime::BroadcastMsg;
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
         "whenbroadcastreceived" => Box::new(WhenBroadcastReceived::new(id, runtime)),
@@ -14,13 +14,13 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct WhenFlagClicked {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl WhenFlagClicked {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -34,7 +34,7 @@ impl Block for WhenFlagClicked {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "WhenFlagClicked",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -64,7 +64,7 @@ impl Block for WhenFlagClicked {
 
 #[derive(Debug)]
 pub struct WhenBroadcastReceived {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     broadcast_id: String,
@@ -72,7 +72,7 @@ pub struct WhenBroadcastReceived {
 }
 
 impl WhenBroadcastReceived {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -88,7 +88,7 @@ impl Block for WhenBroadcastReceived {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "WhenBroadcastReceived",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -141,14 +141,14 @@ impl Block for WhenBroadcastReceived {
 
 #[derive(Debug)]
 pub struct Broadcast {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     message: Option<Box<dyn Block>>,
 }
 
 impl Broadcast {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -163,7 +163,7 @@ impl Block for Broadcast {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Broadcast",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -201,14 +201,14 @@ impl Block for Broadcast {
 
 #[derive(Debug)]
 pub struct BroadcastAndWait {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     message: Option<Box<dyn Block>>,
 }
 
 impl BroadcastAndWait {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -223,7 +223,7 @@ impl Block for BroadcastAndWait {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "BroadcastAndWait",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -268,13 +268,13 @@ impl Block for BroadcastAndWait {
 
 #[derive(Debug)]
 pub struct WhenThisSpriteClicked {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl WhenThisSpriteClicked {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -288,7 +288,7 @@ impl Block for WhenThisSpriteClicked {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "WhenThisSpriteClicked",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 

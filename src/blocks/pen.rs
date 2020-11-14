@@ -3,7 +3,7 @@ use palette::IntoColor;
 use palette::Mix;
 use sprite_runtime::hex_to_color;
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "penDown" => Box::new(PenDown::new(id, runtime)),
         "penUp" => Box::new(PenUp::new(id, runtime)),
@@ -18,13 +18,13 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct PenDown {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl PenDown {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -38,7 +38,7 @@ impl Block for PenDown {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PenDown",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -67,13 +67,13 @@ impl Block for PenDown {
 
 #[derive(Debug)]
 pub struct PenUp {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl PenUp {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -87,7 +87,7 @@ impl Block for PenUp {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PenUp",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -114,14 +114,14 @@ impl Block for PenUp {
 
 #[derive(Debug)]
 pub struct SetPenColorToColor {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     color: Option<Box<dyn Block>>,
 }
 
 impl SetPenColorToColor {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -136,7 +136,7 @@ impl Block for SetPenColorToColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenColorToColor",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -177,14 +177,14 @@ impl Block for SetPenColorToColor {
 
 #[derive(Debug)]
 pub struct SetPenSizeTo {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     size: Option<Box<dyn Block>>,
 }
 
 impl SetPenSizeTo {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -199,7 +199,7 @@ impl Block for SetPenSizeTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenSizeTo",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -233,13 +233,13 @@ impl Block for SetPenSizeTo {
 
 #[derive(Debug)]
 pub struct Clear {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Clear {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -253,7 +253,7 @@ impl Block for Clear {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Clear",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -280,14 +280,14 @@ impl Block for Clear {
 
 #[derive(Debug)]
 pub struct SetPenShadeToNumber {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     shade: Option<Box<dyn Block>>,
 }
 
 impl SetPenShadeToNumber {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -324,7 +324,7 @@ impl Block for SetPenShadeToNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenShadeToNumber",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -360,14 +360,14 @@ impl Block for SetPenShadeToNumber {
 
 #[derive(Debug)]
 pub struct SetPenHueToNumber {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     hue: Option<Box<dyn Block>>, // [0, 100]
 }
 
 impl SetPenHueToNumber {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -386,7 +386,7 @@ impl Block for SetPenHueToNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetPenHueToNumber",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 

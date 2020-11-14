@@ -1,7 +1,7 @@
 use super::*;
 use blocks::*;
 use runtime::{Global, Runtime};
-use savefile::{Image, Target};
+use savefile::{BlockID, Image, Target};
 use sprite_runtime::SpriteRuntime;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
@@ -36,20 +36,20 @@ impl Sprite {
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
-        for (thread_id, hat_id) in find_hats(&target.blocks).iter().enumerate() {
+        for hat_id in find_hats(&target.blocks) {
             let runtime = Runtime::new(
                 sprite_runtime.clone(),
                 global.clone(),
                 ThreadID {
                     sprite_id,
-                    thread_id,
+                    thread_id: 0,
                 },
             );
-            let block = match block_tree(hat_id.to_string(), runtime.clone(), &target.blocks) {
+            let block = match block_tree(hat_id, runtime.clone(), &target.blocks) {
                 Ok(b) => b,
                 Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
             };
-            let thread = Thread::start(block, runtime.clone(), thread_id);
+            let thread = Thread::start(block, runtime.clone(), 0);
             threads.push(RefCell::new(thread));
         }
 
@@ -122,11 +122,11 @@ impl Sprite {
     }
 }
 
-pub fn find_hats(block_infos: &HashMap<String, savefile::Block>) -> Vec<&str> {
-    let mut hats: Vec<&str> = Vec::new();
+pub fn find_hats(block_infos: &HashMap<BlockID, savefile::Block>) -> Vec<BlockID> {
+    let mut hats: Vec<BlockID> = Vec::new();
     for (id, block_info) in block_infos {
         if block_info.top_level {
-            hats.push(id);
+            hats.push(*id);
         }
     }
     hats.sort_unstable();
@@ -152,19 +152,14 @@ where
 
 impl Debug for SpriteID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SpriteID {{ ")?;
-        for b in &self.hash {
-            write!(f, "{:x}", b)?;
-        }
-        write!(f, " }}")
+        f.write_str("SpriteID { ")?;
+        Display::fmt(self, f)?;
+        f.write_str(" }")
     }
 }
 
 impl Display for SpriteID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for b in &self.hash[..4] {
-            write!(f, "{:x}", b)?;
-        }
-        Ok(())
+        f.write_str(&hex::encode(self.hash))
     }
 }

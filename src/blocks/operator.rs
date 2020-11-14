@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn get_block(name: &str, id: String, _runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, _runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "equals" => Box::new(Equals::new(id)),
         "add" => Box::new(Add::new(id)),
@@ -20,13 +20,13 @@ pub fn get_block(name: &str, id: String, _runtime: Runtime) -> Result<Box<dyn Bl
 
 #[derive(Debug)]
 pub struct Equals {
-    id: String,
+    id: BlockID,
     operand1: Option<Box<dyn Block>>,
     operand2: Option<Box<dyn Block>>,
 }
 
 impl Equals {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             operand1: None,
@@ -51,7 +51,7 @@ impl Block for Equals {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Equals",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -103,13 +103,13 @@ async fn get_num1_and_num2(
 
 #[derive(Debug)]
 pub struct Add {
-    id: String,
+    id: BlockID,
     num1: Option<Box<dyn Block>>,
     num2: Option<Box<dyn Block>>,
 }
 
 impl Add {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             num1: None,
@@ -123,7 +123,7 @@ impl Block for Add {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Add",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -152,13 +152,13 @@ impl Block for Add {
 
 #[derive(Debug)]
 pub struct Subtract {
-    id: String,
+    id: BlockID,
     num1: Option<Box<dyn Block>>,
     num2: Option<Box<dyn Block>>,
 }
 
 impl Subtract {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             num1: None,
@@ -172,7 +172,7 @@ impl Block for Subtract {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Subtract",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -201,13 +201,13 @@ impl Block for Subtract {
 
 #[derive(Debug)]
 pub struct Multiply {
-    id: String,
+    id: BlockID,
     num1: Option<Box<dyn Block>>,
     num2: Option<Box<dyn Block>>,
 }
 
 impl Multiply {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             num1: None,
@@ -221,7 +221,7 @@ impl Block for Multiply {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Multiply",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -250,13 +250,13 @@ impl Block for Multiply {
 
 #[derive(Debug)]
 pub struct Divide {
-    id: String,
+    id: BlockID,
     num1: Option<Box<dyn Block>>,
     num2: Option<Box<dyn Block>>,
 }
 
 impl Divide {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             num1: None,
@@ -270,7 +270,7 @@ impl Block for Divide {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Divide",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -299,13 +299,13 @@ impl Block for Divide {
 
 #[derive(Debug)]
 pub struct And {
-    id: String,
+    id: BlockID,
     operand1: Option<Box<dyn Block>>,
     operand2: Option<Box<dyn Block>>,
 }
 
 impl And {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             operand1: None,
@@ -319,7 +319,7 @@ impl Block for And {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "And",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -369,13 +369,13 @@ impl Block for And {
 
 #[derive(Debug)]
 pub struct Or {
-    id: String,
+    id: BlockID,
     operand1: Option<Box<dyn Block>>,
     operand2: Option<Box<dyn Block>>,
 }
 
 impl Or {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             operand1: None,
@@ -389,7 +389,7 @@ impl Block for Or {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Or",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -439,12 +439,12 @@ impl Block for Or {
 
 #[derive(Debug)]
 pub struct Not {
-    id: String,
+    id: BlockID,
     operand: Option<Box<dyn Block>>,
 }
 
 impl Not {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id, operand: None }
     }
 }
@@ -454,7 +454,7 @@ impl Block for Not {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Not",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -495,13 +495,13 @@ impl Block for Not {
 
 #[derive(Debug)]
 pub struct LessThan {
-    id: String,
+    id: BlockID,
     operand1: Option<Box<dyn Block>>,
     operand2: Option<Box<dyn Block>>,
 }
 
 impl LessThan {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             operand1: None,
@@ -515,7 +515,7 @@ impl Block for LessThan {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "LessThan",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -553,13 +553,13 @@ impl Block for LessThan {
 
 #[derive(Debug)]
 pub struct GreaterThan {
-    id: String,
+    id: BlockID,
     operand1: Option<Box<dyn Block>>,
     operand2: Option<Box<dyn Block>>,
 }
 
 impl GreaterThan {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             operand1: None,
@@ -573,7 +573,7 @@ impl Block for GreaterThan {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "GreaterThan",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -611,11 +611,11 @@ impl Block for GreaterThan {
 
 #[derive(Debug)]
 pub struct Random {
-    id: String,
+    id: BlockID,
 }
 
 impl Random {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id }
     }
 }
@@ -625,7 +625,7 @@ impl Block for Random {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Random",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -638,11 +638,11 @@ impl Block for Random {
 
 #[derive(Debug)]
 pub struct Join {
-    id: String,
+    id: BlockID,
 }
 
 impl Join {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id }
     }
 }
@@ -652,7 +652,7 @@ impl Block for Join {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Join",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 

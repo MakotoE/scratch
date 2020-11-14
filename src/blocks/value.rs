@@ -17,7 +17,7 @@ impl Block for Variable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Variable",
-            id: self.id.to_string(),
+            id: BlockID::default(), // TODO
         }
     }
 
@@ -45,11 +45,12 @@ impl Block for Value {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Value",
-            id: String::new(),
+            id: BlockID::default(),
         }
     }
 
     fn block_inputs(&self) -> BlockInputs {
+        // TODO show value in field
         BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 

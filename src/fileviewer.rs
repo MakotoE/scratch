@@ -172,7 +172,7 @@ impl Component for Diagram {
         html! {
             <>
                 <strong>{block_inputs.info.name.to_string()}</strong>
-                {String::from(" ") + &block_inputs.info.id}<br />
+                {String::from(" ") + &block_inputs.info.id.to_string()}<br />
 
                 <div style="padding-left: 10px; border-left: 1px solid #B3B3B3; margin-bottom: 1px;">
                     {

@@ -1,7 +1,10 @@
 use super::*;
-use serde::{Deserialize, Serialize};
+use serde::de::Visitor;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use std::collections::hash_map::DefaultHasher;
+use std::convert::{TryFrom, TryInto};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format
@@ -28,7 +31,7 @@ pub struct Target {
     pub is_stage: bool,
     pub name: String,
     pub variables: HashMap<String, Variable>,
-    pub blocks: HashMap<String, Block>,
+    pub blocks: HashMap<BlockID, Block>,
     pub costumes: Vec<Costume>,
     #[serde(default)]
     pub x: f64,
@@ -96,7 +99,7 @@ where
 #[serde(rename_all = "camelCase")]
 pub struct Block {
     pub opcode: String,
-    pub next: Option<String>,
+    pub next: Option<BlockID>,
     pub inputs: HashMap<String, Value>,
     pub fields: HashMap<String, Vec<Option<String>>>,
     pub top_level: bool,
@@ -202,6 +205,78 @@ pub enum Image {
     PNG(Vec<u8>),
 }
 
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Default, Hash)]
+pub struct BlockID {
+    id: [u8; 20],
+}
+
+impl Debug for BlockID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("BlockID { ")?;
+        Display::fmt(self, f)?;
+        f.write_str(" }")
+    }
+}
+
+impl Display for BlockID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(std::str::from_utf8(&self.id).map_err(|_| std::fmt::Error {})?)
+    }
+}
+
+impl TryFrom<&str> for BlockID {
+    type Error = Error;
+
+    fn try_from(s: &str) -> Result<Self> {
+        let mut id: [u8; 20] = [0; 20];
+        let s_bytes = s.as_bytes();
+        if s_bytes.len() == id.len() {
+            id.copy_from_slice(s_bytes);
+            Ok(Self { id })
+        } else {
+            Err("invalid string".into())
+        }
+    }
+}
+
+impl Serialize for BlockID {
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for BlockID {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct BytesVisitor;
+
+        impl<'de> Visitor<'de> for BytesVisitor {
+            type Value = BlockID;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                formatter.write_str("string")
+            }
+
+            fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                v.try_into().map_err(serde::de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(BytesVisitor)
+    }
+}
+
 impl ScratchFile {
     pub fn parse<R>(file: R) -> Result<ScratchFile>
     where
@@ -264,5 +339,24 @@ mod tests {
         let savefile = ScratchFile::parse(&file).unwrap();
         let target = &savefile.project.targets[1];
         assert_eq!(target.name, "Sprite1");
+    }
+
+    mod block_id {
+        use super::*;
+
+        #[test]
+        fn test_from_str() {
+            {
+                assert!(BlockID::try_from("").is_err());
+            }
+            {
+                assert!(BlockID::try_from("a").is_err());
+            }
+            {
+                let s = "G@pZX]3ynBGB)L`_LJk8";
+                let id = BlockID::try_from(s).unwrap();
+                assert_eq!(s, &id.to_string());
+            }
+        }
     }
 }

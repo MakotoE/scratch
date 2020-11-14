@@ -1,7 +1,7 @@
 use super::*;
 use sprite_runtime::{Coordinate, Rectangle};
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "movesteps" => Box::new(MoveSteps::new(id, runtime)),
         "gotoxy" => Box::new(GoToXY::new(id, runtime)),
@@ -21,14 +21,14 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct MoveSteps {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     steps: Option<Box<dyn Block>>,
 }
 
 impl MoveSteps {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -43,7 +43,7 @@ impl Block for MoveSteps {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "MoveSteps",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -82,7 +82,7 @@ impl Block for MoveSteps {
 
 #[derive(Debug)]
 pub struct GoToXY {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     x: Option<Box<dyn Block>>,
@@ -90,7 +90,7 @@ pub struct GoToXY {
 }
 
 impl GoToXY {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -106,7 +106,7 @@ impl Block for GoToXY {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "GoToXY",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -150,14 +150,14 @@ impl Block for GoToXY {
 
 #[derive(Debug)]
 pub struct ChangeXBy {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     dx: Option<Box<dyn Block>>,
 }
 
 impl ChangeXBy {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -172,7 +172,7 @@ impl Block for ChangeXBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeXBy",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -208,14 +208,14 @@ impl Block for ChangeXBy {
 
 #[derive(Debug)]
 pub struct ChangeYBy {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     dy: Option<Box<dyn Block>>,
 }
 
 impl ChangeYBy {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -230,7 +230,7 @@ impl Block for ChangeYBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeYBy",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -266,14 +266,14 @@ impl Block for ChangeYBy {
 
 #[derive(Debug)]
 pub struct SetX {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     x: Option<Box<dyn Block>>,
 }
 
 impl SetX {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -288,7 +288,7 @@ impl Block for SetX {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetX",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -329,14 +329,14 @@ impl Block for SetX {
 
 #[derive(Debug)]
 pub struct SetY {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     y: Option<Box<dyn Block>>,
 }
 
 impl SetY {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -351,7 +351,7 @@ impl Block for SetY {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetY",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -392,12 +392,12 @@ impl Block for SetY {
 
 #[derive(Debug)]
 pub struct XPosition {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl XPosition {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -407,7 +407,7 @@ impl Block for XPosition {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "XPosition",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -425,12 +425,12 @@ impl Block for XPosition {
 
 #[derive(Debug)]
 pub struct YPosition {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl YPosition {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -440,7 +440,7 @@ impl Block for YPosition {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "YPosition",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -458,12 +458,12 @@ impl Block for YPosition {
 
 #[derive(Debug)]
 pub struct Direction {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl Direction {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -473,7 +473,7 @@ impl Block for Direction {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Direction",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -490,12 +490,12 @@ impl Block for Direction {
 
 #[derive(Debug)]
 pub struct PointingDirection {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl PointingDirection {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -505,7 +505,7 @@ impl Block for PointingDirection {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PointingDirection",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -522,12 +522,12 @@ impl Block for PointingDirection {
 
 #[derive(Debug)]
 pub struct GoTo {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl GoTo {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -537,7 +537,7 @@ impl Block for GoTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "GoTo",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -550,12 +550,12 @@ impl Block for GoTo {
 
 #[derive(Debug)]
 pub struct GoToMenu {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl GoToMenu {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -565,7 +565,7 @@ impl Block for GoToMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "GoToMenu",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 

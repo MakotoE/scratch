@@ -4,7 +4,7 @@ use runtime::BroadcastMsg;
 use std::str::FromStr;
 use vm::ThreadID;
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
@@ -24,7 +24,7 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct If {
-    id: String,
+    id: BlockID,
     condition: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
@@ -32,7 +32,7 @@ pub struct If {
 }
 
 impl If {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             condition: None,
@@ -48,7 +48,7 @@ impl Block for If {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "If",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -104,14 +104,14 @@ impl Block for If {
 
 #[derive(Debug)]
 pub struct Wait {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     duration: Option<Box<dyn Block>>,
     runtime: Runtime,
 }
 
 impl Wait {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             next: None,
@@ -126,7 +126,7 @@ impl Block for Wait {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Wait",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -160,12 +160,12 @@ impl Block for Wait {
 
 #[derive(Debug)]
 pub struct Forever {
-    id: String,
+    id: BlockID,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Forever {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id, substack: None }
     }
 }
@@ -175,7 +175,7 @@ impl Block for Forever {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Forever",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -204,7 +204,7 @@ impl Block for Forever {
 
 #[derive(Debug)]
 pub struct Repeat {
-    id: String,
+    id: BlockID,
     times: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
@@ -212,7 +212,7 @@ pub struct Repeat {
 }
 
 impl Repeat {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             times: None,
@@ -228,7 +228,7 @@ impl Block for Repeat {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Repeat",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -269,14 +269,14 @@ impl Block for Repeat {
 
 #[derive(Debug)]
 pub struct RepeatUntil {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
     condition: Option<Box<dyn Block>>,
 }
 
 impl RepeatUntil {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             next: None,
@@ -291,7 +291,7 @@ impl Block for RepeatUntil {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "RepeatUntil",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -339,7 +339,7 @@ impl Block for RepeatUntil {
 
 #[derive(Debug)]
 pub struct IfElse {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     condition: Option<Box<dyn Block>>,
     substack_true: Option<Rc<RefCell<Box<dyn Block>>>>,
@@ -348,7 +348,7 @@ pub struct IfElse {
 }
 
 impl IfElse {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             next: None,
@@ -365,7 +365,7 @@ impl Block for IfElse {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "IfElse",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -425,11 +425,11 @@ impl Block for IfElse {
 
 #[derive(Debug)]
 pub struct WaitUntil {
-    id: String,
+    id: BlockID,
 }
 
 impl WaitUntil {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id }
     }
 }
@@ -439,7 +439,7 @@ impl Block for WaitUntil {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "WaitUntil",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -452,13 +452,13 @@ impl Block for WaitUntil {
 
 #[derive(Debug)]
 pub struct StartAsClone {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl StartAsClone {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -472,7 +472,7 @@ impl Block for StartAsClone {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "StartAsClone",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -502,12 +502,12 @@ impl Block for StartAsClone {
 
 #[derive(Debug)]
 pub struct DeleteThisClone {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl DeleteThisClone {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -517,7 +517,7 @@ impl Block for DeleteThisClone {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "DeleteThisClone",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -539,14 +539,14 @@ impl Block for DeleteThisClone {
 
 #[derive(Debug)]
 pub struct Stop {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     stop_option: StopOption,
 }
 
 impl Stop {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -561,7 +561,7 @@ impl Block for Stop {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Stop",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -631,14 +631,14 @@ impl FromStr for StopOption {
 
 #[derive(Debug)]
 pub struct CreateCloneOf {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     clone_option: Option<Box<dyn Block>>,
 }
 
 impl CreateCloneOf {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -653,7 +653,7 @@ impl Block for CreateCloneOf {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "CreateCloneOf",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -686,11 +686,11 @@ impl Block for CreateCloneOf {
 
 #[derive(Debug)]
 pub struct CreateCloneOfMenu {
-    id: String,
+    id: BlockID,
 }
 
 impl CreateCloneOfMenu {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id }
     }
 }
@@ -700,7 +700,7 @@ impl Block for CreateCloneOfMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "CreateCloneOfMenu",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 

@@ -2,7 +2,7 @@ use super::*;
 use gloo_timers::future::TimeoutFuture;
 use sprite_runtime::{HideStatus, Text};
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "say" => Box::new(Say::new(id, runtime)),
         "sayforsecs" => Box::new(SayForSecs::new(id, runtime)),
@@ -21,14 +21,14 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct Say {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     message: Option<Box<dyn Block>>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Say {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -43,7 +43,7 @@ impl Block for Say {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Say",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -70,7 +70,7 @@ impl Block for Say {
             None => return Next::Err(wrap_err!("message is None")),
         };
         self.runtime.sprite.write().await.say(Text {
-            id: self.id.clone(),
+            id: self.id,
             text: Some(message),
         });
         Next::continue_(self.next.clone())
@@ -79,7 +79,7 @@ impl Block for Say {
 
 #[derive(Debug)]
 pub struct SayForSecs {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     message: Option<Box<dyn Block>>,
     secs: Option<Box<dyn Block>>,
@@ -87,7 +87,7 @@ pub struct SayForSecs {
 }
 
 impl SayForSecs {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -103,7 +103,7 @@ impl Block for SayForSecs {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SayForSecs",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -137,12 +137,12 @@ impl Block for SayForSecs {
         };
 
         self.runtime.sprite.write().await.say(Text {
-            id: self.id.clone(),
+            id: self.id,
             text: Some(message),
         });
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
         self.runtime.sprite.write().await.say(Text {
-            id: self.id.clone(),
+            id: self.id,
             text: None,
         });
         Next::continue_(self.next.clone())
@@ -151,12 +151,12 @@ impl Block for SayForSecs {
 
 #[derive(Debug)]
 pub struct GoToFrontBack {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl GoToFrontBack {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -166,7 +166,7 @@ impl Block for GoToFrontBack {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "GoToFrontBack",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -188,13 +188,13 @@ impl Block for GoToFrontBack {
 
 #[derive(Debug)]
 pub struct Hide {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Hide {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -208,7 +208,7 @@ impl Block for Hide {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Hide",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -235,13 +235,13 @@ impl Block for Hide {
 
 #[derive(Debug)]
 pub struct Show {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Show {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -255,7 +255,7 @@ impl Block for Show {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Show",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -282,12 +282,12 @@ impl Block for Show {
 
 #[derive(Debug)]
 pub struct SetEffectTo {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SetEffectTo {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -297,7 +297,7 @@ impl Block for SetEffectTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetEffectTo",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -319,12 +319,12 @@ impl Block for SetEffectTo {
 
 #[derive(Debug)]
 pub struct NextCostume {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl NextCostume {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -334,7 +334,7 @@ impl Block for NextCostume {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "NextCostume",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -356,12 +356,12 @@ impl Block for NextCostume {
 
 #[derive(Debug)]
 pub struct ChangeEffectBy {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl ChangeEffectBy {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -371,7 +371,7 @@ impl Block for ChangeEffectBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeEffectBy",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -393,12 +393,12 @@ impl Block for ChangeEffectBy {
 
 #[derive(Debug)]
 pub struct SetSizeTo {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SetSizeTo {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -408,7 +408,7 @@ impl Block for SetSizeTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetSizeTo",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -430,12 +430,12 @@ impl Block for SetSizeTo {
 
 #[derive(Debug)]
 pub struct SwitchCostumeTo {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl SwitchCostumeTo {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -445,7 +445,7 @@ impl Block for SwitchCostumeTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SwitchCostumeTo",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -467,12 +467,12 @@ impl Block for SwitchCostumeTo {
 
 #[derive(Debug)]
 pub struct Costume {
-    id: String,
+    id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
 impl Costume {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id, next: None }
     }
 }
@@ -482,7 +482,7 @@ impl Block for Costume {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Costume",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 

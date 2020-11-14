@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
@@ -12,7 +12,7 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct SetVariable {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     variable_id: String,
     value: Option<Box<dyn Block>>,
@@ -20,7 +20,7 @@ pub struct SetVariable {
 }
 
 impl SetVariable {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -36,7 +36,7 @@ impl Block for SetVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "SetVariable",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -83,7 +83,7 @@ impl Block for SetVariable {
 
 #[derive(Debug)]
 pub struct ChangeVariable {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
     variable_id: String,
     value: Option<Box<dyn Block>>,
@@ -91,7 +91,7 @@ pub struct ChangeVariable {
 }
 
 impl ChangeVariable {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
             runtime,
@@ -107,7 +107,7 @@ impl Block for ChangeVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ChangeVariable",
-            id: self.id.to_string(),
+            id: self.id,
         }
     }
 
@@ -175,12 +175,12 @@ impl Block for ChangeVariable {
 
 #[derive(Debug)]
 pub struct HideVariable {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl HideVariable {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -190,7 +190,7 @@ impl Block for HideVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "HideVariable",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -203,12 +203,12 @@ impl Block for HideVariable {
 
 #[derive(Debug)]
 pub struct ShowVariable {
-    id: String,
+    id: BlockID,
     runtime: Runtime,
 }
 
 impl ShowVariable {
-    pub fn new(id: String, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
@@ -218,7 +218,7 @@ impl Block for ShowVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ShowVariable",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 

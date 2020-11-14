@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "keypressed" => Box::new(KeyPressed::new(id, runtime)),
         "keyoptions" => Box::new(KeyOptions::new(id, runtime)),
@@ -14,11 +14,11 @@ pub fn get_block(name: &str, id: String, runtime: Runtime) -> Result<Box<dyn Blo
 
 #[derive(Debug)]
 pub struct KeyPressed {
-    id: String,
+    id: BlockID,
 }
 
 impl KeyPressed {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id }
     }
 }
@@ -28,7 +28,7 @@ impl Block for KeyPressed {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "KeyPressed",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -41,11 +41,11 @@ impl Block for KeyPressed {
 
 #[derive(Debug)]
 pub struct KeyOptions {
-    id: String,
+    id: BlockID,
 }
 
 impl KeyOptions {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id }
     }
 }
@@ -55,7 +55,7 @@ impl Block for KeyOptions {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "KeyOptions",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -68,11 +68,11 @@ impl Block for KeyOptions {
 
 #[derive(Debug)]
 pub struct ColorIsTouchingColor {
-    id: String,
+    id: BlockID,
 }
 
 impl ColorIsTouchingColor {
-    pub fn new(id: String, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self { id }
     }
 }
@@ -82,7 +82,7 @@ impl Block for ColorIsTouchingColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "ColorIsTouchingColor",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -95,11 +95,11 @@ impl Block for ColorIsTouchingColor {
 
 #[derive(Debug)]
 pub struct TouchingColor {
-    id: String,
+    id: BlockID,
 }
 
 impl TouchingColor {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id }
     }
 }
@@ -109,7 +109,7 @@ impl Block for TouchingColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "TouchingColor",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -122,11 +122,11 @@ impl Block for TouchingColor {
 
 #[derive(Debug)]
 pub struct TouchingObject {
-    id: String,
+    id: BlockID,
 }
 
 impl TouchingObject {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id }
     }
 }
@@ -136,7 +136,7 @@ impl Block for TouchingObject {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "TouchingObject",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
@@ -149,11 +149,11 @@ impl Block for TouchingObject {
 
 #[derive(Debug)]
 pub struct TouchingObjectMenu {
-    id: String,
+    id: BlockID,
 }
 
 impl TouchingObjectMenu {
-    pub fn new(id: String) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self { id }
     }
 }
@@ -163,7 +163,7 @@ impl Block for TouchingObjectMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "TouchingObjectMenu",
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
