@@ -38,6 +38,15 @@ impl Global {
             broadcaster: Broadcaster::new(),
         }
     }
+
+    pub fn need_redraw(&self) -> bool {
+        true
+    }
+
+    pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+        // TODO
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]

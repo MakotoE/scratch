@@ -23,7 +23,8 @@ impl VM {
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
     ) -> Result<(Self, mpsc::Receiver<DebugInfo>)> {
-        let (sprites, broadcaster) = VM::sprites(scratch_file).await?;
+        let global = Global::new(&scratch_file.project.targets[0].variables);
+        let (sprites, broadcaster) = VM::sprites(scratch_file, global.clone()).await?;
 
         let (control_sender, control_receiver) = mpsc::channel(1);
         let (debug_sender, debug_receiver) = mpsc::channel(1);
@@ -36,6 +37,7 @@ impl VM {
                 &context,
                 debug_sender,
                 broadcaster_clone,
+                global,
             )
             .await
             {
@@ -56,8 +58,9 @@ impl VM {
     pub async fn block_inputs(
         scratch_file: &ScratchFile,
     ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
+        let global = Global::new(&scratch_file.project.targets[0].variables);
         Ok(HashMap::from_iter(
-            VM::sprites(scratch_file)
+            VM::sprites(scratch_file, global)
                 .await?
                 .0
                 .iter()
@@ -67,8 +70,8 @@ impl VM {
 
     async fn sprites(
         scratch_file: &ScratchFile,
+        global: Global,
     ) -> Result<(HashMap<SpriteID, Sprite>, Broadcaster)> {
-        let global = Global::new(&scratch_file.project.targets[0].variables);
         let images = Rc::new(scratch_file.images.clone());
 
         let mut futures = FuturesUnordered::new();
@@ -100,6 +103,7 @@ impl VM {
         context: &web_sys::CanvasRenderingContext2d,
         debug_sender: mpsc::Sender<DebugInfo>,
         broadcaster: Broadcaster,
+        global: Global,
     ) -> Result<()> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
@@ -109,7 +113,7 @@ impl VM {
 
         let control_chan = ControlReceiverCell::new(control_chan);
         let broadcaster_recv = BroadcastCell::new(broadcaster);
-        let sprites = SpritesCell::new(sprites_map);
+        let sprites = SpritesCell::new(sprites_map, global);
         let mut futures: FuturesUnordered<LocalBoxFuture<Event>> = FuturesUnordered::new();
         futures.push(Box::pin(control_chan.recv()));
         futures.push(Box::pin(
@@ -329,13 +333,15 @@ impl BroadcastCell {
 struct SpritesCell {
     sprites: RefCell<HashMap<SpriteID, Sprite>>,
     threads_to_stop: RefCell<HashSet<ThreadID>>,
+    global: RefCell<Global>,
 }
 
 impl SpritesCell {
-    fn new(sprites: HashMap<SpriteID, Sprite>) -> Self {
+    fn new(sprites: HashMap<SpriteID, Sprite>, global: Global) -> Self {
         Self {
             sprites: RefCell::new(sprites),
             threads_to_stop: RefCell::default(),
+            global: RefCell::new(global),
         }
     }
 
@@ -361,10 +367,14 @@ impl SpritesCell {
 
     async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         let mut need_redraw = false;
-        for sprite in self.sprites.borrow().values() {
-            if sprite.need_redraw().await {
-                need_redraw = true;
-                break;
+        if self.global.borrow().need_redraw() {
+            need_redraw = true;
+        } else {
+            for sprite in self.sprites.borrow().values() {
+                if sprite.need_redraw().await {
+                    need_redraw = true;
+                    break;
+                }
             }
         }
 
@@ -379,6 +389,8 @@ impl SpritesCell {
         context.reset_transform().unwrap();
         context.scale(2.0, 2.0).unwrap();
         context.clear_rect(0.0, 0.0, 480.0, 360.0);
+
+        self.global.borrow_mut().redraw(context)?;
 
         let sprites = self.sprites.borrow();
         for sprite in sprites.values() {

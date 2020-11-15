@@ -213,7 +213,7 @@ impl Component for ScratchInterface {
                     <button onclick={self.link.callback(|_| Msg::Run)}>{"Restart"}</button>{"\u{00a0}"}
                 </div>
                 <div style="margin-left: 20px; font-family: monospace;">
-                    <pre style="tab-size: 2; -moz-tab-size: 2;">
+                    <pre style="margin: 5px 0; tab-size: 2; -moz-tab-size: 2;">
                         {
                             match self.vm_state {
                                 VMState::Paused => ScratchInterface::debug_output(&self.debug_info),
