@@ -74,9 +74,8 @@ impl Block for SetVariable {
         self.runtime
             .global
             .variables
-            .write()
-            .await
-            .insert(self.variable_id.clone(), value);
+            .set(&self.variable_id, value)
+            .await?;
         Next::continue_(self.next.clone())
     }
 }
@@ -138,37 +137,19 @@ impl Block for ChangeVariable {
     }
 
     async fn execute(&mut self) -> Next {
-        let previous_value = match self
-            .runtime
-            .global
-            .variables
-            .write()
-            .await
-            .remove(&self.variable_id)
-        {
-            Some(v) => v,
-            None => {
-                return Next::Err(wrap_err!(format!(
-                    "variable {} does not exist",
-                    &self.variable_id
-                )))
-            }
-        };
-
-        let previous_float = value_to_float(&previous_value).unwrap_or(0.0);
-
         let value = match &self.value {
-            Some(b) => b.value().await?,
+            Some(b) => value_to_float(&b.value().await?)?,
             None => return Next::Err(wrap_err!("value is None")),
         };
 
-        let new_value = previous_float + value_to_float(&value)?;
         self.runtime
             .global
             .variables
-            .write()
-            .await
-            .insert(self.variable_id.clone(), new_value.into());
+            .set_with(&self.variable_id, |v| {
+                let previous_float = value_to_float(v).unwrap_or(0.0);
+                (previous_float + value).into()
+            })
+            .await?;
         Next::continue_(self.next.clone())
     }
 }
