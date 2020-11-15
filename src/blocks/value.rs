@@ -50,8 +50,12 @@ impl Block for Value {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        // TODO show value in field
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputs::new(
+            self.block_info(),
+            vec![("value", self.value.to_string())],
+            vec![],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
