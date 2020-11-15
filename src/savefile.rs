@@ -220,7 +220,7 @@ impl Debug for BlockID {
 
 impl Display for BlockID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(std::str::from_utf8(&self.id).map_err(|_| std::fmt::Error {})?)
+        f.write_str(std::str::from_utf8(&self.id[..10]).map_err(|_| std::fmt::Error {})?)
     }
 }
 

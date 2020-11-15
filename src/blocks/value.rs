@@ -17,7 +17,7 @@ impl Block for Variable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Variable",
-            id: BlockID::default(), // TODO
+            id: BlockID::default(),
         }
     }
 

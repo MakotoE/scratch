@@ -160,6 +160,6 @@ impl Debug for SpriteID {
 
 impl Display for SpriteID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&hex::encode(self.hash))
+        f.write_str(&hex::encode(&self.hash[..4]))
     }
 }

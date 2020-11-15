@@ -273,7 +273,7 @@ enum Event {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ThreadID {
     pub sprite_id: SpriteID,
-    pub thread_id: usize, // TODO should match with id in file
+    pub thread_id: usize,
 }
 
 /// Resolves a lifetime issue with Receiver and FuturesUnordered.
