@@ -46,6 +46,7 @@ impl Global {
     }
 
     pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+        // TODO get position from file
         context.translate(6.0, 0.0)?;
         for (name, variable) in self.variables.variables.read().await.iter() {
             context.translate(0.0, 6.0)?;
@@ -54,6 +55,7 @@ impl Global {
         Ok(())
     }
 
+    // TODO display variable name, not id
     fn draw_monitor(
         context: &web_sys::CanvasRenderingContext2d,
         variable_name: &str,
@@ -237,6 +239,17 @@ impl Variables {
 
         variable.value = function(&variable.value);
         Ok(())
+    }
+
+    pub async fn set_monitored(&self, key: &str, monitored: bool) -> Result<()> {
+        let mut variables = self.variables.write().await;
+        match variables.get_mut(key) {
+            Some(v) => {
+                v.monitored = monitored;
+                Ok(())
+            }
+            None => Err(wrap_err!(format!("key does not exist: {}", key))),
+        }
     }
 }
 

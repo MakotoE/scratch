@@ -158,11 +158,18 @@ impl Block for ChangeVariable {
 pub struct HideVariable {
     id: BlockID,
     runtime: Runtime,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    variable_id: String,
 }
 
 impl HideVariable {
     pub fn new(id: BlockID, runtime: Runtime) -> Self {
-        Self { id, runtime }
+        Self {
+            id,
+            runtime,
+            next: None,
+            variable_id: String::new(),
+        }
     }
 }
 
@@ -176,21 +183,55 @@ impl Block for HideVariable {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputs::new(
+            self.block_info(),
+            vec![("variable_id", self.variable_id.clone())],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "VARIABLE" {
+            if let Some(s) = field.get(1).cloned().flatten() {
+                self.variable_id = s;
+            }
+        }
+        Ok(())
+    }
+
+    async fn execute(&mut self) -> Next {
+        self.runtime
+            .global
+            .variables
+            .set_monitored(&self.variable_id, false)
+            .await?;
+        Next::continue_(self.next.clone())
+    }
 }
 
 #[derive(Debug)]
 pub struct ShowVariable {
     id: BlockID,
     runtime: Runtime,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    variable_id: String,
 }
 
 impl ShowVariable {
     pub fn new(id: BlockID, runtime: Runtime) -> Self {
-        Self { id, runtime }
+        Self {
+            id,
+            runtime,
+            next: None,
+            variable_id: String::new(),
+        }
     }
 }
 
@@ -204,8 +245,35 @@ impl Block for ShowVariable {
     }
 
     fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputs::new(
+            self.block_info(),
+            vec![("variable_id", self.variable_id.clone())],
+            vec![],
+            vec![("next", &self.next)],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "next" {
+            self.next = Some(Rc::new(RefCell::new(block)));
+        }
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "VARIABLE" {
+            if let Some(s) = field.get(1).cloned().flatten() {
+                self.variable_id = s;
+            }
+        }
+        Ok(())
+    }
+
+    async fn execute(&mut self) -> Next {
+        self.runtime
+            .global
+            .variables
+            .set_monitored(&self.variable_id, true)
+            .await?;
+        Next::continue_(self.next.clone())
+    }
 }
