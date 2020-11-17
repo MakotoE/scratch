@@ -31,7 +31,7 @@ impl VM {
 
         wasm_bindgen_futures::spawn_local({
             let global = global.clone();
-            let broadcaster = global.clone().broadcaster.clone();
+            let broadcaster = global.broadcaster.clone();
             async move {
                 match VM::run(
                     sprites,
@@ -392,7 +392,10 @@ impl SpritesCell {
         context.scale(2.0, 2.0).unwrap();
         context.clear_rect(0.0, 0.0, 480.0, 360.0);
 
-        self.global.redraw(context)?;
+        self.global.redraw(context).await?;
+
+        context.reset_transform().unwrap();
+        context.scale(2.0, 2.0).unwrap();
 
         let sprites = self.sprites.borrow();
         for sprite in sprites.values() {

@@ -1,7 +1,9 @@
 use super::*;
+use blocks::value_to_string;
 use serde_json::Value;
 use sprite::SpriteID;
 use sprite_runtime::{Coordinate, SpriteRuntime};
+use std::f64::consts::TAU;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use vm::ThreadID;
 
@@ -43,8 +45,103 @@ impl Global {
         true
     }
 
-    pub fn redraw(&self, _context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
-        // TODO
+    pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+        context.translate(6.0, 0.0)?;
+        for (name, variable) in self.variables.variables.read().await.iter() {
+            context.translate(0.0, 6.0)?;
+            Global::draw_monitor(context, name, &value_to_string(variable.value.clone()))?;
+        }
+        Ok(())
+    }
+
+    fn draw_monitor(
+        context: &web_sys::CanvasRenderingContext2d,
+        variable_name: &str,
+        value_str: &str,
+    ) -> Result<()> {
+        const NAME_FONT: &str = "12px Helvetica, sans-serif";
+        const VALUE_FONT: &str = "12px Helvetica, sans-serif";
+
+        context.set_font(NAME_FONT);
+        let name_width: f64 = context.measure_text(variable_name)?.width();
+
+        context.set_font(VALUE_FONT);
+        let value_width: f64 = context.measure_text(value_str)?.width();
+
+        Global::draw_rectangle(
+            context,
+            0.0,
+            0.0,
+            name_width + value_width + 57.0,
+            20.0,
+            3.5,
+        )?;
+        context.set_fill_style(&"#e6f0ff".into());
+        context.fill();
+        context.set_stroke_style(&"#c4ccd9".into());
+        context.set_line_width(1.0);
+        context.stroke();
+
+        context.set_fill_style(&"#575e75".into());
+        context.set_font(NAME_FONT);
+        context.fill_text(variable_name, 7.0, 14.0)?;
+
+        Global::draw_rectangle(
+            context,
+            name_width + 16.0,
+            3.0,
+            value_width + 31.5,
+            14.0,
+            3.5,
+        )?;
+        context.set_fill_style(&"#ff8c1a".into());
+        context.fill();
+
+        context.set_fill_style(&"#ffffff".into());
+        context.set_font(VALUE_FONT);
+        context.fill_text(value_str, name_width + 16.0 + 16.0, 14.5)?;
+        Ok(())
+    }
+
+    fn draw_rectangle(
+        context: &web_sys::CanvasRenderingContext2d,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        corner_radius: f64,
+    ) -> Result<()> {
+        context.begin_path();
+        context.move_to(x + corner_radius, y + 0.0);
+        context.arc(
+            x + width - corner_radius,
+            y + corner_radius,
+            corner_radius,
+            3.0 / 4.0 * TAU,
+            0.0,
+        )?;
+        context.arc(
+            x + width - corner_radius,
+            y + height - corner_radius,
+            corner_radius,
+            0.0,
+            1.0 / 4.0 * TAU,
+        )?;
+        context.arc(
+            x + corner_radius,
+            y + height - corner_radius,
+            corner_radius,
+            1.0 / 4.0 * TAU,
+            2.0 / 4.0 * TAU,
+        )?;
+        context.arc(
+            x + corner_radius,
+            y + corner_radius,
+            corner_radius,
+            2.0 / 4.0 * TAU,
+            3.0 / 4.0 * TAU,
+        )?;
+        context.close_path();
         Ok(())
     }
 }

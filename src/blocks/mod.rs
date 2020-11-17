@@ -31,9 +31,7 @@ fn get_block(id: BlockID, runtime: Runtime, info: &savefile::Block) -> Result<Bo
     match category {
         "control" => control::get_block(name, id_clone, runtime)
             .map_err(|e| add_error_context(id, "control", e)),
-        "data" => {
-            data::get_block(name, id, runtime).map_err(|e| add_error_context(id, "data", e))
-        }
+        "data" => data::get_block(name, id, runtime).map_err(|e| add_error_context(id, "data", e)),
         "event" => {
             event::get_block(name, id_clone, runtime).map_err(|e| add_error_context(id, "event", e))
         }
@@ -195,11 +193,8 @@ pub fn block_tree(
         let input_arr = match input.as_array() {
             Some(a) => a,
             None => {
-                let e = ErrorKind::BlockInput(
-                    top_block_id,
-                    k.clone(),
-                    Box::new("invalid type".into()),
-                );
+                let e =
+                    ErrorKind::BlockInput(top_block_id, k.clone(), Box::new("invalid type".into()));
                 return Err(e.into());
             }
         };
@@ -280,7 +275,7 @@ fn value_to_float(value: &serde_json::Value) -> Result<f64> {
     })
 }
 
-fn value_to_string(value: Value) -> String {
+pub fn value_to_string(value: Value) -> String {
     match value {
         Value::String(s) => s,
         Value::Number(n) => n.as_f64().unwrap().to_string(),
