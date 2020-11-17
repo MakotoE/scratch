@@ -8,12 +8,12 @@ use vm::ThreadID;
 #[derive(Debug, Clone)]
 pub struct Runtime {
     pub sprite: Rc<RwLock<SpriteRuntime>>,
-    pub global: Global,
+    pub global: Rc<Global>,
     thread_id: ThreadID,
 }
 
 impl Runtime {
-    pub fn new(sprite: Rc<RwLock<SpriteRuntime>>, global: Global, thread_id: ThreadID) -> Self {
+    pub fn new(sprite: Rc<RwLock<SpriteRuntime>>, global: Rc<Global>, thread_id: ThreadID) -> Self {
         Self {
             sprite,
             global,
@@ -25,16 +25,16 @@ impl Runtime {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Global {
-    pub variables: Rc<Variables>,
+    pub variables: Variables,
     pub broadcaster: Broadcaster,
 }
 
 impl Global {
     pub fn new(scratch_file_variables: &HashMap<String, savefile::Variable>) -> Self {
         Self {
-            variables: Rc::new(Variables::new(scratch_file_variables)),
+            variables: Variables::new(scratch_file_variables),
             broadcaster: Broadcaster::new(),
         }
     }
@@ -43,7 +43,7 @@ impl Global {
         true
     }
 
-    pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+    pub fn redraw(&self, _context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         // TODO
         Ok(())
     }

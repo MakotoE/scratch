@@ -23,33 +23,36 @@ impl VM {
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
     ) -> Result<(Self, mpsc::Receiver<DebugInfo>)> {
-        let global = Global::new(&scratch_file.project.targets[0].variables);
-        let (sprites, broadcaster) = VM::sprites(scratch_file, global.clone()).await?;
+        let global = Rc::new(Global::new(&scratch_file.project.targets[0].variables));
+        let sprites = VM::sprites(scratch_file, global.clone()).await?;
 
         let (control_sender, control_receiver) = mpsc::channel(1);
         let (debug_sender, debug_receiver) = mpsc::channel(1);
 
-        let broadcaster_clone = broadcaster.clone();
-        wasm_bindgen_futures::spawn_local(async move {
-            match VM::run(
-                sprites,
-                control_receiver,
-                &context,
-                debug_sender,
-                broadcaster_clone,
-                global,
-            )
-            .await
-            {
-                Ok(_) => {}
-                Err(e) => log::error!("{}", e),
+        wasm_bindgen_futures::spawn_local({
+            let global = global.clone();
+            let broadcaster = global.clone().broadcaster.clone();
+            async move {
+                match VM::run(
+                    sprites,
+                    control_receiver,
+                    &context,
+                    debug_sender,
+                    broadcaster,
+                    global,
+                )
+                .await
+                {
+                    Ok(_) => {}
+                    Err(e) => log::error!("{}", e),
+                }
             }
         });
 
         Ok((
             Self {
                 control_sender,
-                broadcaster,
+                broadcaster: global.broadcaster.clone(),
             },
             debug_receiver,
         ))
@@ -58,11 +61,10 @@ impl VM {
     pub async fn block_inputs(
         scratch_file: &ScratchFile,
     ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
-        let global = Global::new(&scratch_file.project.targets[0].variables);
+        let global = Rc::new(Global::new(&scratch_file.project.targets[0].variables));
         Ok(HashMap::from_iter(
             VM::sprites(scratch_file, global)
                 .await?
-                .0
                 .iter()
                 .map(|(id, sprite)| (*id, sprite.block_inputs())),
         ))
@@ -70,8 +72,8 @@ impl VM {
 
     async fn sprites(
         scratch_file: &ScratchFile,
-        global: Global,
-    ) -> Result<(HashMap<SpriteID, Sprite>, Broadcaster)> {
+        global: Rc<Global>,
+    ) -> Result<HashMap<SpriteID, Sprite>> {
         let images = Rc::new(scratch_file.images.clone());
 
         let mut futures = FuturesUnordered::new();
@@ -92,7 +94,7 @@ impl VM {
                     let sprite = r?;
                     sprites.insert(sprite.0, sprite.1);
                 }
-                None => return Ok((sprites, global.broadcaster)),
+                None => return Ok(sprites),
             }
         }
     }
@@ -103,7 +105,7 @@ impl VM {
         context: &web_sys::CanvasRenderingContext2d,
         debug_sender: mpsc::Sender<DebugInfo>,
         broadcaster: Broadcaster,
-        global: Global,
+        global: Rc<Global>,
     ) -> Result<()> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
@@ -333,15 +335,15 @@ impl BroadcastCell {
 struct SpritesCell {
     sprites: RefCell<HashMap<SpriteID, Sprite>>,
     threads_to_stop: RefCell<HashSet<ThreadID>>,
-    global: RefCell<Global>,
+    global: Rc<Global>,
 }
 
 impl SpritesCell {
-    fn new(sprites: HashMap<SpriteID, Sprite>, global: Global) -> Self {
+    fn new(sprites: HashMap<SpriteID, Sprite>, global: Rc<Global>) -> Self {
         Self {
             sprites: RefCell::new(sprites),
             threads_to_stop: RefCell::default(),
-            global: RefCell::new(global),
+            global,
         }
     }
 
@@ -367,7 +369,7 @@ impl SpritesCell {
 
     async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         let mut need_redraw = false;
-        if self.global.borrow().need_redraw() {
+        if self.global.need_redraw() {
             need_redraw = true;
         } else {
             for sprite in self.sprites.borrow().values() {
@@ -390,7 +392,7 @@ impl SpritesCell {
         context.scale(2.0, 2.0).unwrap();
         context.clear_rect(0.0, 0.0, 480.0, 360.0);
 
-        self.global.borrow_mut().redraw(context)?;
+        self.global.redraw(context)?;
 
         let sprites = self.sprites.borrow();
         for sprite in sprites.values() {

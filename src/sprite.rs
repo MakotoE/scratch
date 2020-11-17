@@ -20,7 +20,7 @@ pub struct Sprite {
 
 impl Sprite {
     pub async fn new(
-        global: Global,
+        global: Rc<Global>,
         target: Rc<Target>,
         images: Rc<HashMap<String, Image>>,
         is_a_clone: bool,
@@ -30,11 +30,11 @@ impl Sprite {
         is_a_clone.hash(&mut hasher);
         let sprite_id = SpriteID::from(hasher);
 
+        let mut threads: Vec<RefCell<Thread>> = Vec::new();
+
         let sprite_runtime = Rc::new(RwLock::new(
             SpriteRuntime::new(&target, &images, is_a_clone).await?,
         ));
-
-        let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
         for hat_id in find_hats(&target.blocks) {
             let runtime = Runtime::new(
