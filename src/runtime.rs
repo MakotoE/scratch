@@ -1,9 +1,10 @@
 use super::*;
+use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use blocks::value_to_string;
 use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;
-use sprite_runtime::{CanvasCoordinate, SpriteCoordinate, SpriteRuntime};
+use sprite_runtime::SpriteRuntime;
 use std::f64::consts::TAU;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use vm::ThreadID;

@@ -1,4 +1,5 @@
 use super::*;
+use crate::coordinate::SpriteCoordinate;
 use blocks::{BlockInfo, BlockInputs};
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
@@ -7,7 +8,6 @@ use gloo_timers::future::TimeoutFuture;
 use runtime::{BroadcastMsg, Broadcaster, Global, Stop};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
-use sprite_runtime::SpriteCoordinate;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use tokio::sync::{broadcast, mpsc};

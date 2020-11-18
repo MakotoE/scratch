@@ -1,6 +1,7 @@
 use super::*;
-use crate::pen::PenStatus::PenUp;
-use sprite_runtime::{color_to_hex, SpriteCoordinate};
+use coordinate::SpriteCoordinate;
+use pen::PenStatus::PenUp;
+use sprite_runtime::color_to_hex;
 
 #[derive(Debug)]
 pub struct Pen {

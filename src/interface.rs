@@ -1,6 +1,6 @@
 use super::*;
-use crate::sprite_runtime::SpriteCoordinate;
 use blocks::BlockInfo;
+use coordinate::SpriteCoordinate;
 use fileinput::FileInput;
 use savefile::ScratchFile;
 use sprite::SpriteID;
