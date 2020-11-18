@@ -50,12 +50,15 @@ impl Global {
     }
 
     pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
-        // TODO get position from file
-        context.translate(6.0, 6.0)?;
         for (name, variable) in self.variables.variables.read().await.iter() {
             if variable.monitored {
-                Global::draw_monitor(context, name, &value_to_string(variable.value.clone()))?;
-                context.translate(0.0, 27.0)?;
+                Global::draw_monitor(
+                    context,
+                    variable.x,
+                    variable.y,
+                    name,
+                    &value_to_string(variable.value.clone()),
+                )?;
             }
         }
         Ok(())
@@ -64,6 +67,8 @@ impl Global {
     // TODO display variable name, not id
     fn draw_monitor(
         context: &web_sys::CanvasRenderingContext2d,
+        x: f64,
+        y: f64,
         variable_name: &str,
         value_str: &str,
     ) -> Result<()> {
@@ -80,8 +85,8 @@ impl Global {
 
         Global::draw_rectangle(
             context,
-            0.0,
-            0.0,
+            x,
+            y,
             name_width + orange_rectangle_width + 24.0,
             20.0,
             3.5,
@@ -94,12 +99,12 @@ impl Global {
 
         context.set_fill_style(&"#575e75".into());
         context.set_font(NAME_FONT);
-        context.fill_text(variable_name, 7.0, 14.0)?;
+        context.fill_text(variable_name, x + 7.0, y + 14.0)?;
 
         Global::draw_rectangle(
             context,
-            name_width + 16.0,
-            3.0,
+            x + name_width + 16.0,
+            y + 3.0,
             orange_rectangle_width,
             14.0,
             3.5,
@@ -111,8 +116,8 @@ impl Global {
         context.set_font(VALUE_FONT);
         context.fill_text(
             value_str,
-            name_width + 16.0 + (orange_rectangle_width - value_width) / 2.0,
-            14.5,
+            x + name_width + 16.0 + (orange_rectangle_width - value_width) / 2.0,
+            y + 14.5,
         )?;
         Ok(())
     }
@@ -212,9 +217,20 @@ impl Variables {
     ) -> Self {
         let mut variables: HashMap<String, Variable> = HashMap::new();
         for (key, v) in scratch_file_variables {
-            let variable = Variable {
-                value: v.value.clone(),
-                monitored: Variables::monitored(monitors, key),
+            let monitor = monitors.iter().find(|m| &m.id == key);
+            let variable = match monitor {
+                Some(monitor) => Variable {
+                    value: v.value.clone(),
+                    monitored: monitor.visible,
+                    x: monitor.x,
+                    y: monitor.y,
+                },
+                None => Variable {
+                    value: v.value.clone(),
+                    monitored: false,
+                    x: 0.0,
+                    y: 0.0,
+                },
             };
             variables.insert(key.clone(), variable);
         }
@@ -222,16 +238,6 @@ impl Variables {
         Self {
             variables: RwLock::new(variables),
         }
-    }
-
-    fn monitored(monitors: &Vec<Monitor>, variable_id: &str) -> bool {
-        for monitor in monitors {
-            if monitor.id == variable_id {
-                return monitor.visible;
-            }
-        }
-
-        false
     }
 
     pub async fn get(&self, key: &str) -> Result<Value> {
@@ -282,4 +288,6 @@ impl Variables {
 pub struct Variable {
     value: Value,
     monitored: bool,
+    x: f64,
+    y: f64,
 }
