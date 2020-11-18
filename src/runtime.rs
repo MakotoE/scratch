@@ -1,4 +1,5 @@
 use super::*;
+use crate::coordinate::CanvasRectangle;
 use blocks::value_to_string;
 use coordinate::{CanvasCoordinate, Size, SpriteCoordinate};
 use savefile::Monitor;
@@ -38,7 +39,7 @@ pub struct Global {
 impl Global {
     pub fn new(
         scratch_file_variables: &HashMap<String, savefile::Variable>,
-        monitors: &Vec<Monitor>,
+        monitors: &[Monitor],
     ) -> Self {
         Self {
             variables: Variables::new(scratch_file_variables, monitors),
@@ -84,10 +85,12 @@ impl Global {
 
         Global::draw_rectangle(
             context,
-            position,
-            &Size {
-                width: name_width + orange_rectangle_width + 24.0,
-                length: 20.0,
+            &CanvasRectangle {
+                top_left: *position,
+                size: Size {
+                    width: name_width + orange_rectangle_width + 24.0,
+                    length: 20.0,
+                },
             },
             3.5,
         )?;
@@ -107,10 +110,12 @@ impl Global {
         });
         Global::draw_rectangle(
             context,
-            &orange_position,
-            &Size {
-                width: orange_rectangle_width,
-                length: 14.0,
+            &CanvasRectangle {
+                top_left: orange_position,
+                size: Size {
+                    width: orange_rectangle_width,
+                    length: 14.0,
+                },
             },
             3.5,
         )?;
@@ -129,36 +134,38 @@ impl Global {
 
     fn draw_rectangle(
         context: &web_sys::CanvasRenderingContext2d,
-        position: &CanvasCoordinate,
-        size: &Size,
+        rectangle: &CanvasRectangle,
         corner_radius: f64,
     ) -> Result<()> {
         context.begin_path();
-        context.move_to(position.x + corner_radius, position.y + 0.0);
+        context.move_to(
+            rectangle.top_left.x + corner_radius,
+            rectangle.top_left.y + 0.0,
+        );
         context.arc(
-            position.x + size.width - corner_radius,
-            position.y + corner_radius,
+            rectangle.top_left.x + rectangle.size.width - corner_radius,
+            rectangle.top_left.y + corner_radius,
             corner_radius,
             3.0 / 4.0 * TAU,
             0.0,
         )?;
         context.arc(
-            position.x + size.width - corner_radius,
-            position.y + size.length - corner_radius,
+            rectangle.top_left.x + rectangle.size.width - corner_radius,
+            rectangle.top_left.y + rectangle.size.length - corner_radius,
             corner_radius,
             0.0,
             1.0 / 4.0 * TAU,
         )?;
         context.arc(
-            position.x + corner_radius,
-            position.y + size.length - corner_radius,
+            rectangle.top_left.x + corner_radius,
+            rectangle.top_left.y + rectangle.size.length - corner_radius,
             corner_radius,
             1.0 / 4.0 * TAU,
             2.0 / 4.0 * TAU,
         )?;
         context.arc(
-            position.x + corner_radius,
-            position.y + corner_radius,
+            rectangle.top_left.x + corner_radius,
+            rectangle.top_left.y + corner_radius,
             corner_radius,
             2.0 / 4.0 * TAU,
             3.0 / 4.0 * TAU,

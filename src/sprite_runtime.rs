@@ -1,5 +1,5 @@
 use super::*;
-use coordinate::{Rectangle, Size, SpriteCoordinate};
+use coordinate::{Size, SpriteCoordinate, SpriteRectangle};
 use palette::IntoColor;
 use pen::Pen;
 use savefile::{BlockID, Image, Target};
@@ -215,15 +215,18 @@ impl SpriteRuntime {
         self.is_a_clone
     }
 
-    pub fn rectangle(&self) -> Rectangle {
-        Rectangle::with_center(self.position, self.costumes[self.current_costume].size)
+    pub fn rectangle(&self) -> SpriteRectangle {
+        SpriteRectangle {
+            center: self.position,
+            size: self.costumes[self.current_costume].size,
+        }
     }
 
     /// Can't do scaling yet
-    pub fn set_rectangle(&mut self, rectangle: Rectangle) {
+    pub fn set_rectangle(&mut self, rectangle: SpriteRectangle) {
         self.need_redraw = true;
-        self.position = rectangle.center();
-        self.pen().set_position(&rectangle.center());
+        self.position = rectangle.center;
+        self.pen().set_position(&rectangle.center);
     }
 
     pub fn set_hide(&mut self, hide: HideStatus) {

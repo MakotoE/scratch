@@ -1,5 +1,5 @@
 use super::*;
-use coordinate::{Rectangle, SpriteCoordinate};
+use coordinate::{SpriteCoordinate, SpriteRectangle};
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -139,8 +139,10 @@ impl Block for GoToXY {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let new_rectangle =
-            Rectangle::with_center(SpriteCoordinate { x, y }, runtime.rectangle().size());
+        let new_rectangle = SpriteRectangle {
+            center: SpriteCoordinate { x, y },
+            size: runtime.rectangle().size,
+        };
         runtime.set_rectangle(new_rectangle);
         Next::continue_(self.next.clone())
     }
@@ -319,13 +321,13 @@ impl Block for SetX {
 
         let mut runtime = self.runtime.sprite.write().await;
         let curr_rectangle = runtime.rectangle();
-        let rectangle = Rectangle::with_center(
-            SpriteCoordinate {
+        let rectangle = SpriteRectangle {
+            center: SpriteCoordinate {
                 x,
-                y: curr_rectangle.center().y,
+                y: curr_rectangle.center.y,
             },
-            curr_rectangle.size(),
-        );
+            size: curr_rectangle.size,
+        };
 
         runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
@@ -385,13 +387,13 @@ impl Block for SetY {
 
         let mut runtime = self.runtime.sprite.write().await;
         let curr_rectangle = runtime.rectangle();
-        let rectangle = Rectangle::with_center(
-            SpriteCoordinate {
-                x: curr_rectangle.center().x,
+        let rectangle = SpriteRectangle {
+            center: SpriteCoordinate {
+                x: curr_rectangle.center.x,
                 y,
             },
-            curr_rectangle.size(),
-        );
+            size: curr_rectangle.size,
+        };
 
         runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
@@ -427,7 +429,7 @@ impl Block for XPosition {
 
     async fn value(&self) -> Result<serde_json::Value> {
         let runtime = self.runtime.sprite.read().await;
-        Ok(runtime.rectangle().center().x.into())
+        Ok(runtime.rectangle().center.x.into())
     }
 }
 
@@ -460,7 +462,7 @@ impl Block for YPosition {
 
     async fn value(&self) -> Result<serde_json::Value> {
         let runtime = self.runtime.sprite.read().await;
-        Ok(runtime.rectangle().center().y.into())
+        Ok(runtime.rectangle().center.y.into())
     }
 }
 
