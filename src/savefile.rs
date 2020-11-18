@@ -355,7 +355,7 @@ mod tests {
             {
                 let s = "G@pZX]3ynBGB)L`_LJk8";
                 let id = BlockID::try_from(s).unwrap();
-                assert_eq!(s, &id.to_string());
+                assert_eq!(&id.to_string(), "G@pZX]3ynB");
             }
         }
     }

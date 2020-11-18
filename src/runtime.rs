@@ -1,6 +1,6 @@
 use super::*;
-use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use blocks::value_to_string;
+use coordinate::{CanvasCoordinate, Size, SpriteCoordinate};
 use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;
@@ -85,8 +85,10 @@ impl Global {
         Global::draw_rectangle(
             context,
             position,
-            name_width + orange_rectangle_width + 24.0,
-            20.0,
+            &Size {
+                width: name_width + orange_rectangle_width + 24.0,
+                length: 20.0,
+            },
             3.5,
         )?;
         context.set_fill_style(&"#e6f0ff".into());
@@ -99,8 +101,19 @@ impl Global {
         context.set_font(NAME_FONT);
         context.fill_text(variable_name, position.x + 7.0, position.y + 14.0)?;
 
-        let orange_position = position.add(&CanvasCoordinate::new(name_width + 16.0, 3.0));
-        Global::draw_rectangle(context, &orange_position, orange_rectangle_width, 14.0, 3.5)?;
+        let orange_position = position.add(&CanvasCoordinate {
+            x: name_width + 16.0,
+            y: 3.0,
+        });
+        Global::draw_rectangle(
+            context,
+            &orange_position,
+            &Size {
+                width: orange_rectangle_width,
+                length: 14.0,
+            },
+            3.5,
+        )?;
         context.set_fill_style(&"#ff8c1a".into());
         context.fill();
 
@@ -117,29 +130,28 @@ impl Global {
     fn draw_rectangle(
         context: &web_sys::CanvasRenderingContext2d,
         position: &CanvasCoordinate,
-        width: f64,
-        height: f64,
+        size: &Size,
         corner_radius: f64,
     ) -> Result<()> {
         context.begin_path();
         context.move_to(position.x + corner_radius, position.y + 0.0);
         context.arc(
-            position.x + width - corner_radius,
+            position.x + size.width - corner_radius,
             position.y + corner_radius,
             corner_radius,
             3.0 / 4.0 * TAU,
             0.0,
         )?;
         context.arc(
-            position.x + width - corner_radius,
-            position.y + height - corner_radius,
+            position.x + size.width - corner_radius,
+            position.y + size.length - corner_radius,
             corner_radius,
             0.0,
             1.0 / 4.0 * TAU,
         )?;
         context.arc(
             position.x + corner_radius,
-            position.y + height - corner_radius,
+            position.y + size.length - corner_radius,
             corner_radius,
             1.0 / 4.0 * TAU,
             2.0 / 4.0 * TAU,
@@ -213,12 +225,15 @@ impl Variables {
                 Some(monitor) => Variable {
                     value: v.value.clone(),
                     monitored: monitor.visible,
-                    position: CanvasCoordinate::new(monitor.x, monitor.y),
+                    position: CanvasCoordinate {
+                        x: monitor.x,
+                        y: monitor.y,
+                    },
                 },
                 None => Variable {
                     value: v.value.clone(),
                     monitored: false,
-                    position: CanvasCoordinate::new(0.0, 0.0),
+                    position: CanvasCoordinate { x: 0.0, y: 0.0 },
                 },
             };
             variables.insert(key.clone(), variable);

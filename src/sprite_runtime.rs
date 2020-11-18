@@ -27,7 +27,10 @@ impl SpriteRuntime {
     ) -> Result<Self> {
         let mut runtime = Self {
             need_redraw: true,
-            position: SpriteCoordinate::new(target.x, target.y),
+            position: SpriteCoordinate {
+                x: target.x,
+                y: target.y,
+            },
             costumes: Vec::new(),
             current_costume: 0,
             text: Text {
@@ -64,8 +67,8 @@ impl SpriteRuntime {
         if let Some(text) = &self.text.text {
             context.save();
             context.translate(
-                240.0 + costume.size().width() as f64 / 4.0 + self.position.x as f64,
-                130.0 - costume.size().length() as f64 / 2.0 - self.position.y as f64,
+                240.0 + costume.size().width as f64 / 4.0 + self.position.x as f64,
+                130.0 - costume.size().length as f64 / 2.0 - self.position.y as f64,
             )?;
             SpriteRuntime::draw_text_bubble(context, text)?;
             context.restore();
@@ -80,8 +83,8 @@ impl SpriteRuntime {
     ) -> Result<()> {
         context.draw_image_with_html_image_element(
             &costume.image,
-            240.0 - costume.size().width() as f64 / 2.0 + position.x as f64,
-            180.0 - costume.size().length() as f64 / 2.0 - position.y as f64,
+            240.0 - costume.size().width as f64 / 2.0 + position.x as f64,
+            180.0 - costume.size().length as f64 / 2.0 - position.y as f64,
         )?;
         Ok(())
     }
@@ -213,7 +216,7 @@ impl SpriteRuntime {
     }
 
     pub fn rectangle(&self) -> Rectangle {
-        Rectangle::new(self.position, self.costumes[self.current_costume].size)
+        Rectangle::with_center(self.position, self.costumes[self.current_costume].size)
     }
 
     /// Can't do scaling yet
@@ -236,7 +239,10 @@ pub struct Costume {
 
 impl Costume {
     pub fn new(image: HtmlImageElement) -> Self {
-        let size = Size::new(image.width() as f64, image.height() as f64);
+        let size = Size {
+            width: image.width() as f64,
+            length: image.height() as f64,
+        };
         Self { image, size }
     }
 
@@ -342,65 +348,5 @@ mod tests {
     #[test]
     fn test_color_to_hex() {
         assert_eq!(color_to_hex(&palette::Hsv::new(0.0, 1.0, 1.0)), "#ff0000");
-    }
-
-    mod rectangle {
-        use super::*;
-
-        #[test]
-        fn test_contains() {
-            struct Test {
-                rect: Rectangle,
-                coordinate: SpriteCoordinate,
-                expected: bool,
-            }
-
-            let tests = vec![
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(0.0, 0.0), Size::new(0.0, 0.0)),
-                    coordinate: SpriteCoordinate::new(0.0, 0.0),
-                    expected: true,
-                },
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(0.0, 0.0), Size::new(1.0, 1.0)),
-                    coordinate: SpriteCoordinate::new(0.0, 0.0),
-                    expected: true,
-                },
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(0.0, 0.0), Size::new(2.0, 2.0)),
-                    coordinate: SpriteCoordinate::new(1.0, 1.0),
-                    expected: true,
-                },
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(0.0, 0.0), Size::new(1.0, 1.0)),
-                    coordinate: SpriteCoordinate::new(1.0, 1.0),
-                    expected: true,
-                },
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(0.0, 0.0), Size::new(1.0, 1.0)),
-                    coordinate: SpriteCoordinate::new(-1.0, -1.0),
-                    expected: false,
-                },
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(0.0, 0.0), Size::new(1.0, 1.0)),
-                    coordinate: SpriteCoordinate::new(-2.0, 0.0),
-                    expected: false,
-                },
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(1.0, 1.0), Size::new(1.0, 1.0)),
-                    coordinate: SpriteCoordinate::new(1.0, 0.0),
-                    expected: false,
-                },
-                Test {
-                    rect: Rectangle::new(SpriteCoordinate::new(0.0, 0.0), Size::new(1.0, 1.0)),
-                    coordinate: SpriteCoordinate::new(1.0, 2.0),
-                    expected: false,
-                },
-            ];
-
-            for (i, test) in tests.iter().enumerate() {
-                assert_eq!(test.rect.contains(&test.coordinate), test.expected, "{}", i);
-            }
-        }
     }
 }

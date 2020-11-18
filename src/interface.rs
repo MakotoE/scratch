@@ -38,7 +38,10 @@ impl ScratchInterface {
         let canvas: web_sys::Element = self.canvas_ref.cast().unwrap();
         self.canvas_position.get_or_insert_with(|| {
             let rect = canvas.get_bounding_client_rect();
-            SpriteCoordinate::new(rect.left(), rect.top())
+            SpriteCoordinate {
+                x: rect.left(),
+                y: rect.top(),
+            }
         })
     }
 }
@@ -161,10 +164,10 @@ impl Component for ScratchInterface {
             Msg::OnCanvasClick(e) => {
                 let canvas_position = *self.canvas_position();
                 if let Some(vm) = &self.vm {
-                    vm.click(SpriteCoordinate::new(
-                        e.client_x() as f64 - canvas_position.x() - 240.0,
-                        e.client_y() as f64 - canvas_position.y() - 180.0,
-                    ));
+                    vm.click(SpriteCoordinate {
+                        x: e.client_x() as f64 - canvas_position.x - 240.0,
+                        y: e.client_y() as f64 - canvas_position.y - 180.0,
+                    });
                 }
                 false
             }

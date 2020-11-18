@@ -74,7 +74,7 @@ impl Block for MoveSteps {
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime
             .rectangle()
-            .translate(&SpriteCoordinate::new(steps, 0.0));
+            .translate(&SpriteCoordinate { x: steps, y: 0.0 });
         runtime.set_rectangle(position);
         Next::continue_(self.next.clone())
     }
@@ -139,7 +139,8 @@ impl Block for GoToXY {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let new_rectangle = Rectangle::new(SpriteCoordinate::new(x, y), runtime.rectangle().size());
+        let new_rectangle =
+            Rectangle::with_center(SpriteCoordinate { x, y }, runtime.rectangle().size());
         runtime.set_rectangle(new_rectangle);
         Next::continue_(self.next.clone())
     }
@@ -199,7 +200,7 @@ impl Block for ChangeXBy {
         let mut runtime = self.runtime.sprite.write().await;
         let rectangle = runtime
             .rectangle()
-            .translate(&SpriteCoordinate::new(x, 0.0));
+            .translate(&SpriteCoordinate { x, y: 0.0 });
         runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
@@ -259,7 +260,7 @@ impl Block for ChangeYBy {
         let mut runtime = self.runtime.sprite.write().await;
         let rectangle = runtime
             .rectangle()
-            .translate(&SpriteCoordinate::new(0.0, y));
+            .translate(&SpriteCoordinate { x: 0.0, y });
         runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
@@ -318,8 +319,11 @@ impl Block for SetX {
 
         let mut runtime = self.runtime.sprite.write().await;
         let curr_rectangle = runtime.rectangle();
-        let rectangle = Rectangle::new(
-            SpriteCoordinate::new(x, curr_rectangle.center().y()),
+        let rectangle = Rectangle::with_center(
+            SpriteCoordinate {
+                x,
+                y: curr_rectangle.center().y,
+            },
             curr_rectangle.size(),
         );
 
@@ -381,8 +385,11 @@ impl Block for SetY {
 
         let mut runtime = self.runtime.sprite.write().await;
         let curr_rectangle = runtime.rectangle();
-        let rectangle = Rectangle::new(
-            SpriteCoordinate::new(curr_rectangle.center().x(), y),
+        let rectangle = Rectangle::with_center(
+            SpriteCoordinate {
+                x: curr_rectangle.center().x,
+                y,
+            },
             curr_rectangle.size(),
         );
 
@@ -420,7 +427,7 @@ impl Block for XPosition {
 
     async fn value(&self) -> Result<serde_json::Value> {
         let runtime = self.runtime.sprite.read().await;
-        Ok(runtime.rectangle().center().x().into())
+        Ok(runtime.rectangle().center().x.into())
     }
 }
 
@@ -453,7 +460,7 @@ impl Block for YPosition {
 
     async fn value(&self) -> Result<serde_json::Value> {
         let runtime = self.runtime.sprite.read().await;
-        Ok(runtime.rectangle().center().y().into())
+        Ok(runtime.rectangle().center().y.into())
     }
 }
 

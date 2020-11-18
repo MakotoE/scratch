@@ -5,23 +5,11 @@ pub struct Coordinate {
 }
 
 impl Coordinate {
-    pub fn new(x: f64, y: f64) -> Self {
-        Self { x, y }
-    }
-
     pub fn add(&self, other: &Self) -> Self {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
         }
-    }
-
-    pub fn x(&self) -> f64 {
-        self.x
-    }
-
-    pub fn y(&self) -> f64 {
-        self.y
     }
 }
 
@@ -40,20 +28,6 @@ pub struct Size {
     pub length: f64,
 }
 
-impl Size {
-    pub fn new(width: f64, length: f64) -> Self {
-        Self { width, length }
-    }
-
-    pub fn width(&self) -> f64 {
-        self.width
-    }
-
-    pub fn length(&self) -> f64 {
-        self.length
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Rectangle {
     center: SpriteCoordinate,
@@ -61,7 +35,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    pub fn new(center: SpriteCoordinate, size: Size) -> Self {
+    pub fn with_center(center: SpriteCoordinate, size: Size) -> Self {
         Self { center, size }
     }
 
@@ -74,20 +48,129 @@ impl Rectangle {
     }
 
     pub fn contains(&self, coordinate: &SpriteCoordinate) -> bool {
-        let top_left = self.center.add(&SpriteCoordinate::new(
-            self.size.width() / -2.0,
-            self.size.length() / -2.0,
-        ));
+        let top_left = self.center.add(&SpriteCoordinate {
+            x: self.size.width / -2.0,
+            y: self.size.length / -2.0,
+        });
         coordinate.x >= top_left.x
             && coordinate.y >= top_left.y
-            && coordinate.x <= top_left.x + self.size.width()
-            && coordinate.y <= top_left.y + self.size.length()
+            && coordinate.x <= top_left.x + self.size.width
+            && coordinate.y <= top_left.y + self.size.length
     }
 
     pub fn translate(&self, coordinate: &SpriteCoordinate) -> Rectangle {
         Rectangle {
             center: self.center.add(coordinate),
             size: self.size,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_contains() {
+        struct Test {
+            rect: Rectangle,
+            coordinate: SpriteCoordinate,
+            expected: bool,
+        }
+
+        let tests = vec![
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 0.0, y: 0.0 },
+                    Size {
+                        width: 0.0,
+                        length: 0.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
+                expected: true,
+            },
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 0.0, y: 0.0 },
+                    Size {
+                        width: 1.0,
+                        length: 1.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
+                expected: true,
+            },
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 0.0, y: 0.0 },
+                    Size {
+                        width: 2.0,
+                        length: 2.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
+                expected: true,
+            },
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 0.0, y: 0.0 },
+                    Size {
+                        width: 1.0,
+                        length: 1.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
+                expected: false,
+            },
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 0.0, y: 0.0 },
+                    Size {
+                        width: 1.0,
+                        length: 1.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: -1.0, y: -1.0 },
+                expected: false,
+            },
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 0.0, y: 0.0 },
+                    Size {
+                        width: 1.0,
+                        length: 1.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: -2.0, y: 0.0 },
+                expected: false,
+            },
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 1.0, y: 1.0 },
+                    Size {
+                        width: 1.0,
+                        length: 1.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: 1.0, y: 0.0 },
+                expected: false,
+            },
+            Test {
+                rect: Rectangle::with_center(
+                    SpriteCoordinate { x: 0.0, y: 0.0 },
+                    Size {
+                        width: 1.0,
+                        length: 1.0,
+                    },
+                ),
+                coordinate: SpriteCoordinate { x: 1.0, y: 2.0 },
+                expected: false,
+            },
+        ];
+
+        for (i, test) in tests.iter().enumerate() {
+            assert_eq!(test.rect.contains(&test.coordinate), test.expected, "{}", i);
         }
     }
 }
