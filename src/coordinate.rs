@@ -30,17 +30,34 @@ pub struct Size {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Rectangle {
-    center: SpriteCoordinate,
+    top_left: SpriteCoordinate,
     size: Size,
 }
 
 impl Rectangle {
+    pub fn new(top_left: SpriteCoordinate, size: Size) -> Self {
+        Self { top_left, size }
+    }
+
     pub fn with_center(center: SpriteCoordinate, size: Size) -> Self {
-        Self { center, size }
+        Self {
+            top_left: center.add(&SpriteCoordinate {
+                x: size.width / -2.0,
+                y: size.length / -2.0,
+            }),
+            size,
+        }
+    }
+
+    pub fn top_left(&self) -> SpriteCoordinate {
+        self.top_left
     }
 
     pub fn center(&self) -> SpriteCoordinate {
-        self.center
+        self.top_left.add(&SpriteCoordinate {
+            x: self.size.width / 2.0,
+            y: self.size.length / 2.0,
+        })
     }
 
     pub fn size(&self) -> Size {
@@ -48,19 +65,15 @@ impl Rectangle {
     }
 
     pub fn contains(&self, coordinate: &SpriteCoordinate) -> bool {
-        let top_left = self.center.add(&SpriteCoordinate {
-            x: self.size.width / -2.0,
-            y: self.size.length / -2.0,
-        });
-        coordinate.x >= top_left.x
-            && coordinate.y >= top_left.y
-            && coordinate.x <= top_left.x + self.size.width
-            && coordinate.y <= top_left.y + self.size.length
+        coordinate.x >= self.top_left.x
+            && coordinate.y >= self.top_left.y
+            && coordinate.x <= self.top_left.x + self.size.width
+            && coordinate.y <= self.top_left.y + self.size.length
     }
 
     pub fn translate(&self, coordinate: &SpriteCoordinate) -> Rectangle {
         Rectangle {
-            center: self.center.add(coordinate),
+            top_left: self.top_left.add(coordinate),
             size: self.size,
         }
     }
@@ -71,6 +84,53 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_with_center() {
+        assert_eq!(
+            Rectangle::with_center(
+                SpriteCoordinate { x: 0.0, y: 0.0 },
+                Size {
+                    width: 0.0,
+                    length: 0.0,
+                }
+            ),
+            Rectangle::new(
+                SpriteCoordinate { x: 0.0, y: 0.0 },
+                Size {
+                    width: 0.0,
+                    length: 0.0,
+                }
+            )
+        );
+        assert_eq!(
+            Rectangle::with_center(
+                SpriteCoordinate { x: 0.0, y: 0.0 },
+                Size {
+                    width: 1.0,
+                    length: 1.0,
+                }
+            ),
+            Rectangle::new(
+                SpriteCoordinate { x: -0.5, y: -0.5 },
+                Size {
+                    width: 1.0,
+                    length: 1.0,
+                }
+            )
+        );
+        assert_eq!(
+            Rectangle::new(
+                SpriteCoordinate { x: -0.5, y: -0.5 },
+                Size {
+                    width: 1.0,
+                    length: 1.0,
+                }
+            )
+            .center(),
+            SpriteCoordinate { x: 0.0, y: 0.0 },
+        )
+    }
+
+    #[test]
     fn test_contains() {
         struct Test {
             rect: Rectangle,
@@ -79,8 +139,9 @@ mod tests {
         }
 
         let tests = vec![
+            // 0
             Test {
-                rect: Rectangle::with_center(
+                rect: Rectangle::new(
                     SpriteCoordinate { x: 0.0, y: 0.0 },
                     Size {
                         width: 0.0,
@@ -90,8 +151,9 @@ mod tests {
                 coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
                 expected: true,
             },
+            // 1
             Test {
-                rect: Rectangle::with_center(
+                rect: Rectangle::new(
                     SpriteCoordinate { x: 0.0, y: 0.0 },
                     Size {
                         width: 1.0,
@@ -101,52 +163,45 @@ mod tests {
                 coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
                 expected: true,
             },
+            // 2
             Test {
-                rect: Rectangle::with_center(
+                rect: Rectangle::new(
                     SpriteCoordinate { x: 0.0, y: 0.0 },
                     Size {
-                        width: 2.0,
-                        length: 2.0,
+                        width: 1.0,
+                        length: 1.0,
                     },
                 ),
                 coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
                 expected: true,
             },
+            // 3
             Test {
-                rect: Rectangle::with_center(
+                rect: Rectangle::new(
                     SpriteCoordinate { x: 0.0, y: 0.0 },
                     Size {
                         width: 1.0,
                         length: 1.0,
                     },
                 ),
-                coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
+                coordinate: SpriteCoordinate { x: 2.0, y: 2.0 },
                 expected: false,
             },
+            // 4
             Test {
-                rect: Rectangle::with_center(
+                rect: Rectangle::new(
                     SpriteCoordinate { x: 0.0, y: 0.0 },
                     Size {
                         width: 1.0,
                         length: 1.0,
                     },
                 ),
-                coordinate: SpriteCoordinate { x: -1.0, y: -1.0 },
-                expected: false,
+                coordinate: SpriteCoordinate { x: 1.0, y: 0.0 },
+                expected: true,
             },
+            // 5
             Test {
-                rect: Rectangle::with_center(
-                    SpriteCoordinate { x: 0.0, y: 0.0 },
-                    Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                ),
-                coordinate: SpriteCoordinate { x: -2.0, y: 0.0 },
-                expected: false,
-            },
-            Test {
-                rect: Rectangle::with_center(
+                rect: Rectangle::new(
                     SpriteCoordinate { x: 1.0, y: 1.0 },
                     Size {
                         width: 1.0,
@@ -154,17 +209,6 @@ mod tests {
                     },
                 ),
                 coordinate: SpriteCoordinate { x: 1.0, y: 0.0 },
-                expected: false,
-            },
-            Test {
-                rect: Rectangle::with_center(
-                    SpriteCoordinate { x: 0.0, y: 0.0 },
-                    Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                ),
-                coordinate: SpriteCoordinate { x: 1.0, y: 2.0 },
                 expected: false,
             },
         ];
