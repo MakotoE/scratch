@@ -74,7 +74,7 @@ impl Block for MoveSteps {
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime
             .rectangle()
-            .translate(&SpriteCoordinate::new(steps as i16, 0));
+            .translate(&SpriteCoordinate::new(steps, 0.0));
         runtime.set_rectangle(position);
         Next::continue_(self.next.clone())
     }
@@ -139,10 +139,7 @@ impl Block for GoToXY {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let new_rectangle = Rectangle::new(
-            SpriteCoordinate::new(x as i16, y as i16),
-            runtime.rectangle().size(),
-        );
+        let new_rectangle = Rectangle::new(SpriteCoordinate::new(x, y), runtime.rectangle().size());
         runtime.set_rectangle(new_rectangle);
         Next::continue_(self.next.clone())
     }
@@ -202,7 +199,7 @@ impl Block for ChangeXBy {
         let mut runtime = self.runtime.sprite.write().await;
         let rectangle = runtime
             .rectangle()
-            .translate(&SpriteCoordinate::new(x as i16, 0));
+            .translate(&SpriteCoordinate::new(x, 0.0));
         runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
@@ -262,7 +259,7 @@ impl Block for ChangeYBy {
         let mut runtime = self.runtime.sprite.write().await;
         let rectangle = runtime
             .rectangle()
-            .translate(&SpriteCoordinate::new(0, y as i16));
+            .translate(&SpriteCoordinate::new(0.0, y));
         runtime.set_rectangle(rectangle);
         Next::continue_(self.next.clone())
     }
@@ -322,7 +319,7 @@ impl Block for SetX {
         let mut runtime = self.runtime.sprite.write().await;
         let curr_rectangle = runtime.rectangle();
         let rectangle = Rectangle::new(
-            SpriteCoordinate::new(x as i16, curr_rectangle.center().y()),
+            SpriteCoordinate::new(x, curr_rectangle.center().y()),
             curr_rectangle.size(),
         );
 
@@ -385,7 +382,7 @@ impl Block for SetY {
         let mut runtime = self.runtime.sprite.write().await;
         let curr_rectangle = runtime.rectangle();
         let rectangle = Rectangle::new(
-            SpriteCoordinate::new(curr_rectangle.center().x(), y as i16),
+            SpriteCoordinate::new(curr_rectangle.center().x(), y),
             curr_rectangle.size(),
         );
 

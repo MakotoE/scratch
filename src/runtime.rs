@@ -178,7 +178,7 @@ impl Broadcaster {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BroadcastMsg {
     Start(String),
     Finished(String),
