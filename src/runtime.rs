@@ -1,5 +1,6 @@
 use super::*;
 use blocks::value_to_string;
+use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;
 use sprite_runtime::{Coordinate, SpriteRuntime};
@@ -34,9 +35,12 @@ pub struct Global {
 }
 
 impl Global {
-    pub fn new(scratch_file_variables: &HashMap<String, savefile::Variable>) -> Self {
+    pub fn new(
+        scratch_file_variables: &HashMap<String, savefile::Variable>,
+        monitors: &Vec<Monitor>,
+    ) -> Self {
         Self {
-            variables: Variables::new(scratch_file_variables),
+            variables: Variables::new(scratch_file_variables, monitors),
             broadcaster: Broadcaster::new(),
         }
     }
@@ -47,10 +51,12 @@ impl Global {
 
     pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
         // TODO get position from file
-        context.translate(6.0, 0.0)?;
+        context.translate(6.0, 6.0)?;
         for (name, variable) in self.variables.variables.read().await.iter() {
-            context.translate(0.0, 6.0)?;
-            Global::draw_monitor(context, name, &value_to_string(variable.value.clone()))?;
+            if variable.monitored {
+                Global::draw_monitor(context, name, &value_to_string(variable.value.clone()))?;
+                context.translate(0.0, 27.0)?;
+            }
         }
         Ok(())
     }
@@ -70,11 +76,13 @@ impl Global {
         context.set_font(VALUE_FONT);
         let value_width: f64 = context.measure_text(value_str)?.width();
 
+        let orange_rectangle_width = f64::max(39.0 - value_width, value_width + 4.0);
+
         Global::draw_rectangle(
             context,
             0.0,
             0.0,
-            name_width + value_width + 57.0,
+            name_width + orange_rectangle_width + 24.0,
             20.0,
             3.5,
         )?;
@@ -92,7 +100,7 @@ impl Global {
             context,
             name_width + 16.0,
             3.0,
-            value_width + 31.5,
+            orange_rectangle_width,
             14.0,
             3.5,
         )?;
@@ -101,7 +109,11 @@ impl Global {
 
         context.set_fill_style(&"#ffffff".into());
         context.set_font(VALUE_FONT);
-        context.fill_text(value_str, name_width + 16.0 + 16.0, 14.5)?;
+        context.fill_text(
+            value_str,
+            name_width + 16.0 + (orange_rectangle_width - value_width) / 2.0,
+            14.5,
+        )?;
         Ok(())
     }
 
@@ -194,12 +206,15 @@ pub struct Variables {
 }
 
 impl Variables {
-    fn new(scratch_file_variables: &HashMap<String, savefile::Variable>) -> Self {
+    fn new(
+        scratch_file_variables: &HashMap<String, savefile::Variable>,
+        monitors: &Vec<Monitor>,
+    ) -> Self {
         let mut variables: HashMap<String, Variable> = HashMap::new();
         for (key, v) in scratch_file_variables {
             let variable = Variable {
                 value: v.value.clone(),
-                monitored: false,
+                monitored: Variables::monitored(monitors, key),
             };
             variables.insert(key.clone(), variable);
         }
@@ -207,6 +222,16 @@ impl Variables {
         Self {
             variables: RwLock::new(variables),
         }
+    }
+
+    fn monitored(monitors: &Vec<Monitor>, variable_id: &str) -> bool {
+        for monitor in monitors {
+            if monitor.id == variable_id {
+                return monitor.visible;
+            }
+        }
+
+        false
     }
 
     pub async fn get(&self, key: &str) -> Result<Value> {

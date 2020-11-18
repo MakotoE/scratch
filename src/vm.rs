@@ -23,7 +23,10 @@ impl VM {
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
     ) -> Result<(Self, mpsc::Receiver<DebugInfo>)> {
-        let global = Rc::new(Global::new(&scratch_file.project.targets[0].variables));
+        let global = Rc::new(Global::new(
+            &scratch_file.project.targets[0].variables,
+            &scratch_file.project.monitors,
+        ));
         let sprites = VM::sprites(scratch_file, global.clone()).await?;
 
         let (control_sender, control_receiver) = mpsc::channel(1);
@@ -61,7 +64,10 @@ impl VM {
     pub async fn block_inputs(
         scratch_file: &ScratchFile,
     ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
-        let global = Rc::new(Global::new(&scratch_file.project.targets[0].variables));
+        let global = Rc::new(Global::new(
+            &scratch_file.project.targets[0].variables,
+            &scratch_file.project.monitors,
+        ));
         Ok(HashMap::from_iter(
             VM::sprites(scratch_file, global)
                 .await?
