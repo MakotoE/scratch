@@ -36,7 +36,7 @@ pub struct SpriteRectangle {
 
 impl SpriteRectangle {
     pub fn contains(&self, coordinate: &SpriteCoordinate) -> bool {
-        let top_left = coordinate.add(&SpriteCoordinate {
+        let top_left = self.center.add(&SpriteCoordinate {
             x: self.size.width / -2.0,
             y: self.size.length / -2.0,
         });

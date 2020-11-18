@@ -103,45 +103,32 @@ impl SpriteRuntime {
 
         context.begin_path();
 
-        // Flip text bubble
-        context.save();
-        context.scale(-1.0, 1.0)?;
-        context.translate(-1.0 * padded_width, 0.0)?;
-
         // Corners
-        context.move_to(16.0, PADDED_HEIGHT);
+        context.move_to(-16.0 + padded_width, PADDED_HEIGHT);
         context.arc_to(
-            0.0,
+            padded_width,
             PADDED_HEIGHT,
-            0.0,
+            padded_width,
             PADDED_HEIGHT - CORNER_RADIUS,
             CORNER_RADIUS,
         )?;
-        context.arc_to(0.0, 0.0, padded_width, 0.0, CORNER_RADIUS)?;
+        context.arc_to(padded_width, 0.0, 0.0, 0.0, CORNER_RADIUS)?;
+        context.arc_to(0.0, 0.0, 0.0, PADDED_HEIGHT, CORNER_RADIUS)?;
         context.arc_to(
-            padded_width,
             0.0,
-            padded_width,
             PADDED_HEIGHT,
             CORNER_RADIUS,
-        )?;
-        context.arc_to(
-            padded_width,
-            PADDED_HEIGHT,
-            padded_width - CORNER_RADIUS,
             PADDED_HEIGHT,
             CORNER_RADIUS,
         )?;
 
         // Tail
         context.save();
-        context.translate(padded_width - CORNER_RADIUS, PADDED_HEIGHT)?;
-        context.bezier_curve_to(0.0, 4.0, 4.0, 8.0, 4.0, 10.0);
-        context.arc_to(4.0, 12.0, 2.0, 12.0, 2.0)?;
-        context.bezier_curve_to(-1.0, 12.0, -11.0, 8.0, -16.0, 0.0);
+        context.translate(CORNER_RADIUS, PADDED_HEIGHT)?;
+        context.bezier_curve_to(-0.0, 4.0, -4.0, 8.0, -4.0, 10.0);
+        context.arc_to(-4.0, 12.0, -2.0, 12.0, 2.0)?;
+        context.bezier_curve_to(1.0, 12.0, 11.0, 8.0, 16.0, 0.0);
         context.restore();
-
-        context.restore(); // Un-flip text bubble
 
         context.close_path();
 
