@@ -7,7 +7,7 @@ use gloo_timers::future::TimeoutFuture;
 use runtime::{BroadcastMsg, Broadcaster, Global, Stop};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
-use sprite_runtime::Coordinate;
+use sprite_runtime::SpriteCoordinate;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use tokio::sync::{broadcast, mpsc};
@@ -249,7 +249,7 @@ impl VM {
         self.control_sender.send(Control::Step).await.unwrap();
     }
 
-    pub fn click(&self, coordinate: Coordinate) {
+    pub fn click(&self, coordinate: SpriteCoordinate) {
         self.broadcaster
             .send(BroadcastMsg::Click(coordinate))
             .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)))

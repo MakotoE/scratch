@@ -1,5 +1,5 @@
 use super::*;
-use crate::sprite_runtime::Coordinate;
+use crate::sprite_runtime::SpriteCoordinate;
 use blocks::BlockInfo;
 use fileinput::FileInput;
 use savefile::ScratchFile;
@@ -14,7 +14,7 @@ pub struct ScratchInterface {
     file: Option<ScratchFile>,
     vm: Option<Rc<VM>>,
     debug_info: HashMap<SpriteID, Vec<Option<BlockInfo>>>,
-    canvas_position: Option<Coordinate>,
+    canvas_position: Option<SpriteCoordinate>,
 }
 
 impl ScratchInterface {
@@ -34,11 +34,11 @@ impl ScratchInterface {
         result
     }
 
-    fn canvas_position(&mut self) -> &Coordinate {
+    fn canvas_position(&mut self) -> &SpriteCoordinate {
         let canvas: web_sys::Element = self.canvas_ref.cast().unwrap();
         self.canvas_position.get_or_insert_with(|| {
             let rect = canvas.get_bounding_client_rect();
-            Coordinate::new(rect.left() as i16, rect.top() as i16)
+            SpriteCoordinate::new(rect.left() as i16, rect.top() as i16)
         })
     }
 }
@@ -161,7 +161,7 @@ impl Component for ScratchInterface {
             Msg::OnCanvasClick(e) => {
                 let canvas_position = *self.canvas_position();
                 if let Some(vm) = &self.vm {
-                    vm.click(Coordinate::new(
+                    vm.click(SpriteCoordinate::new(
                         e.client_x() as i16 - canvas_position.x() - 240,
                         e.client_y() as i16 - canvas_position.y() - 180,
                     ));

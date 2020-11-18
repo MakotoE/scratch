@@ -1,6 +1,6 @@
 use super::*;
 use crate::pen::PenStatus::PenUp;
-use sprite_runtime::{color_to_hex, Coordinate};
+use sprite_runtime::{color_to_hex, SpriteCoordinate};
 
 #[derive(Debug)]
 pub struct Pen {
@@ -42,14 +42,14 @@ impl Pen {
         self.lines.last_mut().unwrap().set_size(size);
     }
 
-    pub fn set_position(&mut self, position: &Coordinate) {
+    pub fn set_position(&mut self, position: &SpriteCoordinate) {
         match self.pen_status {
             PenStatus::PenDown => self.lines.last_mut().unwrap().add_point(position),
             PenStatus::PenUp => {}
         }
     }
 
-    pub fn pen_down(&mut self, position: &Coordinate) {
+    pub fn pen_down(&mut self, position: &SpriteCoordinate) {
         self.new_line();
         self.pen_status = PenStatus::PenDown;
         self.set_position(position);
@@ -88,7 +88,7 @@ impl Pen {
 
 #[derive(Debug, Clone, PartialEq)]
 struct Line {
-    points: Vec<Coordinate>,
+    points: Vec<SpriteCoordinate>,
     color: palette::Hsv,
     size: f64,
 }
@@ -118,15 +118,19 @@ impl Line {
         self.size = size;
     }
 
-    fn last_point(&self) -> Option<&Coordinate> {
+    fn last_point(&self) -> Option<&SpriteCoordinate> {
         self.points.last()
     }
 
-    fn add_point(&mut self, position: &Coordinate) {
+    fn add_point(&mut self, position: &SpriteCoordinate) {
         self.points.push(*position);
     }
 
-    fn draw(&self, context: &web_sys::CanvasRenderingContext2d, extra_point: Option<Coordinate>) {
+    fn draw(
+        &self,
+        context: &web_sys::CanvasRenderingContext2d,
+        extra_point: Option<SpriteCoordinate>,
+    ) {
         context.begin_path();
         for (i, point) in self.points.iter().enumerate() {
             if i == 0 {

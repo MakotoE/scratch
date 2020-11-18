@@ -9,7 +9,7 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 pub struct SpriteRuntime {
     is_a_clone: bool,
     need_redraw: bool,
-    position: Coordinate,
+    position: SpriteCoordinate,
     costumes: Vec<Costume>,
     current_costume: usize,
     text: Text,
@@ -26,7 +26,7 @@ impl SpriteRuntime {
     ) -> Result<Self> {
         let mut runtime = Self {
             need_redraw: true,
-            position: Coordinate::new(target.x as i16, target.y as i16),
+            position: SpriteCoordinate::new(target.x as i16, target.y as i16),
             costumes: Vec::new(),
             current_costume: 0,
             text: Text {
@@ -75,7 +75,7 @@ impl SpriteRuntime {
     fn draw_costume(
         context: &web_sys::CanvasRenderingContext2d,
         costume: &Costume,
-        position: &Coordinate,
+        position: &SpriteCoordinate,
     ) -> Result<()> {
         context.draw_image_with_html_image_element(
             &costume.image,
@@ -227,17 +227,20 @@ impl SpriteRuntime {
     }
 }
 
-/// Center = 0, 0
-/// Left = -x, right = +x
-/// Top = -y, bottom = +y
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Coordinate {
-    pub x: i16,
-    pub y: i16,
+pub struct Coordinate<T>
+where
+    T: Copy + std::ops::Add<Output = T>,
+{
+    pub x: T,
+    pub y: T,
 }
 
-impl Coordinate {
-    pub fn new(x: i16, y: i16) -> Self {
+impl<T> Coordinate<T>
+where
+    T: Copy + std::ops::Add<Output = T>,
+{
+    pub fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
 
@@ -248,14 +251,23 @@ impl Coordinate {
         }
     }
 
-    pub fn x(&self) -> i16 {
+    pub fn x(&self) -> T {
         self.x
     }
 
-    pub fn y(&self) -> i16 {
+    pub fn y(&self) -> T {
         self.y
     }
 }
+
+/// Center = 0, 0
+/// Left = -x, right = +x
+/// Top = -y, bottom = +y
+pub type SpriteCoordinate = Coordinate<i16>;
+
+/// Left = 0, right = +x
+/// Top = 0, bottom + y
+pub type CanvasCoordinate = Coordinate<f64>;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Size {
@@ -292,16 +304,16 @@ impl Size {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Rectangle {
-    center: Coordinate,
+    center: SpriteCoordinate,
     size: Size,
 }
 
 impl Rectangle {
-    pub fn new(center: Coordinate, size: Size) -> Self {
+    pub fn new(center: SpriteCoordinate, size: Size) -> Self {
         Self { center, size }
     }
 
-    pub fn center(&self) -> Coordinate {
+    pub fn center(&self) -> SpriteCoordinate {
         self.center
     }
 
@@ -309,8 +321,8 @@ impl Rectangle {
         self.size
     }
 
-    pub fn contains(&self, coordinate: &Coordinate) -> bool {
-        let top_left = self.center.add(&Coordinate::new(
+    pub fn contains(&self, coordinate: &SpriteCoordinate) -> bool {
+        let top_left = self.center.add(&SpriteCoordinate::new(
             self.size.width() as i16 / -2,
             self.size.length() as i16 / -2,
         ));
@@ -320,7 +332,7 @@ impl Rectangle {
             && coordinate.y <= top_left.y + self.size.length() as i16
     }
 
-    pub fn translate(&self, coordinate: &Coordinate) -> Rectangle {
+    pub fn translate(&self, coordinate: &SpriteCoordinate) -> Rectangle {
         Rectangle {
             center: self.center.add(coordinate),
             size: self.size,
@@ -451,49 +463,49 @@ mod tests {
         fn test_contains() {
             struct Test {
                 rect: Rectangle,
-                coordinate: Coordinate,
+                coordinate: SpriteCoordinate,
                 expected: bool,
             }
 
             let tests = vec![
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(0, 0)),
-                    coordinate: Coordinate::new(0, 0),
+                    rect: Rectangle::new(SpriteCoordinate::new(0, 0), Size::new(0, 0)),
+                    coordinate: SpriteCoordinate::new(0, 0),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
-                    coordinate: Coordinate::new(0, 0),
+                    rect: Rectangle::new(SpriteCoordinate::new(0, 0), Size::new(1, 1)),
+                    coordinate: SpriteCoordinate::new(0, 0),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(2, 2)),
-                    coordinate: Coordinate::new(1, 1),
+                    rect: Rectangle::new(SpriteCoordinate::new(0, 0), Size::new(2, 2)),
+                    coordinate: SpriteCoordinate::new(1, 1),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
-                    coordinate: Coordinate::new(1, 1),
+                    rect: Rectangle::new(SpriteCoordinate::new(0, 0), Size::new(1, 1)),
+                    coordinate: SpriteCoordinate::new(1, 1),
                     expected: true,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
-                    coordinate: Coordinate::new(-1, -1),
+                    rect: Rectangle::new(SpriteCoordinate::new(0, 0), Size::new(1, 1)),
+                    coordinate: SpriteCoordinate::new(-1, -1),
                     expected: false,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
-                    coordinate: Coordinate::new(-2, 0),
+                    rect: Rectangle::new(SpriteCoordinate::new(0, 0), Size::new(1, 1)),
+                    coordinate: SpriteCoordinate::new(-2, 0),
                     expected: false,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(1, 1), Size::new(1, 1)),
-                    coordinate: Coordinate::new(1, 0),
+                    rect: Rectangle::new(SpriteCoordinate::new(1, 1), Size::new(1, 1)),
+                    coordinate: SpriteCoordinate::new(1, 0),
                     expected: false,
                 },
                 Test {
-                    rect: Rectangle::new(Coordinate::new(0, 0), Size::new(1, 1)),
-                    coordinate: Coordinate::new(1, 2),
+                    rect: Rectangle::new(SpriteCoordinate::new(0, 0), Size::new(1, 1)),
+                    coordinate: SpriteCoordinate::new(1, 2),
                     expected: false,
                 },
             ];

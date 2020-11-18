@@ -3,7 +3,7 @@ use blocks::value_to_string;
 use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;
-use sprite_runtime::{Coordinate, SpriteRuntime};
+use sprite_runtime::{CanvasCoordinate, SpriteCoordinate, SpriteRuntime};
 use std::f64::consts::TAU;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use vm::ThreadID;
@@ -54,8 +54,7 @@ impl Global {
             if variable.monitored {
                 Global::draw_monitor(
                     context,
-                    variable.x,
-                    variable.y,
+                    &variable.position,
                     name,
                     &value_to_string(variable.value.clone()),
                 )?;
@@ -67,8 +66,7 @@ impl Global {
     // TODO display variable name, not id
     fn draw_monitor(
         context: &web_sys::CanvasRenderingContext2d,
-        x: f64,
-        y: f64,
+        position: &CanvasCoordinate,
         variable_name: &str,
         value_str: &str,
     ) -> Result<()> {
@@ -85,8 +83,7 @@ impl Global {
 
         Global::draw_rectangle(
             context,
-            x,
-            y,
+            position,
             name_width + orange_rectangle_width + 24.0,
             20.0,
             3.5,
@@ -99,16 +96,10 @@ impl Global {
 
         context.set_fill_style(&"#575e75".into());
         context.set_font(NAME_FONT);
-        context.fill_text(variable_name, x + 7.0, y + 14.0)?;
+        context.fill_text(variable_name, position.x + 7.0, position.y + 14.0)?;
 
-        Global::draw_rectangle(
-            context,
-            x + name_width + 16.0,
-            y + 3.0,
-            orange_rectangle_width,
-            14.0,
-            3.5,
-        )?;
+        let orange_position = position.add(&CanvasCoordinate::new(name_width + 16.0, 3.0));
+        Global::draw_rectangle(context, &orange_position, orange_rectangle_width, 14.0, 3.5)?;
         context.set_fill_style(&"#ff8c1a".into());
         context.fill();
 
@@ -116,46 +107,45 @@ impl Global {
         context.set_font(VALUE_FONT);
         context.fill_text(
             value_str,
-            x + name_width + 16.0 + (orange_rectangle_width - value_width) / 2.0,
-            y + 14.5,
+            orange_position.x + (orange_rectangle_width - value_width) / 2.0,
+            orange_position.y + 11.5,
         )?;
         Ok(())
     }
 
     fn draw_rectangle(
         context: &web_sys::CanvasRenderingContext2d,
-        x: f64,
-        y: f64,
+        position: &CanvasCoordinate,
         width: f64,
         height: f64,
         corner_radius: f64,
     ) -> Result<()> {
         context.begin_path();
-        context.move_to(x + corner_radius, y + 0.0);
+        context.move_to(position.x + corner_radius, position.y + 0.0);
         context.arc(
-            x + width - corner_radius,
-            y + corner_radius,
+            position.x + width - corner_radius,
+            position.y + corner_radius,
             corner_radius,
             3.0 / 4.0 * TAU,
             0.0,
         )?;
         context.arc(
-            x + width - corner_radius,
-            y + height - corner_radius,
+            position.x + width - corner_radius,
+            position.y + height - corner_radius,
             corner_radius,
             0.0,
             1.0 / 4.0 * TAU,
         )?;
         context.arc(
-            x + corner_radius,
-            y + height - corner_radius,
+            position.x + corner_radius,
+            position.y + height - corner_radius,
             corner_radius,
             1.0 / 4.0 * TAU,
             2.0 / 4.0 * TAU,
         )?;
         context.arc(
-            x + corner_radius,
-            y + corner_radius,
+            position.x + corner_radius,
+            position.y + corner_radius,
             corner_radius,
             2.0 / 4.0 * TAU,
             3.0 / 4.0 * TAU,
@@ -194,7 +184,7 @@ pub enum BroadcastMsg {
     Finished(String),
     Clone(SpriteID),
     DeleteClone(SpriteID),
-    Click(Coordinate),
+    Click(SpriteCoordinate),
     Stop(Stop),
 }
 
@@ -213,7 +203,7 @@ pub struct Variables {
 impl Variables {
     fn new(
         scratch_file_variables: &HashMap<String, savefile::Variable>,
-        monitors: &Vec<Monitor>,
+        monitors: &[Monitor],
     ) -> Self {
         let mut variables: HashMap<String, Variable> = HashMap::new();
         for (key, v) in scratch_file_variables {
@@ -222,14 +212,12 @@ impl Variables {
                 Some(monitor) => Variable {
                     value: v.value.clone(),
                     monitored: monitor.visible,
-                    x: monitor.x,
-                    y: monitor.y,
+                    position: CanvasCoordinate::new(monitor.x, monitor.y),
                 },
                 None => Variable {
                     value: v.value.clone(),
                     monitored: false,
-                    x: 0.0,
-                    y: 0.0,
+                    position: CanvasCoordinate::new(0.0, 0.0),
                 },
             };
             variables.insert(key.clone(), variable);
@@ -288,6 +276,5 @@ impl Variables {
 pub struct Variable {
     value: Value,
     monitored: bool,
-    x: f64,
-    y: f64,
+    position: CanvasCoordinate,
 }
