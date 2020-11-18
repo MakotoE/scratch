@@ -7,6 +7,7 @@
 mod error;
 mod app;
 mod blocks;
+mod canvas;
 mod coordinate;
 mod fileinput;
 mod fileviewer;

@@ -1,6 +1,7 @@
 use super::*;
 use crate::coordinate::CanvasRectangle;
 use blocks::value_to_string;
+use canvas::CanvasContext;
 use coordinate::{CanvasCoordinate, Size, SpriteCoordinate};
 use savefile::Monitor;
 use serde_json::Value;
@@ -51,7 +52,7 @@ impl Global {
         true
     }
 
-    pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+    pub async fn redraw(&self, context: &CanvasContext) -> Result<()> {
         for (name, variable) in self.variables.variables.read().await.iter() {
             if variable.monitored {
                 Global::draw_monitor(
@@ -67,7 +68,7 @@ impl Global {
 
     // TODO display variable name, not id
     fn draw_monitor(
-        context: &web_sys::CanvasRenderingContext2d,
+        context: &CanvasContext,
         position: &CanvasCoordinate,
         variable_name: &str,
         value_str: &str,
@@ -76,10 +77,10 @@ impl Global {
         const VALUE_FONT: &str = "12px Helvetica, sans-serif";
 
         context.set_font(NAME_FONT);
-        let name_width: f64 = context.measure_text(variable_name)?.width();
+        let name_width = context.measure_text(variable_name)?;
 
         context.set_font(VALUE_FONT);
-        let value_width: f64 = context.measure_text(value_str)?.width();
+        let value_width = context.measure_text(value_str)?;
 
         let orange_rectangle_width = f64::max(39.0 - value_width, value_width + 4.0);
 
@@ -94,15 +95,18 @@ impl Global {
             },
             3.5,
         )?;
-        context.set_fill_style(&"#e6f0ff".into());
+        context.set_fill_style("#e6f0ff");
         context.fill();
-        context.set_stroke_style(&"#c4ccd9".into());
+        context.set_stroke_style("#c4ccd9");
         context.set_line_width(1.0);
         context.stroke();
 
-        context.set_fill_style(&"#575e75".into());
+        context.set_fill_style("#575e75");
         context.set_font(NAME_FONT);
-        context.fill_text(variable_name, position.x + 7.0, position.y + 14.0)?;
+        context.fill_text(
+            variable_name,
+            &position.add(&CanvasCoordinate { x: 7.0, y: 14.0 }),
+        )?;
 
         let orange_position = position.add(&CanvasCoordinate {
             x: name_width + 16.0,
@@ -119,53 +123,63 @@ impl Global {
             },
             3.5,
         )?;
-        context.set_fill_style(&"#ff8c1a".into());
+        context.set_fill_style("#ff8c1a");
         context.fill();
 
-        context.set_fill_style(&"#ffffff".into());
+        context.set_fill_style("#ffffff");
         context.set_font(VALUE_FONT);
         context.fill_text(
             value_str,
-            orange_position.x + (orange_rectangle_width - value_width) / 2.0,
-            orange_position.y + 11.5,
+            &orange_position.add(&CanvasCoordinate {
+                x: (orange_rectangle_width - value_width) / 2.0,
+                y: 11.5,
+            }),
         )?;
         Ok(())
     }
 
     fn draw_rectangle(
-        context: &web_sys::CanvasRenderingContext2d,
+        context: &CanvasContext,
         rectangle: &CanvasRectangle,
         corner_radius: f64,
     ) -> Result<()> {
         context.begin_path();
-        context.move_to(
-            rectangle.top_left.x + corner_radius,
-            rectangle.top_left.y + 0.0,
-        );
+        context.move_to(&rectangle.top_left.add(&CanvasCoordinate {
+            x: corner_radius,
+            y: 0.0,
+        }));
         context.arc(
-            rectangle.top_left.x + rectangle.size.width - corner_radius,
-            rectangle.top_left.y + corner_radius,
+            &rectangle.top_left.add(&CanvasCoordinate {
+                x: rectangle.size.width - corner_radius,
+                y: corner_radius,
+            }),
             corner_radius,
             3.0 / 4.0 * TAU,
             0.0,
         )?;
         context.arc(
-            rectangle.top_left.x + rectangle.size.width - corner_radius,
-            rectangle.top_left.y + rectangle.size.length - corner_radius,
+            &rectangle.top_left.add(&CanvasCoordinate {
+                x: rectangle.size.width - corner_radius,
+                y: rectangle.size.length - corner_radius,
+            }),
             corner_radius,
             0.0,
             1.0 / 4.0 * TAU,
         )?;
         context.arc(
-            rectangle.top_left.x + corner_radius,
-            rectangle.top_left.y + rectangle.size.length - corner_radius,
+            &rectangle.top_left.add(&CanvasCoordinate {
+                x: corner_radius,
+                y: rectangle.size.length - corner_radius,
+            }),
             corner_radius,
             1.0 / 4.0 * TAU,
             2.0 / 4.0 * TAU,
         )?;
         context.arc(
-            rectangle.top_left.x + corner_radius,
-            rectangle.top_left.y + corner_radius,
+            &rectangle.top_left.add(&CanvasCoordinate {
+                x: corner_radius,
+                y: corner_radius,
+            }),
             corner_radius,
             2.0 / 4.0 * TAU,
             3.0 / 4.0 * TAU,

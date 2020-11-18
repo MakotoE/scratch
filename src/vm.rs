@@ -1,6 +1,7 @@
 use super::*;
 use crate::coordinate::SpriteCoordinate;
 use blocks::{BlockInfo, BlockInputs};
+use canvas::CanvasContext;
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
@@ -398,7 +399,9 @@ impl SpritesCell {
         context.scale(2.0, 2.0).unwrap();
         context.clear_rect(0.0, 0.0, 480.0, 360.0);
 
-        self.global.redraw(context).await?;
+        self.global
+            .redraw(&CanvasContext::new(context.clone()))
+            .await?;
 
         context.reset_transform().unwrap();
         context.scale(2.0, 2.0).unwrap();
