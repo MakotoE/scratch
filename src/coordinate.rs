@@ -22,6 +22,15 @@ pub type SpriteCoordinate = Coordinate;
 /// Top = 0, bottom + y
 pub type CanvasCoordinate = Coordinate;
 
+impl CanvasCoordinate {
+    pub fn from_sprite_coordinate(c: SpriteCoordinate) -> Self {
+        Self {
+            x: 240.0 + c.x,
+            y: 180.0 - c.y,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Size {
     pub width: f64,
@@ -30,7 +39,7 @@ pub struct Size {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SpriteRectangle {
-    pub center: Coordinate,
+    pub center: SpriteCoordinate,
     pub size: Size,
 }
 
@@ -56,7 +65,7 @@ impl SpriteRectangle {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CanvasRectangle {
-    pub top_left: Coordinate,
+    pub top_left: CanvasCoordinate,
     pub size: Size,
 }
 
@@ -73,107 +82,130 @@ impl CanvasRectangle {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_contains() {
-        struct Test {
-            rect: SpriteRectangle,
-            coordinate: SpriteCoordinate,
-            expected: bool,
+    mod canvas_coordinate {
+        use super::*;
+
+        #[test]
+        fn from_sprite_coordinate() {
+            assert_eq!(
+                CanvasCoordinate::from_sprite_coordinate(SpriteCoordinate { x: 0.0, y: 0.0 }),
+                CanvasCoordinate { x: 240.0, y: 180.0 }
+            );
+            assert_eq!(
+                CanvasCoordinate::from_sprite_coordinate(SpriteCoordinate {
+                    x: -240.0,
+                    y: 180.0
+                }),
+                CanvasCoordinate { x: 0.0, y: 0.0 }
+            );
         }
+    }
 
-        let tests = vec![
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 0.0, y: 0.0 },
-                    size: Size {
-                        width: 0.0,
-                        length: 0.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
-                expected: true,
-            },
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 0.0, y: 0.0 },
-                    size: Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
-                expected: true,
-            },
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 0.0, y: 0.0 },
-                    size: Size {
-                        width: 2.0,
-                        length: 2.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
-                expected: true,
-            },
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 0.0, y: 0.0 },
-                    size: Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
-                expected: false,
-            },
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 0.0, y: 0.0 },
-                    size: Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: -1.0, y: -1.0 },
-                expected: false,
-            },
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 0.0, y: 0.0 },
-                    size: Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: -2.0, y: 0.0 },
-                expected: false,
-            },
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 1.0, y: 1.0 },
-                    size: Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: 1.0, y: 0.0 },
-                expected: false,
-            },
-            Test {
-                rect: SpriteRectangle {
-                    center: SpriteCoordinate { x: 0.0, y: 0.0 },
-                    size: Size {
-                        width: 1.0,
-                        length: 1.0,
-                    },
-                },
-                coordinate: SpriteCoordinate { x: 1.0, y: 2.0 },
-                expected: false,
-            },
-        ];
+    mod sprite_rectangle {
+        use super::*;
 
-        for (i, test) in tests.iter().enumerate() {
-            assert_eq!(test.rect.contains(&test.coordinate), test.expected, "{}", i);
+        #[test]
+        fn test_contains() {
+            struct Test {
+                rect: SpriteRectangle,
+                coordinate: SpriteCoordinate,
+                expected: bool,
+            }
+
+            let tests = vec![
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 0.0,
+                            length: 0.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
+                    expected: true,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 1.0,
+                            length: 1.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
+                    expected: true,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 2.0,
+                            length: 2.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
+                    expected: true,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 1.0,
+                            length: 1.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
+                    expected: false,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 1.0,
+                            length: 1.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: -1.0, y: -1.0 },
+                    expected: false,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 1.0,
+                            length: 1.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: -2.0, y: 0.0 },
+                    expected: false,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 1.0, y: 1.0 },
+                        size: Size {
+                            width: 1.0,
+                            length: 1.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: 1.0, y: 0.0 },
+                    expected: false,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 1.0,
+                            length: 1.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate { x: 1.0, y: 2.0 },
+                    expected: false,
+                },
+            ];
+
+            for (i, test) in tests.iter().enumerate() {
+                assert_eq!(test.rect.contains(&test.coordinate), test.expected, "{}", i);
+            }
         }
     }
 }

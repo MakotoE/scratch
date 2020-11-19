@@ -1,6 +1,7 @@
 use super::*;
 use coordinate::CanvasCoordinate;
 use std::f64::consts::TAU;
+use web_sys::HtmlImageElement;
 
 pub struct CanvasContext {
     context: web_sys::CanvasRenderingContext2d,
@@ -84,6 +85,12 @@ impl CanvasContext {
 
     pub fn fill_text(&self, s: &str, position: &CanvasCoordinate) -> Result<()> {
         Ok(self.context.fill_text(s, position.x, position.y)?)
+    }
+
+    pub fn draw_image(&self, image: &HtmlImageElement, position: &CanvasCoordinate) -> Result<()> {
+        Ok(self
+            .context
+            .draw_image_with_html_image_element(image, position.x, position.y)?)
     }
 }
 

@@ -63,7 +63,11 @@ impl SpriteRuntime {
         self.pen.draw(context);
 
         let costume = &self.costumes[self.current_costume];
-        SpriteRuntime::draw_costume(context, costume, &self.position)?;
+        SpriteRuntime::draw_costume(
+            &CanvasContext::new(context.clone()),
+            costume,
+            &self.position,
+        )?;
 
         if let Some(text) = &self.text.text {
             context.save();
@@ -78,14 +82,17 @@ impl SpriteRuntime {
     }
 
     fn draw_costume(
-        context: &web_sys::CanvasRenderingContext2d,
+        context: &CanvasContext,
         costume: &Costume,
         position: &SpriteCoordinate,
     ) -> Result<()> {
-        context.draw_image_with_html_image_element(
+        let canvas_position = CanvasCoordinate::from_sprite_coordinate(*position);
+        context.draw_image(
             &costume.image,
-            240.0 - costume.size().width as f64 / 2.0 + position.x as f64,
-            180.0 - costume.size().length as f64 / 2.0 - position.y as f64,
+            &canvas_position.add(&CanvasCoordinate {
+                x: costume.size().width / -2.0,
+                y: costume.size().length / -2.0,
+            }),
         )?;
         Ok(())
     }
