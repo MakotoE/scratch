@@ -89,7 +89,6 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    //noinspection RsBorrowChecker
     fn draw_text_bubble(context: &web_sys::CanvasRenderingContext2d, text: &str) -> Result<()> {
         // Original implementation:
         // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
@@ -123,13 +122,29 @@ impl SpriteRuntime {
         )?;
 
         // Tail
-        context.save();
-        context.translate(CORNER_RADIUS, PADDED_HEIGHT)?;
-        context.bezier_curve_to(-0.0, 4.0, -4.0, 8.0, -4.0, 10.0);
-        context.arc_to(-4.0, 12.0, -2.0, 12.0, 2.0)?;
-        context.bezier_curve_to(1.0, 12.0, 11.0, 8.0, 16.0, 0.0);
-        context.restore();
-
+        context.bezier_curve_to(
+            CORNER_RADIUS,
+            4.0 + PADDED_HEIGHT,
+            -4.0 + CORNER_RADIUS,
+            8.0 + PADDED_HEIGHT,
+            -4.0 + CORNER_RADIUS,
+            10.0 + PADDED_HEIGHT,
+        );
+        context.arc_to(
+            -4.0 + CORNER_RADIUS,
+            12.0 + PADDED_HEIGHT,
+            -2.0 + CORNER_RADIUS,
+            12.0 + PADDED_HEIGHT,
+            2.0,
+        )?;
+        context.bezier_curve_to(
+            1.0 + CORNER_RADIUS,
+            12.0 + PADDED_HEIGHT,
+            11.0 + CORNER_RADIUS,
+            8.0 + PADDED_HEIGHT,
+            16.0 + CORNER_RADIUS,
+            PADDED_HEIGHT,
+        );
         context.close_path();
 
         context.set_fill_style(&"white".into());
