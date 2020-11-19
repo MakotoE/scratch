@@ -1,13 +1,12 @@
 use super::*;
 use crate::coordinate::CanvasRectangle;
 use blocks::value_to_string;
-use canvas::CanvasContext;
+use canvas::{CanvasContext, Corner};
 use coordinate::{CanvasCoordinate, Size, SpriteCoordinate};
 use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;
 use sprite_runtime::SpriteRuntime;
-use std::f64::consts::TAU;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use vm::ThreadID;
 
@@ -148,41 +147,37 @@ impl Global {
             x: corner_radius,
             y: 0.0,
         }));
-        context.arc(
+        context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
                 x: rectangle.size.width - corner_radius,
                 y: corner_radius,
             }),
             corner_radius,
-            3.0 / 4.0 * TAU,
-            0.0,
+            Corner::TopRight,
         )?;
-        context.arc(
+        context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
                 x: rectangle.size.width - corner_radius,
                 y: rectangle.size.length - corner_radius,
             }),
             corner_radius,
-            0.0,
-            1.0 / 4.0 * TAU,
+            Corner::BottomRight,
         )?;
-        context.arc(
+        context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
                 x: corner_radius,
                 y: rectangle.size.length - corner_radius,
             }),
             corner_radius,
-            1.0 / 4.0 * TAU,
-            2.0 / 4.0 * TAU,
+            Corner::BottomLeft,
         )?;
-        context.arc(
+        context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
                 x: corner_radius,
                 y: corner_radius,
             }),
             corner_radius,
-            2.0 / 4.0 * TAU,
-            3.0 / 4.0 * TAU,
+            Corner::TopLeft,
         )?;
         context.close_path();
         Ok(())

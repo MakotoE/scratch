@@ -1,5 +1,6 @@
 use super::*;
 use coordinate::CanvasCoordinate;
+use std::f64::consts::TAU;
 
 pub struct CanvasContext {
     context: web_sys::CanvasRenderingContext2d,
@@ -22,16 +23,16 @@ impl CanvasContext {
         self.context.move_to(position.x, position.y);
     }
 
-    pub fn arc(
+    pub fn rounded_corner(
         &self,
         arc_center: &CanvasCoordinate,
         radius: f64,
-        start_angle: f64,
-        end_angle: f64,
+        corner: Corner,
     ) -> Result<()> {
+        let angles = corner.angles();
         Ok(self
             .context
-            .arc(arc_center.x, arc_center.y, radius, start_angle, end_angle)?)
+            .arc(arc_center.x, arc_center.y, radius, angles.start, angles.end)?)
     }
 
     pub fn set_font(&self, font: &str) {
@@ -65,4 +66,46 @@ impl CanvasContext {
     pub fn fill_text(&self, s: &str, position: &CanvasCoordinate) -> Result<()> {
         Ok(self.context.fill_text(s, position.x, position.y)?)
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Corner {
+    TopRight,
+    BottomRight,
+    BottomLeft,
+    TopLeft,
+}
+
+impl Corner {
+    fn angles(&self) -> Angles {
+        const RIGHT: f64 = 0.0 / 4.0 * TAU;
+        const DOWN: f64 = 1.0 / 4.0 * TAU;
+        const LEFT: f64 = 2.0 / 4.0 * TAU;
+        const UP: f64 = 3.0 / 4.0 * TAU;
+
+        match self {
+            Corner::TopRight => Angles {
+                start: UP,
+                end: RIGHT,
+            },
+            Corner::BottomRight => Angles {
+                start: RIGHT,
+                end: DOWN,
+            },
+            Corner::BottomLeft => Angles {
+                start: DOWN,
+                end: LEFT,
+            },
+            Corner::TopLeft => Angles {
+                start: LEFT,
+                end: UP,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+struct Angles {
+    start: f64,
+    end: f64,
 }
