@@ -1,5 +1,6 @@
 use super::*;
-use coordinate::{Size, SpriteCoordinate, SpriteRectangle};
+use canvas::{CanvasContext, Corner, Direction};
+use coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle};
 use palette::IntoColor;
 use pen::Pen;
 use savefile::{BlockID, Image, Target};
@@ -70,7 +71,7 @@ impl SpriteRuntime {
                 240.0 + costume.size().width as f64 / 4.0 + self.position.x as f64,
                 130.0 - costume.size().length as f64 / 2.0 - self.position.y as f64,
             )?;
-            SpriteRuntime::draw_text_bubble(context, text)?;
+            SpriteRuntime::draw_text_bubble(&CanvasContext::new(context.clone()), text)?;
             context.restore();
         }
         Ok(())
@@ -89,52 +90,59 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    fn draw_text_bubble(context: &web_sys::CanvasRenderingContext2d, text: &str) -> Result<()> {
+    fn draw_text_bubble(context: &CanvasContext, text: &str) -> Result<()> {
         // Original implementation:
         // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
         const CORNER_RADIUS: f64 = 16.0;
         const PADDING: f64 = 10.0;
-        const HEIGHT: f64 = 16.0 + PADDING * 2.0;
+        const HEIGHT: f64 = CORNER_RADIUS + PADDING * 2.0;
 
         context.set_font("14px Helvetica, sans-serif");
-        let line_width: f64 = context.measure_text(text)?.width();
+        let line_width = context.measure_text(text)?;
         let width = line_width.max(50.0) + PADDING * 2.0;
 
         context.begin_path();
 
         // Corners
-        context.move_to(width - CORNER_RADIUS, HEIGHT);
-        context.arc_with_anticlockwise(
-            width - CORNER_RADIUS,
-            HEIGHT - CORNER_RADIUS,
+        context.move_to(&CanvasCoordinate {
+            x: width - CORNER_RADIUS,
+            y: HEIGHT,
+        });
+        context.rounded_corner(
+            &CanvasCoordinate {
+                x: width - CORNER_RADIUS,
+                y: HEIGHT - CORNER_RADIUS,
+            },
             CORNER_RADIUS,
-            1.0 / 4.0 * 6.28,
-            0.0 / 4.0 * 6.28,
-            true,
+            Corner::BottomRight,
+            Direction::CounterClockwise,
         )?;
-        context.arc_with_anticlockwise(
-            width - CORNER_RADIUS,
+        context.rounded_corner(
+            &CanvasCoordinate {
+                x: width - CORNER_RADIUS,
+                y: CORNER_RADIUS,
+            },
             CORNER_RADIUS,
-            CORNER_RADIUS,
-            0.0 / 4.0 * 6.28,
-            3.0 / 4.0 * 6.28,
-            true,
+            Corner::TopRight,
+            Direction::CounterClockwise,
         )?;
-        context.arc_with_anticlockwise(
+        context.rounded_corner(
+            &CanvasCoordinate {
+                x: CORNER_RADIUS,
+                y: CORNER_RADIUS,
+            },
             CORNER_RADIUS,
-            CORNER_RADIUS,
-            CORNER_RADIUS,
-            3.0 / 4.0 * 6.28,
-            2.0 / 4.0 * 6.28,
-            true,
+            Corner::TopLeft,
+            Direction::CounterClockwise,
         )?;
-        context.arc_with_anticlockwise(
+        context.rounded_corner(
+            &CanvasCoordinate {
+                x: CORNER_RADIUS,
+                y: HEIGHT - CORNER_RADIUS,
+            },
             CORNER_RADIUS,
-            HEIGHT - CORNER_RADIUS,
-            CORNER_RADIUS,
-            2.0 / 4.0 * 6.28,
-            1.0 / 4.0 * 6.28,
-            true,
+            Corner::BottomLeft,
+            Direction::CounterClockwise,
         )?;
 
         // Tail
@@ -163,14 +171,20 @@ impl SpriteRuntime {
         );
         context.close_path();
 
-        context.set_fill_style(&"white".into());
-        context.set_stroke_style(&"rgba(0, 0, 0, 0.15)".into());
+        context.set_fill_style("white");
+        context.set_stroke_style("rgba(0, 0, 0, 0.15)");
         context.set_line_width(4.0);
         context.stroke();
         context.fill();
 
-        context.set_fill_style(&"#575E75".into());
-        context.fill_text(text, PADDING, PADDING + 0.9 * 15.0)?;
+        context.set_fill_style("#575E75");
+        context.fill_text(
+            text,
+            &CanvasCoordinate {
+                x: PADDING,
+                y: PADDING + 0.9 * 15.0,
+            },
+        )?;
         Ok(())
     }
 

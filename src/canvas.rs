@@ -46,6 +46,14 @@ impl CanvasContext {
         )?)
     }
 
+    pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) -> Result<()> {
+        Ok(self.context.arc_to(x1, y1, x2, y2, radius)?)
+    }
+
+    pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
+        self.context.bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y);
+    }
+
     pub fn set_font(&self, font: &str) {
         self.context.set_font(font);
     }
