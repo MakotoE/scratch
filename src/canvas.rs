@@ -28,11 +28,22 @@ impl CanvasContext {
         arc_center: &CanvasCoordinate,
         radius: f64,
         corner: Corner,
+        direction: Direction,
     ) -> Result<()> {
         let angles = corner.angles();
-        Ok(self
-            .context
-            .arc(arc_center.x, arc_center.y, radius, angles.start, angles.end)?)
+        let (start, end) = match direction {
+            Direction::Clockwise => (angles.0, angles.1),
+            Direction::CounterClockwise => (angles.1, angles.0),
+        };
+
+        Ok(self.context.arc_with_anticlockwise(
+            arc_center.x,
+            arc_center.y,
+            radius,
+            start,
+            end,
+            matches! {direction, Direction::CounterClockwise},
+        )?)
     }
 
     pub fn set_font(&self, font: &str) {
@@ -84,28 +95,19 @@ impl Corner {
         const UP: f64 = 3.0 / 4.0 * TAU;
 
         match self {
-            Corner::TopRight => Angles {
-                start: UP,
-                end: RIGHT,
-            },
-            Corner::BottomRight => Angles {
-                start: RIGHT,
-                end: DOWN,
-            },
-            Corner::BottomLeft => Angles {
-                start: DOWN,
-                end: LEFT,
-            },
-            Corner::TopLeft => Angles {
-                start: LEFT,
-                end: UP,
-            },
+            Corner::TopRight => Angles(UP, RIGHT),
+            Corner::BottomRight => Angles(RIGHT, DOWN),
+            Corner::BottomLeft => Angles(DOWN, LEFT),
+            Corner::TopLeft => Angles(LEFT, UP),
         }
     }
 }
 
 #[derive(Debug, Copy, Clone)]
-struct Angles {
-    start: f64,
-    end: f64,
+struct Angles(f64, f64);
+
+#[derive(Debug, Copy, Clone)]
+pub enum Direction {
+    Clockwise,
+    CounterClockwise,
 }

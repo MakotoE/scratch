@@ -1,7 +1,7 @@
 use super::*;
 use crate::coordinate::CanvasRectangle;
 use blocks::value_to_string;
-use canvas::{CanvasContext, Corner};
+use canvas::{CanvasContext, Corner, Direction};
 use coordinate::{CanvasCoordinate, Size, SpriteCoordinate};
 use savefile::Monitor;
 use serde_json::Value;
@@ -154,6 +154,7 @@ impl Global {
             }),
             corner_radius,
             Corner::TopRight,
+            Direction::Clockwise,
         )?;
         context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
@@ -162,6 +163,7 @@ impl Global {
             }),
             corner_radius,
             Corner::BottomRight,
+            Direction::Clockwise,
         )?;
         context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
@@ -170,6 +172,7 @@ impl Global {
             }),
             corner_radius,
             Corner::BottomLeft,
+            Direction::Clockwise,
         )?;
         context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
@@ -178,6 +181,7 @@ impl Global {
             }),
             corner_radius,
             Corner::TopLeft,
+            Direction::Clockwise,
         )?;
         context.close_path();
         Ok(())
