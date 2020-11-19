@@ -94,56 +94,72 @@ impl SpriteRuntime {
         // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
         const CORNER_RADIUS: f64 = 16.0;
         const PADDING: f64 = 10.0;
-        const PADDED_HEIGHT: f64 = 16.0 + PADDING * 2.0;
+        const HEIGHT: f64 = 16.0 + PADDING * 2.0;
 
         context.set_font("14px Helvetica, sans-serif");
         let line_width: f64 = context.measure_text(text)?.width();
-        let padded_width = line_width.max(50.0) + PADDING * 2.0;
+        let width = line_width.max(50.0) + PADDING * 2.0;
 
         context.begin_path();
 
         // Corners
-        context.move_to(-16.0 + padded_width, PADDED_HEIGHT);
-        context.arc_to(
-            padded_width,
-            PADDED_HEIGHT,
-            padded_width,
-            PADDED_HEIGHT - CORNER_RADIUS,
+        context.move_to(width - CORNER_RADIUS, HEIGHT);
+        context.arc_with_anticlockwise(
+            width - CORNER_RADIUS,
+            HEIGHT - CORNER_RADIUS,
             CORNER_RADIUS,
+            1.0 / 4.0 * 6.28,
+            0.0 / 4.0 * 6.28,
+            true,
         )?;
-        context.arc_to(padded_width, 0.0, 0.0, 0.0, CORNER_RADIUS)?;
-        context.arc_to(0.0, 0.0, 0.0, PADDED_HEIGHT, CORNER_RADIUS)?;
-        context.arc_to(
-            0.0,
-            PADDED_HEIGHT,
+        context.arc_with_anticlockwise(
+            width - CORNER_RADIUS,
             CORNER_RADIUS,
-            PADDED_HEIGHT,
             CORNER_RADIUS,
+            0.0 / 4.0 * 6.28,
+            3.0 / 4.0 * 6.28,
+            true,
+        )?;
+        context.arc_with_anticlockwise(
+            CORNER_RADIUS,
+            CORNER_RADIUS,
+            CORNER_RADIUS,
+            3.0 / 4.0 * 6.28,
+            2.0 / 4.0 * 6.28,
+            true,
+        )?;
+        context.arc_with_anticlockwise(
+            CORNER_RADIUS,
+            HEIGHT - CORNER_RADIUS,
+            CORNER_RADIUS,
+            2.0 / 4.0 * 6.28,
+            1.0 / 4.0 * 6.28,
+            true,
         )?;
 
         // Tail
         context.bezier_curve_to(
             CORNER_RADIUS,
-            4.0 + PADDED_HEIGHT,
+            4.0 + HEIGHT,
             -4.0 + CORNER_RADIUS,
-            8.0 + PADDED_HEIGHT,
+            8.0 + HEIGHT,
             -4.0 + CORNER_RADIUS,
-            10.0 + PADDED_HEIGHT,
+            10.0 + HEIGHT,
         );
         context.arc_to(
             -4.0 + CORNER_RADIUS,
-            12.0 + PADDED_HEIGHT,
+            12.0 + HEIGHT,
             -2.0 + CORNER_RADIUS,
-            12.0 + PADDED_HEIGHT,
+            12.0 + HEIGHT,
             2.0,
         )?;
         context.bezier_curve_to(
             1.0 + CORNER_RADIUS,
-            12.0 + PADDED_HEIGHT,
+            12.0 + HEIGHT,
             11.0 + CORNER_RADIUS,
-            8.0 + PADDED_HEIGHT,
+            8.0 + HEIGHT,
             16.0 + CORNER_RADIUS,
-            PADDED_HEIGHT,
+            HEIGHT,
         );
         context.close_path();
 
