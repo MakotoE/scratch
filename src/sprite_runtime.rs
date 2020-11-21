@@ -1,5 +1,5 @@
 use super::*;
-use canvas::{CanvasContext, Corner, Direction};
+use canvas::{CanvasContext, Corner, Direction, Transformation};
 use coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle};
 use palette::IntoColor;
 use pen::Pen;
@@ -53,30 +53,27 @@ impl SpriteRuntime {
         Ok(runtime)
     }
 
-    pub fn redraw(&mut self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+    pub fn redraw(&mut self, context: &CanvasContext) -> Result<()> {
         self.need_redraw = false;
 
         if let HideStatus::Hide = self.hide {
             return Ok(());
         }
 
-        self.pen.draw(&CanvasContext::new(context.clone()));
+        self.pen.draw(context);
 
         let costume = &self.costumes[self.current_costume];
-        SpriteRuntime::draw_costume(
-            &CanvasContext::new(context.clone()),
-            costume,
-            &self.position,
-        )?;
+        SpriteRuntime::draw_costume(context, costume, &self.position)?;
 
         if let Some(text) = &self.text.text {
-            context.save();
-            context.translate(
-                240.0 + costume.size().width as f64 / 4.0 + self.position.x as f64,
-                130.0 - costume.size().length as f64 / 2.0 - self.position.y as f64,
-            )?;
-            SpriteRuntime::draw_text_bubble(&CanvasContext::new(context.clone()), text)?;
-            context.restore();
+            let position = CanvasCoordinate::from_sprite_coordinate(self.position);
+            let context = context.with_transformation(Transformation::translate(position.add(
+                &CanvasCoordinate {
+                    x: costume.size().width as f64 / 4.0,
+                    y: -50.0 - costume.size().length as f64 / 2.0,
+                },
+            )));
+            SpriteRuntime::draw_text_bubble(&context, text)?;
         }
         Ok(())
     }
@@ -154,27 +151,43 @@ impl SpriteRuntime {
 
         // Tail
         context.bezier_curve_to(
-            CORNER_RADIUS,
-            4.0 + HEIGHT,
-            -4.0 + CORNER_RADIUS,
-            8.0 + HEIGHT,
-            -4.0 + CORNER_RADIUS,
-            10.0 + HEIGHT,
+            &CanvasCoordinate {
+                x: CORNER_RADIUS,
+                y: 4.0 + HEIGHT,
+            },
+            &CanvasCoordinate {
+                x: -4.0 + CORNER_RADIUS,
+                y: 8.0 + HEIGHT,
+            },
+            &CanvasCoordinate {
+                x: -4.0 + CORNER_RADIUS,
+                y: 10.0 + HEIGHT,
+            },
         );
         context.arc_to(
-            -4.0 + CORNER_RADIUS,
-            12.0 + HEIGHT,
-            -2.0 + CORNER_RADIUS,
-            12.0 + HEIGHT,
+            &CanvasCoordinate {
+                x: -4.0 + CORNER_RADIUS,
+                y: 12.0 + HEIGHT,
+            },
+            &CanvasCoordinate {
+                x: -2.0 + CORNER_RADIUS,
+                y: 12.0 + HEIGHT,
+            },
             2.0,
         )?;
         context.bezier_curve_to(
-            1.0 + CORNER_RADIUS,
-            12.0 + HEIGHT,
-            11.0 + CORNER_RADIUS,
-            8.0 + HEIGHT,
-            16.0 + CORNER_RADIUS,
-            HEIGHT,
+            &CanvasCoordinate {
+                x: 1.0 + CORNER_RADIUS,
+                y: 12.0 + HEIGHT,
+            },
+            &CanvasCoordinate {
+                x: 11.0 + CORNER_RADIUS,
+                y: 8.0 + HEIGHT,
+            },
+            &CanvasCoordinate {
+                x: 16.0 + CORNER_RADIUS,
+                y: HEIGHT,
+            },
         );
         context.close_path();
 

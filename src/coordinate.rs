@@ -70,6 +70,7 @@ pub struct CanvasRectangle {
 }
 
 impl CanvasRectangle {
+    #[allow(dead_code)]
     pub fn translate(&self, coordinate: &SpriteCoordinate) -> CanvasRectangle {
         CanvasRectangle {
             top_left: self.top_left.add(coordinate),

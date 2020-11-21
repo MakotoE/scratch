@@ -1,15 +1,27 @@
 use super::*;
 use coordinate::CanvasCoordinate;
 use std::f64::consts::TAU;
-use web_sys::HtmlImageElement;
+use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
-pub struct CanvasContext {
-    context: web_sys::CanvasRenderingContext2d,
+#[derive(Debug, Clone)]
+pub struct CanvasContext<'a> {
+    context: &'a CanvasRenderingContext2d,
+    transformation: Transformation,
 }
 
-impl CanvasContext {
-    pub fn new(context: web_sys::CanvasRenderingContext2d) -> Self {
-        Self { context }
+impl<'a> CanvasContext<'a> {
+    pub fn new(context: &'a CanvasRenderingContext2d) -> Self {
+        Self {
+            context,
+            transformation: Transformation::default(),
+        }
+    }
+
+    pub fn with_transformation(&'a self, transformation: Transformation) -> Self {
+        Self {
+            context: self.context,
+            transformation: self.transformation.apply_transformation(&transformation),
+        }
     }
 
     pub fn begin_path(&self) {
@@ -21,6 +33,7 @@ impl CanvasContext {
     }
 
     pub fn move_to(&self, position: &CanvasCoordinate) {
+        let position = self.transformation.apply_to(position);
         self.context.move_to(position.x, position.y);
     }
 
@@ -31,6 +44,7 @@ impl CanvasContext {
         corner: Corner,
         direction: Direction,
     ) -> Result<()> {
+        let arc_center = self.transformation.apply_to(arc_center);
         let angles = corner.angles();
         let (start, end) = match direction {
             Direction::Clockwise => (angles.0, angles.1),
@@ -47,15 +61,32 @@ impl CanvasContext {
         )?)
     }
 
-    pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) -> Result<()> {
-        Ok(self.context.arc_to(x1, y1, x2, y2, radius)?)
+    pub fn arc_to(
+        &self,
+        from: &CanvasCoordinate,
+        to: &CanvasCoordinate,
+        radius: f64,
+    ) -> Result<()> {
+        let from = self.transformation.apply_to(from);
+        let to = self.transformation.apply_to(to);
+        Ok(self.context.arc_to(from.x, from.y, to.x, to.y, radius)?)
     }
 
-    pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
-        self.context.bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y);
+    pub fn bezier_curve_to(
+        &self,
+        cp1: &CanvasCoordinate,
+        cp2: &CanvasCoordinate,
+        position: &CanvasCoordinate,
+    ) {
+        let cp1 = self.transformation.apply_to(cp1);
+        let cp2 = self.transformation.apply_to(cp2);
+        let position = self.transformation.apply_to(position);
+        self.context
+            .bezier_curve_to(cp1.x, cp1.y, cp2.x, cp2.y, position.x, position.y);
     }
 
     pub fn line_to(&self, position: &CanvasCoordinate) {
+        let position = self.transformation.apply_to(position);
         self.context.line_to(position.x, position.y);
     }
 
@@ -76,7 +107,7 @@ impl CanvasContext {
     }
 
     pub fn fill(&self) {
-        self.context.fill()
+        self.context.fill();
     }
 
     pub fn stroke(&self) {
@@ -88,6 +119,7 @@ impl CanvasContext {
     }
 
     pub fn fill_text(&self, s: &str, position: &CanvasCoordinate) -> Result<()> {
+        let position = self.transformation.apply_to(position);
         Ok(self.context.fill_text(s, position.x, position.y)?)
     }
 
@@ -96,6 +128,7 @@ impl CanvasContext {
     }
 
     pub fn draw_image(&self, image: &HtmlImageElement, position: &CanvasCoordinate) -> Result<()> {
+        let position = self.transformation.apply_to(position);
         Ok(self
             .context
             .draw_image_with_html_image_element(image, position.x, position.y)?)
@@ -133,4 +166,33 @@ struct Angles(f64, f64);
 pub enum Direction {
     Clockwise,
     CounterClockwise,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Transformation {
+    pub translate: CanvasCoordinate,
+}
+
+impl Transformation {
+    pub fn translate(translate: CanvasCoordinate) -> Self {
+        Self { translate }
+    }
+
+    pub fn apply_transformation(&self, other: &Transformation) -> Self {
+        Self {
+            translate: self.translate.add(&other.translate),
+        }
+    }
+
+    pub fn apply_to(&self, coordinate: &CanvasCoordinate) -> CanvasCoordinate {
+        coordinate.add(&self.translate)
+    }
+}
+
+impl Default for Transformation {
+    fn default() -> Self {
+        Self {
+            translate: CanvasCoordinate { x: 0.0, y: 0.0 },
+        }
+    }
 }

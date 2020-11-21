@@ -399,16 +399,14 @@ impl SpritesCell {
         context.scale(2.0, 2.0).unwrap();
         context.clear_rect(0.0, 0.0, 480.0, 360.0);
 
-        self.global
-            .redraw(&CanvasContext::new(context.clone()))
-            .await?;
+        self.global.redraw(&CanvasContext::new(context)).await?;
 
         context.reset_transform().unwrap();
         context.scale(2.0, 2.0).unwrap();
 
         let sprites = self.sprites.borrow();
         for sprite in sprites.values() {
-            sprite.redraw(context).await?;
+            sprite.redraw(&CanvasContext::new(context)).await?;
         }
         Ok(())
     }

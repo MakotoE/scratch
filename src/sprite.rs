@@ -93,7 +93,7 @@ impl Sprite {
         self.runtime.sprite.read().await.need_redraw()
     }
 
-    pub async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+    pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
         if *self.sprite_removed.borrow() {
             Ok(())
         } else {

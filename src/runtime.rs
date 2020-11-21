@@ -1,8 +1,7 @@
 use super::*;
-use crate::coordinate::CanvasRectangle;
 use blocks::value_to_string;
 use canvas::{CanvasContext, Corner, Direction};
-use coordinate::{CanvasCoordinate, Size, SpriteCoordinate};
+use coordinate::{CanvasCoordinate, CanvasRectangle, Size, SpriteCoordinate};
 use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;
@@ -51,7 +50,7 @@ impl Global {
         true
     }
 
-    pub async fn redraw(&self, context: &CanvasContext) -> Result<()> {
+    pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
         for (name, variable) in self.variables.variables.read().await.iter() {
             if variable.monitored {
                 Global::draw_monitor(
@@ -149,6 +148,7 @@ impl Global {
         }));
         context.rounded_corner(
             &rectangle.top_left.add(&CanvasCoordinate {
+                // TODO
                 x: rectangle.size.width - corner_radius,
                 y: corner_radius,
             }),
