@@ -1,4 +1,5 @@
 use super::*;
+use crate::canvas::Transformation;
 use blocks::value_to_string;
 use canvas::{CanvasContext, Corner, Direction};
 use coordinate::{CanvasCoordinate, CanvasRectangle, Size, SpriteCoordinate};
@@ -141,44 +142,44 @@ impl Global {
         rectangle: &CanvasRectangle,
         corner_radius: f64,
     ) -> Result<()> {
+        let context = context.with_transformation(Transformation::translate(rectangle.top_left));
         context.begin_path();
-        context.move_to(&rectangle.top_left.add(&CanvasCoordinate {
+        context.move_to(&CanvasCoordinate {
             x: corner_radius,
             y: 0.0,
-        }));
+        });
         context.rounded_corner(
-            &rectangle.top_left.add(&CanvasCoordinate {
-                // TODO
+            &CanvasCoordinate {
                 x: rectangle.size.width - corner_radius,
                 y: corner_radius,
-            }),
+            },
             corner_radius,
             Corner::TopRight,
             Direction::Clockwise,
         )?;
         context.rounded_corner(
-            &rectangle.top_left.add(&CanvasCoordinate {
+            &CanvasCoordinate {
                 x: rectangle.size.width - corner_radius,
                 y: rectangle.size.length - corner_radius,
-            }),
+            },
             corner_radius,
             Corner::BottomRight,
             Direction::Clockwise,
         )?;
         context.rounded_corner(
-            &rectangle.top_left.add(&CanvasCoordinate {
+            &CanvasCoordinate {
                 x: corner_radius,
                 y: rectangle.size.length - corner_radius,
-            }),
+            },
             corner_radius,
             Corner::BottomLeft,
             Direction::Clockwise,
         )?;
         context.rounded_corner(
-            &rectangle.top_left.add(&CanvasCoordinate {
+            &CanvasCoordinate {
                 x: corner_radius,
                 y: corner_radius,
-            }),
+            },
             corner_radius,
             Corner::TopLeft,
             Direction::Clockwise,
