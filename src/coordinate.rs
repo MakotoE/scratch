@@ -11,6 +11,13 @@ impl Coordinate {
             y: self.y + other.y,
         }
     }
+
+    pub fn multiply(&self, other: &Self) -> Self {
+        Self {
+            x: self.x * other.x,
+            y: self.y * other.y,
+        }
+    }
 }
 
 /// Center = 0, 0

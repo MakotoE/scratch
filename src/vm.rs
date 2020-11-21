@@ -211,7 +211,7 @@ impl VM {
                 }
                 Event::DeleteClone(sprite_id) => {
                     sprites.remove(&sprite_id);
-                    sprites.force_redraw(context).await?;
+                    sprites.force_redraw(&CanvasContext::new(context)).await?;
                     TimeoutFuture::new(0).await;
                     last_redraw = performance.now();
                 }
@@ -391,22 +391,17 @@ impl SpritesCell {
             return Ok(());
         }
 
-        self.force_redraw(context).await
+        self.force_redraw(&CanvasContext::new(context)).await
     }
 
-    async fn force_redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
-        context.reset_transform().unwrap();
-        context.scale(2.0, 2.0).unwrap();
-        context.clear_rect(0.0, 0.0, 480.0, 360.0);
+    async fn force_redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
+        context.clear();
 
-        self.global.redraw(&CanvasContext::new(context)).await?;
-
-        context.reset_transform().unwrap();
-        context.scale(2.0, 2.0).unwrap();
+        self.global.redraw(context).await?;
 
         let sprites = self.sprites.borrow();
         for sprite in sprites.values() {
-            sprite.redraw(&CanvasContext::new(context)).await?;
+            sprite.redraw(context).await?;
         }
         Ok(())
     }
