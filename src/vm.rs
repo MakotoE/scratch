@@ -408,7 +408,7 @@ impl SpritesCell {
 
         let sprites = self.sprites.borrow();
         for sprite in sprites.values() {
-            sprite.redraw(&context).await?;
+            sprite.redraw(context).await?;
         }
         Ok(())
     }

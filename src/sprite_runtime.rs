@@ -60,7 +60,7 @@ impl SpriteRuntime {
             return Ok(());
         }
 
-        self.pen.draw(context);
+        self.pen.draw(&CanvasContext::new(context.clone()));
 
         let costume = &self.costumes[self.current_costume];
         SpriteRuntime::draw_costume(

@@ -1,5 +1,6 @@
 use super::*;
-use coordinate::SpriteCoordinate;
+use canvas::CanvasContext;
+use coordinate::{CanvasCoordinate, SpriteCoordinate};
 use pen::PenStatus::PenUp;
 use sprite_runtime::color_to_hex;
 
@@ -67,7 +68,7 @@ impl Pen {
             .push(Line::new(&palette::Hsv::new(0.0, 1.0, 1.0), 1.0));
     }
 
-    pub fn draw(&self, context: &web_sys::CanvasRenderingContext2d) {
+    pub fn draw(&self, context: &CanvasContext) {
         context.set_line_cap("round");
         for line in &self.lines {
             line.draw(context, None);
@@ -127,33 +128,26 @@ impl Line {
         self.points.push(*position);
     }
 
-    fn draw(
-        &self,
-        context: &web_sys::CanvasRenderingContext2d,
-        extra_point: Option<SpriteCoordinate>,
-    ) {
+    fn draw(&self, context: &CanvasContext, extra_point: Option<SpriteCoordinate>) {
         context.begin_path();
         for (i, point) in self.points.iter().enumerate() {
+            let position = &CanvasCoordinate::from_sprite_coordinate(*point);
             if i == 0 {
-                context.move_to((240.0 + point.x) as f64, (180.0 - point.y) as f64);
+                context.move_to(position);
 
                 if self.points.len() == 1 {
-                    context.line_to((240.0 + point.x) as f64, (180.0 - point.y) as f64);
+                    context.line_to(position);
                 }
             } else {
-                context.line_to((240.0 + point.x) as f64, (180.0 - point.y) as f64);
+                context.line_to(position);
             }
         }
 
         if let Some(extra_point) = extra_point {
-            context.line_to(
-                (240.0 + extra_point.x) as f64,
-                (180.0 - extra_point.y) as f64,
-            );
+            context.line_to(&CanvasCoordinate::from_sprite_coordinate(extra_point));
         }
 
-        let color_hex = color_to_hex(&self.color);
-        context.set_stroke_style(&color_hex.as_str().into());
+        context.set_stroke_style(&color_to_hex(&self.color));
         context.set_line_width(self.size);
         context.stroke();
     }

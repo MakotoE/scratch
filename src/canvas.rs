@@ -55,6 +55,10 @@ impl CanvasContext {
         self.context.bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y);
     }
 
+    pub fn line_to(&self, position: &CanvasCoordinate) {
+        self.context.line_to(position.x, position.y);
+    }
+
     pub fn set_font(&self, font: &str) {
         self.context.set_font(font);
     }
@@ -85,6 +89,10 @@ impl CanvasContext {
 
     pub fn fill_text(&self, s: &str, position: &CanvasCoordinate) -> Result<()> {
         Ok(self.context.fill_text(s, position.x, position.y)?)
+    }
+
+    pub fn set_line_cap(&self, value: &str) {
+        self.context.set_line_cap(value);
     }
 
     pub fn draw_image(&self, image: &HtmlImageElement, position: &CanvasCoordinate) -> Result<()> {

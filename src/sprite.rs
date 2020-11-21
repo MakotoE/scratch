@@ -1,5 +1,6 @@
 use super::*;
 use blocks::*;
+use canvas::CanvasContext;
 use runtime::{Global, Runtime};
 use savefile::{BlockID, Image, Target};
 use sprite_runtime::SpriteRuntime;
