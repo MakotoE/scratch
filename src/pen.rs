@@ -1,6 +1,6 @@
 use super::*;
 use canvas::CanvasContext;
-use coordinate::SpriteCoordinate;
+use coordinate::{CanvasCoordinate, SpriteCoordinate};
 use pen::PenStatus::PenUp;
 use sprite_runtime::color_to_hex;
 
@@ -131,7 +131,7 @@ impl Line {
     fn draw(&self, context: &CanvasContext, extra_point: Option<SpriteCoordinate>) {
         context.begin_path();
         for (i, point) in self.points.iter().enumerate() {
-            let position = point.as_canvas_coordinate();
+            let position: CanvasCoordinate = (*point).into();
             if i == 0 {
                 context.move_to(&position);
 
@@ -144,7 +144,7 @@ impl Line {
         }
 
         if let Some(extra_point) = extra_point {
-            context.line_to(&extra_point.as_canvas_coordinate());
+            context.line_to(&extra_point.into());
         }
 
         context.set_stroke_style(&color_to_hex(&self.color));

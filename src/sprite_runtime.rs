@@ -1,6 +1,6 @@
 use super::*;
-use canvas::{CanvasContext, Corner, Direction, Transformation};
-use coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle};
+use canvas::{CanvasContext, Corner, Direction};
+use coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle, Transformation};
 use palette::IntoColor;
 use pen::Pen;
 use savefile::{BlockID, Image, Target};
@@ -66,7 +66,7 @@ impl SpriteRuntime {
         SpriteRuntime::draw_costume(context, costume, &self.position)?;
 
         if let Some(text) = &self.text.text {
-            let position = self.position.as_canvas_coordinate();
+            let position: CanvasCoordinate = self.position.into();
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
                     x: costume.size().width as f64 / 4.0,
@@ -83,7 +83,7 @@ impl SpriteRuntime {
         costume: &Costume,
         position: &SpriteCoordinate,
     ) -> Result<()> {
-        let canvas_position = position.as_canvas_coordinate();
+        let canvas_position: CanvasCoordinate = (*position).into();
         context.draw_image(
             &costume.image,
             &canvas_position.add(&CanvasCoordinate {

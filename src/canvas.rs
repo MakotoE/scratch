@@ -1,5 +1,5 @@
 use super::*;
-use coordinate::{CanvasCoordinate, Coordinate};
+use coordinate::{CanvasCoordinate, Transformation};
 use std::f64::consts::TAU;
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
@@ -11,7 +11,6 @@ pub struct CanvasContext<'a> {
 
 impl<'a> CanvasContext<'a> {
     pub fn new(context: &'a CanvasRenderingContext2d) -> Self {
-        // TODO call reset and scale once
         context.reset_transform().unwrap();
         context.scale(2.0, 2.0).unwrap();
         Self {
@@ -173,46 +172,4 @@ struct Angles(f64, f64);
 pub enum Direction {
     Clockwise,
     CounterClockwise,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Transformation {
-    pub translate: CanvasCoordinate,
-    pub scale: Coordinate,
-}
-
-impl Transformation {
-    pub fn translate(translate: CanvasCoordinate) -> Self {
-        Self {
-            translate,
-            scale: Coordinate { x: 1.0, y: 1.0 },
-        }
-    }
-
-    pub fn scale(scale: Coordinate) -> Self {
-        Self {
-            translate: CanvasCoordinate { x: 0.0, y: 0.0 },
-            scale,
-        }
-    }
-
-    pub fn apply_transformation(&self, other: &Transformation) -> Self {
-        Self {
-            translate: self.translate.add(&other.translate),
-            scale: self.scale.multiply(&other.scale),
-        }
-    }
-
-    pub fn apply_to(&self, coordinate: &CanvasCoordinate) -> CanvasCoordinate {
-        coordinate.add(&self.translate).multiply(&self.scale)
-    }
-}
-
-impl Default for Transformation {
-    fn default() -> Self {
-        Self {
-            translate: CanvasCoordinate { x: 0.0, y: 0.0 },
-            scale: Coordinate { x: 1.0, y: 1.0 },
-        }
-    }
 }

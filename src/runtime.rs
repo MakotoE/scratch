@@ -1,8 +1,7 @@
 use super::*;
-use crate::canvas::Transformation;
 use blocks::value_to_string;
 use canvas::{CanvasContext, Corner, Direction};
-use coordinate::{CanvasCoordinate, CanvasRectangle, Size, SpriteCoordinate};
+use coordinate::{CanvasCoordinate, CanvasRectangle, Size, SpriteCoordinate, Transformation};
 use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;

@@ -1,10 +1,30 @@
+/// Center = 0, 0
+/// Left = -x, right = +x
+/// Top = -y, bottom = +y
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Coordinate {
+pub struct SpriteCoordinate {
     pub x: f64,
     pub y: f64,
 }
 
-impl Coordinate {
+impl SpriteCoordinate {
+    pub fn add(&self, other: &Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+/// Left = 0, right = +x
+/// Top = 0, bottom + y
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct CanvasCoordinate {
+    pub x: f64,
+    pub y: f64,
+}
+
+impl CanvasCoordinate {
     pub fn add(&self, other: &Self) -> Self {
         Self {
             x: self.x + other.x,
@@ -12,36 +32,54 @@ impl Coordinate {
         }
     }
 
-    pub fn multiply(&self, other: &Self) -> Self {
+    pub fn scale(&self, scale: &Scale) -> Self {
         Self {
-            x: self.x * other.x,
-            y: self.y * other.y,
+            x: self.x * scale.x,
+            y: self.y * scale.y,
         }
     }
 }
 
-/// Center = 0, 0
-/// Left = -x, right = +x
-/// Top = -y, bottom = +y
-pub type SpriteCoordinate = Coordinate;
-
-impl SpriteCoordinate {
-    pub fn as_canvas_coordinate(&self) -> CanvasCoordinate {
-        CanvasCoordinate {
-            x: 240.0 + self.x,
-            y: 180.0 - self.y,
-        }
+impl Default for CanvasCoordinate {
+    fn default() -> Self {
+        Self { x: 0.0, y: 0.0 }
     }
 }
 
-/// Left = 0, right = +x
-/// Top = 0, bottom + y
-pub type CanvasCoordinate = Coordinate;
+impl From<SpriteCoordinate> for CanvasCoordinate {
+    fn from(sprite_coordinate: SpriteCoordinate) -> Self {
+        Self {
+            x: 240.0 + sprite_coordinate.x,
+            y: 180.0 - sprite_coordinate.y,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Size {
     pub width: f64,
     pub length: f64,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Scale {
+    pub x: f64,
+    pub y: f64,
+}
+
+impl Scale {
+    pub fn multiply(&self, scale: &Scale) -> Self {
+        Self {
+            x: self.x * scale.x,
+            y: self.y * scale.y,
+        }
+    }
+}
+
+impl Default for Scale {
+    fn default() -> Self {
+        Self { x: 1.0, y: 1.0 }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -78,11 +116,44 @@ pub struct CanvasRectangle {
 
 impl CanvasRectangle {
     #[allow(dead_code)]
-    pub fn translate(&self, coordinate: &SpriteCoordinate) -> CanvasRectangle {
+    pub fn translate(&self, coordinate: &CanvasCoordinate) -> CanvasRectangle {
         CanvasRectangle {
             top_left: self.top_left.add(coordinate),
             size: self.size,
         }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+pub struct Transformation {
+    pub translate: CanvasCoordinate,
+    pub scale: Scale,
+}
+
+impl Transformation {
+    pub fn translate(translate: CanvasCoordinate) -> Self {
+        Self {
+            translate,
+            scale: Scale::default(),
+        }
+    }
+
+    pub fn scale(scale: Scale) -> Self {
+        Self {
+            translate: CanvasCoordinate::default(),
+            scale,
+        }
+    }
+
+    pub fn apply_transformation(&self, other: &Transformation) -> Self {
+        Self {
+            translate: self.translate.add(&other.translate),
+            scale: self.scale.multiply(&other.scale),
+        }
+    }
+
+    pub fn apply_to(&self, coordinate: &CanvasCoordinate) -> CanvasCoordinate {
+        coordinate.add(&self.translate).scale(&self.scale)
     }
 }
 
@@ -96,15 +167,14 @@ mod tests {
         #[test]
         fn as_canvas_coordinate() {
             assert_eq!(
-                SpriteCoordinate { x: 0.0, y: 0.0 }.as_canvas_coordinate(),
+                CanvasCoordinate::from(SpriteCoordinate { x: 0.0, y: 0.0 }),
                 CanvasCoordinate { x: 240.0, y: 180.0 }
             );
             assert_eq!(
-                SpriteCoordinate {
+                CanvasCoordinate::from(SpriteCoordinate {
                     x: -240.0,
                     y: 180.0
-                }
-                .as_canvas_coordinate(),
+                }),
                 CanvasCoordinate { x: 0.0, y: 0.0 }
             );
         }
