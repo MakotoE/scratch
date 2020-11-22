@@ -109,12 +109,14 @@ impl VM {
     async fn run(
         sprites_map: HashMap<SpriteID, Sprite>,
         control_chan: mpsc::Receiver<Control>,
-        context: &web_sys::CanvasRenderingContext2d,
+        ctx: &web_sys::CanvasRenderingContext2d,
         debug_sender: mpsc::Sender<DebugInfo>,
         broadcaster: Broadcaster,
         global: Rc<Global>,
     ) -> Result<()> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
+
+        let context = &CanvasContext::new(ctx);
 
         let performance = web_sys::window().unwrap().performance().unwrap();
 
@@ -211,7 +213,7 @@ impl VM {
                 }
                 Event::DeleteClone(sprite_id) => {
                     sprites.remove(&sprite_id);
-                    sprites.force_redraw(&CanvasContext::new(context)).await?;
+                    sprites.force_redraw(context).await?;
                     TimeoutFuture::new(0).await;
                     last_redraw = performance.now();
                 }
@@ -374,7 +376,7 @@ impl SpritesCell {
         }
     }
 
-    async fn redraw(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<()> {
+    async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
         let mut need_redraw = false;
         if self.global.need_redraw() {
             need_redraw = true;
@@ -391,7 +393,7 @@ impl SpritesCell {
             return Ok(());
         }
 
-        self.force_redraw(&CanvasContext::new(context)).await
+        self.force_redraw(&context).await
     }
 
     async fn force_redraw(&self, context: &CanvasContext<'_>) -> Result<()> {

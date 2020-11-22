@@ -93,8 +93,7 @@ impl Component for ScratchInterface {
             }
             Msg::Run => {
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
-                let ctx: web_sys::CanvasRenderingContext2d =
-                    canvas.get_context("2d").unwrap().unwrap().unchecked_into();
+                let ctx = canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
                 let scratch_file = self.file.as_ref().unwrap().clone();
                 let start_state = self.vm_state;
