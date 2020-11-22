@@ -25,18 +25,18 @@ impl Coordinate {
 /// Top = -y, bottom = +y
 pub type SpriteCoordinate = Coordinate;
 
-/// Left = 0, right = +x
-/// Top = 0, bottom + y
-pub type CanvasCoordinate = Coordinate;
-
-impl CanvasCoordinate {
-    pub fn from_sprite_coordinate(c: SpriteCoordinate) -> Self {
-        Self {
-            x: 240.0 + c.x,
-            y: 180.0 - c.y,
+impl SpriteCoordinate {
+    pub fn as_canvas_coordinate(&self) -> CanvasCoordinate {
+        CanvasCoordinate {
+            x: 240.0 + self.x,
+            y: 180.0 - self.y,
         }
     }
 }
+
+/// Left = 0, right = +x
+/// Top = 0, bottom + y
+pub type CanvasCoordinate = Coordinate;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Size {
@@ -90,20 +90,21 @@ impl CanvasRectangle {
 mod tests {
     use super::*;
 
-    mod canvas_coordinate {
+    mod sprite_coordinate {
         use super::*;
 
         #[test]
-        fn from_sprite_coordinate() {
+        fn as_canvas_coordinate() {
             assert_eq!(
-                CanvasCoordinate::from_sprite_coordinate(SpriteCoordinate { x: 0.0, y: 0.0 }),
+                SpriteCoordinate { x: 0.0, y: 0.0 }.as_canvas_coordinate(),
                 CanvasCoordinate { x: 240.0, y: 180.0 }
             );
             assert_eq!(
-                CanvasCoordinate::from_sprite_coordinate(SpriteCoordinate {
+                SpriteCoordinate {
                     x: -240.0,
                     y: 180.0
-                }),
+                }
+                .as_canvas_coordinate(),
                 CanvasCoordinate { x: 0.0, y: 0.0 }
             );
         }

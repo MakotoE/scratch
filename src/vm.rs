@@ -10,7 +10,6 @@ use runtime::{BroadcastMsg, Broadcaster, Global, Stop};
 use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
 use std::collections::HashSet;
-use std::iter::FromIterator;
 use tokio::sync::{broadcast, mpsc};
 
 #[derive(Debug)]
@@ -69,12 +68,11 @@ impl VM {
             &scratch_file.project.targets[0].variables,
             &scratch_file.project.monitors,
         ));
-        Ok(HashMap::from_iter(
-            VM::sprites(scratch_file, global)
-                .await?
-                .iter()
-                .map(|(id, sprite)| (*id, sprite.block_inputs())),
-        ))
+        Ok(VM::sprites(scratch_file, global)
+            .await?
+            .iter()
+            .map(|(id, sprite)| (*id, sprite.block_inputs()))
+            .collect())
     }
 
     async fn sprites(
@@ -431,7 +429,10 @@ impl SpritesCell {
 
     async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
         let mut sprites = self.sprites.borrow_mut();
-        let (new_sprite_id, new_sprite) = sprites.get(&sprite_id).unwrap().clone_sprite().await?;
+        let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
+            Some(sprite) => sprite.clone_sprite().await?,
+            None => return Err(wrap_err!("sprite_id is invalid")),
+        };
         sprites.insert(new_sprite_id, new_sprite);
         Ok(new_sprite_id)
     }

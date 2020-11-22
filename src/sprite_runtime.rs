@@ -66,7 +66,7 @@ impl SpriteRuntime {
         SpriteRuntime::draw_costume(context, costume, &self.position)?;
 
         if let Some(text) = &self.text.text {
-            let position = CanvasCoordinate::from_sprite_coordinate(self.position);
+            let position = self.position.as_canvas_coordinate();
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
                     x: costume.size().width as f64 / 4.0,
@@ -83,7 +83,7 @@ impl SpriteRuntime {
         costume: &Costume,
         position: &SpriteCoordinate,
     ) -> Result<()> {
-        let canvas_position = CanvasCoordinate::from_sprite_coordinate(*position);
+        let canvas_position = position.as_canvas_coordinate();
         context.draw_image(
             &costume.image,
             &canvas_position.add(&CanvasCoordinate {

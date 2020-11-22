@@ -77,7 +77,7 @@ impl Component for FileViewer {
                         Ok(b) => set_block_inputs.emit(b),
                         Err(e) => {
                             log::error!("{}", e);
-                            return;
+                            
                         }
                     };
                 });

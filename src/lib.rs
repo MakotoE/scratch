@@ -2,6 +2,7 @@
 #![feature(try_trait)]
 #![feature(str_split_once)]
 #![recursion_limit = "512"]
+#![allow(clippy::await_holding_refcell_ref)]
 
 #[macro_use]
 mod error;
