@@ -181,6 +181,22 @@ impl Component for ScratchInterface {
         html! {
             <div style="font-family: sans-serif; display: flex;">
                 <div>
+                    <div style="margin-bottom: 5px;">
+                        <a style="cursor: pointer;">
+                            <img
+                                src="/static/green_flag.svg"
+                                style="width: 30px; height: 30px; margin-left: 8px; margin-right: 20px;"
+                                title="Go"
+                            />
+                        </a>
+                        <a style="cursor: pointer;">
+                            <img
+                                src="/static/stop.svg"
+                                style="width: 30px; height: 30px; cursor: pointer;"
+                                title="Stop"
+                            />
+                        </a>
+                    </div>
                     <canvas
                         ref={self.canvas_ref.clone()}
                         width="960"
