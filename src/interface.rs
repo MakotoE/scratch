@@ -54,6 +54,8 @@ pub enum Msg {
     Step,
     SetDebug(DebugInfo),
     OnCanvasClick(MouseEvent),
+    Start,
+    Stop,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -96,7 +98,6 @@ impl Component for ScratchInterface {
                 let ctx = canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
                 let scratch_file = self.file.as_ref().unwrap().clone();
-                let start_state = self.vm_state;
                 let set_vm = self.link.callback(Msg::SetVM);
                 let set_debug = self.link.callback(Msg::SetDebug);
                 wasm_bindgen_futures::spawn_local(async move {
@@ -107,10 +108,6 @@ impl Component for ScratchInterface {
                             return;
                         }
                     };
-                    match start_state {
-                        VMState::Running => vm.continue_().await,
-                        VMState::Paused => vm.step().await,
-                    }
                     set_vm.emit(vm);
 
                     loop {
@@ -170,6 +167,22 @@ impl Component for ScratchInterface {
                 }
                 false
             }
+            Msg::Start => {
+                if let Some(vm) = self.vm.clone() {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        vm.continue_().await; // TODO
+                    });
+                }
+                false
+            }
+            Msg::Stop => {
+                if let Some(vm) = self.vm.clone() {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        vm.pause().await;
+                    });
+                }
+                false
+            }
         }
     }
 
@@ -182,14 +195,14 @@ impl Component for ScratchInterface {
             <div style="font-family: sans-serif; display: flex;">
                 <div>
                     <div style="margin-bottom: 5px;">
-                        <a style="cursor: pointer;">
+                        <a style="cursor: pointer;" onclick={self.link.callback(|_| Msg::Start)}>
                             <img
                                 src="/static/green_flag.svg"
                                 style="width: 30px; height: 30px; margin-left: 8px; margin-right: 20px;"
                                 title="Go"
                             />
                         </a>
-                        <a style="cursor: pointer;">
+                        <a style="cursor: pointer;" onclick={self.link.callback(|_| Msg::Stop)}>
                             <img
                                 src="/static/stop.svg"
                                 style="width: 30px; height: 30px; cursor: pointer;"
