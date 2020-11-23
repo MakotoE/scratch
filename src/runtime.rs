@@ -51,12 +51,12 @@ impl Global {
     }
 
     pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-        for (name, variable) in self.variables.variables.read().await.iter() {
+        for variable in self.variables.variables.read().await.values() {
             if variable.monitored {
                 Global::draw_monitor(
                     context,
                     &variable.position,
-                    name,
+                    &variable.name,
                     &value_to_string(variable.value.clone()),
                 )?;
             }
@@ -64,7 +64,6 @@ impl Global {
         Ok(())
     }
 
-    // TODO display variable name, not id
     fn draw_monitor(
         context: &CanvasContext,
         position: &CanvasCoordinate,
@@ -243,6 +242,7 @@ impl Variables {
             let monitor = monitors.iter().find(|m| &m.id == key);
             let variable = match monitor {
                 Some(monitor) => Variable {
+                    name: v.id.clone(),
                     value: v.value.clone(),
                     monitored: monitor.visible,
                     position: CanvasCoordinate {
@@ -251,6 +251,7 @@ impl Variables {
                     },
                 },
                 None => Variable {
+                    name: v.id.clone(),
                     value: v.value.clone(),
                     monitored: false,
                     position: CanvasCoordinate { x: 0.0, y: 0.0 },
@@ -310,6 +311,7 @@ impl Variables {
 
 #[derive(Debug, Clone)]
 pub struct Variable {
+    name: String,
     value: Value,
     monitored: bool,
     position: CanvasCoordinate,
