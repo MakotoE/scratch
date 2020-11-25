@@ -4,6 +4,7 @@ use coordinate::SpriteCoordinate;
 use fileinput::FileInput;
 use savefile::ScratchFile;
 use sprite::SpriteID;
+use tokio::sync::mpsc;
 use vm::{DebugInfo, VM};
 use yew::prelude::*;
 
@@ -55,7 +56,6 @@ pub enum Msg {
     SetDebug(DebugInfo),
     OnCanvasClick(MouseEvent),
     Start,
-    Stop,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -101,7 +101,8 @@ impl Component for ScratchInterface {
                 let set_vm = self.link.callback(Msg::SetVM);
                 let set_debug = self.link.callback(Msg::SetDebug);
                 wasm_bindgen_futures::spawn_local(async move {
-                    let (vm, mut debug_receiver) = match VM::start(ctx, &scratch_file).await {
+                    let (debug_sender, mut debug_receiver) = mpsc::channel(1);
+                    let vm = match VM::start(ctx, &scratch_file, debug_sender).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);
@@ -170,15 +171,7 @@ impl Component for ScratchInterface {
             Msg::Start => {
                 if let Some(vm) = self.vm.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
-                        vm.continue_().await; // TODO
-                    });
-                }
-                false
-            }
-            Msg::Stop => {
-                if let Some(vm) = self.vm.clone() {
-                    wasm_bindgen_futures::spawn_local(async move {
-                        vm.pause().await;
+                        vm.continue_().await;
                     });
                 }
                 false
@@ -202,7 +195,7 @@ impl Component for ScratchInterface {
                                 title="Go"
                             />
                         </a>
-                        <a style="cursor: pointer;" onclick={self.link.callback(|_| Msg::Stop)}>
+                        <a style="cursor: pointer;" onclick={self.link.callback(|_| Msg::Run)}>
                             <img
                                 src="/static/stop.svg"
                                 style="width: 30px; height: 30px; cursor: pointer;"
@@ -241,7 +234,6 @@ impl Component for ScratchInterface {
                             },
                         }
                     }{"\u{00a0}"}
-                    <button onclick={self.link.callback(|_| Msg::Run)}>{"Restart"}</button>{"\u{00a0}"}
                 </div>
                 <div style="margin-left: 20px; font-family: monospace;">
                     <pre style="margin: 5px 0; tab-size: 2; -moz-tab-size: 2;">

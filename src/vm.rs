@@ -22,7 +22,8 @@ impl VM {
     pub async fn start(
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: &ScratchFile,
-    ) -> Result<(Self, mpsc::Receiver<DebugInfo>)> {
+        debug_sender: mpsc::Sender<DebugInfo>,
+    ) -> Result<Self> {
         let global = Rc::new(Global::new(
             &scratch_file.project.targets[0].variables,
             &scratch_file.project.monitors,
@@ -30,35 +31,34 @@ impl VM {
         let sprites = VM::sprites(scratch_file, global.clone()).await?;
 
         let (control_sender, control_receiver) = mpsc::channel(1);
-        let (debug_sender, debug_receiver) = mpsc::channel(1);
 
         wasm_bindgen_futures::spawn_local({
             let global = global.clone();
             let broadcaster = global.broadcaster.clone();
+
+            let sprites = SpritesCell::new(sprites, global);
+            let control_receiver = ControlReceiverCell::new(control_receiver);
+            let broadcaster = BroadcastCell::new(broadcaster);
+
             async move {
-                match VM::run(
-                    sprites,
-                    control_receiver,
-                    &context,
-                    debug_sender,
-                    broadcaster,
-                    global,
-                )
-                .await
-                {
-                    Ok(_) => {}
-                    Err(e) => log::error!("{}", e),
+                loop {
+                    VM::run(
+                        &sprites,
+                        &control_receiver,
+                        &context,
+                        &debug_sender,
+                        &broadcaster,
+                    )
+                    .await
+                    .unwrap_or_else(|e| log::error!("{}", e))
                 }
             }
         });
 
-        Ok((
-            Self {
-                control_sender,
-                broadcaster: global.broadcaster.clone(),
-            },
-            debug_receiver,
-        ))
+        Ok(Self {
+            control_sender,
+            broadcaster: global.broadcaster.clone(),
+        })
     }
 
     pub async fn block_inputs(
@@ -105,30 +105,25 @@ impl VM {
     }
 
     async fn run(
-        sprites_map: HashMap<SpriteID, Sprite>,
-        control_chan: mpsc::Receiver<Control>,
+        sprites: &SpritesCell,
+        control_chan: &ControlReceiverCell,
         ctx: &web_sys::CanvasRenderingContext2d,
-        debug_sender: mpsc::Sender<DebugInfo>,
-        broadcaster: Broadcaster,
-        global: Rc<Global>,
+        debug_sender: &mpsc::Sender<DebugInfo>,
+        broadcaster: &BroadcastCell,
     ) -> Result<()> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
         let context = &CanvasContext::new(ctx);
 
         let performance = web_sys::window().unwrap().performance().unwrap();
-
         let mut last_redraw = performance.now();
 
-        let control_chan = ControlReceiverCell::new(control_chan);
-        let broadcaster_recv = BroadcastCell::new(broadcaster);
-        let sprites = SpritesCell::new(sprites_map, global);
         let mut futures: FuturesUnordered<LocalBoxFuture<Event>> = FuturesUnordered::new();
         futures.push(Box::pin(control_chan.recv()));
         futures.push(Box::pin(
             TimeoutFuture::new(REDRAW_INTERVAL_MILLIS as u32).map(|_| Event::Redraw),
         ));
-        futures.push(Box::pin(broadcaster_recv.recv()));
+        futures.push(Box::pin(broadcaster.recv()));
 
         let mut paused_threads: Vec<ThreadID> = Vec::new();
         for thread_id in sprites.all_thread_ids() {
@@ -207,7 +202,7 @@ impl VM {
                             Control::Stop => unreachable!(),
                         }
                     }
-                    futures.push(Box::pin(broadcaster_recv.recv()));
+                    futures.push(Box::pin(broadcaster.recv()));
                 }
                 Event::DeleteClone(sprite_id) => {
                     sprites.remove(&sprite_id);
@@ -255,6 +250,8 @@ impl VM {
             .send(BroadcastMsg::Click(coordinate))
             .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)))
     }
+
+    pub fn stop(&self) {}
 }
 
 impl Drop for VM {
