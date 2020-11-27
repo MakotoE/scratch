@@ -94,12 +94,8 @@ impl SpriteRuntime {
         image: &HtmlImageElement,
         rectangle: &SpriteRectangle,
     ) -> Result<()> {
-        // TODO From<SpriteRectangle>
-        let mut rectangle = CanvasRectangle {
-            top_left: rectangle.center.into(),
-            size: rectangle.size,
-        };
-        rectangle.top_left = rectangle.top_left.add(&CanvasCoordinate {
+        let mut rectangle: CanvasRectangle = (*rectangle).into();
+        rectangle.translate(&CanvasCoordinate {
             x: rectangle.size.width / -2.0,
             y: rectangle.size.length / -2.0,
         });

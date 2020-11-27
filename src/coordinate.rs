@@ -124,11 +124,19 @@ pub struct CanvasRectangle {
 }
 
 impl CanvasRectangle {
-    #[allow(dead_code)]
     pub fn translate(&self, coordinate: &CanvasCoordinate) -> CanvasRectangle {
         CanvasRectangle {
             top_left: self.top_left.add(coordinate),
             size: self.size,
+        }
+    }
+}
+
+impl From<SpriteRectangle> for CanvasRectangle {
+    fn from(s: SpriteRectangle) -> Self {
+        Self {
+            top_left: s.center.into(),
+            size: s.size,
         }
     }
 }
