@@ -1,4 +1,5 @@
 use super::*;
+use crate::coordinate::Scale;
 use gloo_timers::future::TimeoutFuture;
 use sprite_runtime::{HideStatus, Text};
 
@@ -394,12 +395,19 @@ impl Block for ChangeEffectBy {
 #[derive(Debug)]
 pub struct SetSizeTo {
     id: BlockID,
+    runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    size: Option<Box<dyn Block>>, // TODO noop block to get rid of Option
 }
 
 impl SetSizeTo {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            size: None,
+        }
     }
 }
 
@@ -422,9 +430,27 @@ impl Block for SetSizeTo {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+        match key {
+            "next" => self.next = Some(Rc::new(RefCell::new(block))),
+            "SIZE" => self.size = Some(block),
+            _ => {}
         }
+    }
+
+    async fn execute(&mut self) -> Next {
+        let size = match &self.size {
+            Some(b) => b,
+            None => return Next::Err(wrap_err!("size is none")),
+        };
+
+        let scale = value_to_float(&size.value().await?)? / 100.0;
+
+        let mut runtime = self.runtime.sprite.write().await;
+        let mut rectangle = runtime.rectangle();
+        rectangle.size = rectangle.size.multiply(&Scale { x: scale, y: scale });
+        runtime.set_rectangle(rectangle);
+
+        Next::continue_(self.next.clone())
     }
 }
 

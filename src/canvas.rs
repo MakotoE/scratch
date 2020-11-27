@@ -1,4 +1,5 @@
 use super::*;
+use crate::coordinate::CanvasRectangle;
 use coordinate::{CanvasCoordinate, Transformation};
 use std::f64::consts::TAU;
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
@@ -129,11 +130,18 @@ impl<'a> CanvasContext<'a> {
         self.context.set_line_cap(value);
     }
 
-    pub fn draw_image(&self, image: &HtmlImageElement, position: &CanvasCoordinate) -> Result<()> {
-        let position = self.transformation.apply_to(position);
+    pub fn draw_image(&self, image: &HtmlImageElement, rectangle: &CanvasRectangle) -> Result<()> {
+        // TODO apply transformation to rectangle
+        let position = self.transformation.apply_to(&rectangle.top_left);
         Ok(self
             .context
-            .draw_image_with_html_image_element(image, position.x, position.y)?)
+            .draw_image_with_html_image_element_and_dw_and_dh(
+                image,
+                position.x,
+                position.y,
+                rectangle.size.width,
+                rectangle.size.length,
+            )?)
     }
 
     pub fn clear(&self) {

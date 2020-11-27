@@ -1,4 +1,5 @@
 use super::*;
+use crate::coordinate::CanvasRectangle;
 use canvas::{CanvasContext, Corner, Direction};
 use coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle, Transformation};
 use palette::IntoColor;
@@ -11,7 +12,7 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 pub struct SpriteRuntime {
     is_a_clone: bool,
     need_redraw: bool,
-    position: SpriteCoordinate,
+    costume_rectangle: SpriteRectangle,
     costumes: Vec<Costume>,
     current_costume: usize,
     text: Text,
@@ -28,9 +29,15 @@ impl SpriteRuntime {
     ) -> Result<Self> {
         let mut runtime = Self {
             need_redraw: true,
-            position: SpriteCoordinate {
-                x: target.x,
-                y: target.y,
+            costume_rectangle: SpriteRectangle {
+                center: SpriteCoordinate {
+                    x: target.x,
+                    y: target.y,
+                },
+                size: Size {
+                    width: 0.0,
+                    length: 0.0,
+                },
             },
             costumes: Vec::new(),
             current_costume: 0,
@@ -50,6 +57,7 @@ impl SpriteRuntime {
             }
         }
 
+        runtime.costume_rectangle.size = runtime.costumes[0].size;
         Ok(runtime)
     }
 
@@ -62,15 +70,18 @@ impl SpriteRuntime {
 
         self.pen.draw(context);
 
-        let costume = &self.costumes[self.current_costume];
-        SpriteRuntime::draw_costume(context, costume, &self.position)?;
+        SpriteRuntime::draw_costume(
+            context,
+            &self.costumes[self.current_costume].image,
+            &self.costume_rectangle,
+        )?;
 
         if let Some(text) = &self.text.text {
-            let position: CanvasCoordinate = self.position.into();
+            let position: CanvasCoordinate = self.costume_rectangle.center.into();
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
-                    x: costume.size().width as f64 / 4.0,
-                    y: -50.0 - costume.size().length as f64 / 2.0,
+                    x: self.costume_rectangle.size.width as f64 / 4.0,
+                    y: -50.0 - self.costume_rectangle.size.length as f64 / 2.0,
                 },
             )));
             SpriteRuntime::draw_text_bubble(&context, text)?;
@@ -80,17 +91,19 @@ impl SpriteRuntime {
 
     fn draw_costume(
         context: &CanvasContext,
-        costume: &Costume,
-        position: &SpriteCoordinate,
+        image: &HtmlImageElement,
+        rectangle: &SpriteRectangle,
     ) -> Result<()> {
-        let canvas_position: CanvasCoordinate = (*position).into();
-        context.draw_image(
-            &costume.image,
-            &canvas_position.add(&CanvasCoordinate {
-                x: costume.size().width / -2.0,
-                y: costume.size().length / -2.0,
-            }),
-        )?;
+        // TODO From<SpriteRectangle>
+        let mut rectangle = CanvasRectangle {
+            top_left: rectangle.center.into(),
+            size: rectangle.size,
+        };
+        rectangle.top_left = rectangle.top_left.add(&CanvasCoordinate {
+            x: rectangle.size.width / -2.0,
+            y: rectangle.size.length / -2.0,
+        });
+        context.draw_image(image, &rectangle)?;
         Ok(())
     }
 
@@ -268,16 +281,12 @@ impl SpriteRuntime {
     }
 
     pub fn rectangle(&self) -> SpriteRectangle {
-        SpriteRectangle {
-            center: self.position,
-            size: self.costumes[self.current_costume].size,
-        }
+        self.costume_rectangle
     }
 
-    /// Can't do scaling yet
     pub fn set_rectangle(&mut self, rectangle: SpriteRectangle) {
         self.need_redraw = true;
-        self.position = rectangle.center;
+        self.costume_rectangle = rectangle;
         self.pen().set_position(&rectangle.center);
     }
 

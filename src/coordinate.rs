@@ -61,6 +61,15 @@ pub struct Size {
     pub length: f64,
 }
 
+impl Size {
+    pub fn multiply(&self, scale: &Scale) -> Self {
+        Self {
+            width: self.width * scale.x,
+            length: self.length * scale.y,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Scale {
     pub x: f64,
