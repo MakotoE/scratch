@@ -21,14 +21,13 @@ pub struct VM {
 impl VM {
     pub async fn start(
         context: web_sys::CanvasRenderingContext2d,
-        scratch_file: &ScratchFile,
+        scratch_file: ScratchFile,
         debug_sender: mpsc::Sender<DebugInfo>,
     ) -> Result<Self> {
         let global = Rc::new(Global::new(
             &scratch_file.project.targets[0].variables,
             &scratch_file.project.monitors,
         ));
-        let sprites = VM::sprites(scratch_file, global.clone()).await?;
 
         let (control_sender, control_receiver) = mpsc::channel(1);
 
@@ -36,13 +35,21 @@ impl VM {
             let global = global.clone();
             let broadcaster = global.broadcaster.clone();
 
-            let sprites = SpritesCell::new(sprites, global);
             let control_receiver = ControlReceiverCell::new(control_receiver);
             let broadcaster = BroadcastCell::new(broadcaster);
 
             async move {
                 loop {
-                    VM::run(
+                    let sprites = match VM::sprites(&scratch_file, global.clone()).await {
+                        Ok(s) => s,
+                        Err(e) => {
+                            log::error!("{}", e);
+                            break;
+                        }
+                    };
+                    let sprites = SpritesCell::new(sprites, global.clone());
+
+                    match VM::run(
                         &sprites,
                         &control_receiver,
                         &context,
@@ -50,7 +57,13 @@ impl VM {
                         &broadcaster,
                     )
                     .await
-                    .unwrap_or_else(|e| log::error!("{}", e))
+                    {
+                        Ok(l) => match l {
+                            Loop::Restart => continue,
+                            Loop::Break => break,
+                        },
+                        Err(e) => log::error!("{}", e),
+                    }
                 }
             }
         });
@@ -110,7 +123,7 @@ impl VM {
         ctx: &web_sys::CanvasRenderingContext2d,
         debug_sender: &mpsc::Sender<DebugInfo>,
         broadcaster: &BroadcastCell,
-    ) -> Result<()> {
+    ) -> Result<Loop> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
         let context = &CanvasContext::new(ctx);
@@ -160,11 +173,12 @@ impl VM {
                             .await?;
                         current_state = Control::Pause;
                     }
-                    Control::Stop => unreachable!(),
+                    _ => unreachable!(),
                 },
                 Event::Err(e) => return Err(e),
                 Event::Control(control) => {
                     if let Some(c) = control {
+                        log::info!("control: {:?}", &c);
                         current_state = c;
                         match c {
                             Control::Continue | Control::Step => {
@@ -172,10 +186,10 @@ impl VM {
                                     futures.push(Box::pin(sprites.step(thread_id)));
                                 }
                             }
-                            Control::Stop => return Ok(()),
+                            Control::Stop => return Ok(Loop::Restart),
+                            Control::Drop => return Ok(Loop::Break),
                             Control::Pause => {}
                         }
-                        log::info!("control: {:?}", c);
                     }
                     futures.push(Box::pin(control_chan.recv()));
                 }
@@ -199,7 +213,7 @@ impl VM {
                                 futures.push(Box::pin(sprites.step(id)))
                             }
                             Control::Pause => paused_threads.push(id),
-                            Control::Stop => unreachable!(),
+                            _ => unreachable!(),
                         }
                     }
                     futures.push(Box::pin(broadcaster.recv()));
@@ -251,12 +265,14 @@ impl VM {
             .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)))
     }
 
-    pub fn stop(&self) {}
+    pub async fn stop(&self) {
+        self.control_sender.send(Control::Stop).await.unwrap();
+    }
 }
 
 impl Drop for VM {
     fn drop(&mut self) {
-        let _ = self.control_sender.blocking_send(Control::Stop);
+        let _ = self.control_sender.blocking_send(Control::Drop);
     }
 }
 
@@ -266,6 +282,7 @@ enum Control {
     Pause,
     Step,
     Stop,
+    Drop,
 }
 
 #[derive(Debug)]
@@ -445,4 +462,10 @@ impl SpritesCell {
     fn stop(&self, thread_id: ThreadID) {
         self.threads_to_stop.borrow_mut().insert(thread_id);
     }
+}
+
+#[derive(Debug)]
+enum Loop {
+    Restart,
+    Break,
 }

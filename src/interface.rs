@@ -56,6 +56,7 @@ pub enum Msg {
     SetDebug(DebugInfo),
     OnCanvasClick(MouseEvent),
     Start,
+    Stop,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -102,7 +103,7 @@ impl Component for ScratchInterface {
                 let set_debug = self.link.callback(Msg::SetDebug);
                 wasm_bindgen_futures::spawn_local(async move {
                     let (debug_sender, mut debug_receiver) = mpsc::channel(1);
-                    let vm = match VM::start(ctx, &scratch_file, debug_sender).await {
+                    let vm = match VM::start(ctx, scratch_file, debug_sender).await {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("{}", e);
@@ -171,7 +172,16 @@ impl Component for ScratchInterface {
             Msg::Start => {
                 if let Some(vm) = self.vm.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
+                        vm.stop().await;
                         vm.continue_().await;
+                    });
+                }
+                false
+            }
+            Msg::Stop => {
+                if let Some(vm) = self.vm.clone() {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        vm.stop().await;
                     });
                 }
                 false
@@ -195,7 +205,7 @@ impl Component for ScratchInterface {
                                 title="Go"
                             />
                         </a>
-                        <a style="cursor: pointer;" onclick={self.link.callback(|_| Msg::Run)}>
+                        <a style="cursor: pointer;" onclick={self.link.callback(|_| Msg::Stop)}>
                             <img
                                 src="/static/stop.svg"
                                 style="width: 30px; height: 30px; cursor: pointer;"
