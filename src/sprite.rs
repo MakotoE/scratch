@@ -126,7 +126,8 @@ impl Sprite {
 pub fn find_hats(block_infos: &HashMap<BlockID, savefile::Block>) -> Vec<BlockID> {
     let mut hats: Vec<BlockID> = Vec::new();
     for (id, block_info) in block_infos {
-        if block_info.top_level {
+        // Blocks without event watcher (has rounded top in editor) are ignored
+        if block_info.opcode.contains("_when") && block_info.top_level {
             hats.push(*id);
         }
     }
