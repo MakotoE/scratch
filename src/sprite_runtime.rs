@@ -95,7 +95,7 @@ impl SpriteRuntime {
         rectangle: &SpriteRectangle,
     ) -> Result<()> {
         let mut rectangle: CanvasRectangle = (*rectangle).into();
-        rectangle.translate(&CanvasCoordinate {
+        rectangle = rectangle.translate(&CanvasCoordinate {
             x: rectangle.size.width / -2.0,
             y: rectangle.size.length / -2.0,
         });

@@ -36,7 +36,7 @@ impl<'a> CanvasContext<'a> {
     }
 
     pub fn move_to(&self, position: &CanvasCoordinate) {
-        let position = self.transformation.apply_to(position);
+        let position = self.transformation.apply_to_coordinate(position);
         self.context.move_to(position.x, position.y);
     }
 
@@ -47,7 +47,7 @@ impl<'a> CanvasContext<'a> {
         corner: Corner,
         direction: Direction,
     ) -> Result<()> {
-        let arc_center = self.transformation.apply_to(arc_center);
+        let arc_center = self.transformation.apply_to_coordinate(arc_center);
         let angles = corner.angles();
         let (start, end) = match direction {
             Direction::Clockwise => (angles.0, angles.1),
@@ -70,8 +70,8 @@ impl<'a> CanvasContext<'a> {
         to: &CanvasCoordinate,
         radius: f64,
     ) -> Result<()> {
-        let from = self.transformation.apply_to(from);
-        let to = self.transformation.apply_to(to);
+        let from = self.transformation.apply_to_coordinate(from);
+        let to = self.transformation.apply_to_coordinate(to);
         Ok(self.context.arc_to(from.x, from.y, to.x, to.y, radius)?)
     }
 
@@ -81,15 +81,15 @@ impl<'a> CanvasContext<'a> {
         cp2: &CanvasCoordinate,
         position: &CanvasCoordinate,
     ) {
-        let cp1 = self.transformation.apply_to(cp1);
-        let cp2 = self.transformation.apply_to(cp2);
-        let position = self.transformation.apply_to(position);
+        let cp1 = self.transformation.apply_to_coordinate(cp1);
+        let cp2 = self.transformation.apply_to_coordinate(cp2);
+        let position = self.transformation.apply_to_coordinate(position);
         self.context
             .bezier_curve_to(cp1.x, cp1.y, cp2.x, cp2.y, position.x, position.y);
     }
 
     pub fn line_to(&self, position: &CanvasCoordinate) {
-        let position = self.transformation.apply_to(position);
+        let position = self.transformation.apply_to_coordinate(position);
         self.context.line_to(position.x, position.y);
     }
 
@@ -122,7 +122,7 @@ impl<'a> CanvasContext<'a> {
     }
 
     pub fn fill_text(&self, s: &str, position: &CanvasCoordinate) -> Result<()> {
-        let position = self.transformation.apply_to(position);
+        let position = self.transformation.apply_to_coordinate(position);
         Ok(self.context.fill_text(s, position.x, position.y)?)
     }
 
@@ -131,14 +131,13 @@ impl<'a> CanvasContext<'a> {
     }
 
     pub fn draw_image(&self, image: &HtmlImageElement, rectangle: &CanvasRectangle) -> Result<()> {
-        // TODO apply transformation to rectangle
-        let position = self.transformation.apply_to(&rectangle.top_left);
+        let rectangle = self.transformation.apply_to_rectangle(&rectangle);
         Ok(self
             .context
             .draw_image_with_html_image_element_and_dw_and_dh(
                 image,
-                position.x,
-                position.y,
+                rectangle.top_left.x,
+                rectangle.top_left.y,
                 rectangle.size.width,
                 rectangle.size.length,
             )?)

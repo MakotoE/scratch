@@ -130,6 +130,13 @@ impl CanvasRectangle {
             size: self.size,
         }
     }
+
+    pub fn scale(&self, scale: &Scale) -> CanvasRectangle {
+        CanvasRectangle {
+            top_left: self.top_left,
+            size: self.size.multiply(scale),
+        }
+    }
 }
 
 impl From<SpriteRectangle> for CanvasRectangle {
@@ -155,6 +162,7 @@ impl Transformation {
         }
     }
 
+    #[allow(dead_code)]
     pub fn scale(scale: Scale) -> Self {
         Self {
             translate: CanvasCoordinate::default(),
@@ -169,8 +177,12 @@ impl Transformation {
         }
     }
 
-    pub fn apply_to(&self, coordinate: &CanvasCoordinate) -> CanvasCoordinate {
+    pub fn apply_to_coordinate(&self, coordinate: &CanvasCoordinate) -> CanvasCoordinate {
         coordinate.add(&self.translate).scale(&self.scale)
+    }
+
+    pub fn apply_to_rectangle(&self, rectangle: &CanvasRectangle) -> CanvasRectangle {
+        rectangle.translate(&self.translate).scale(&self.scale)
     }
 }
 
