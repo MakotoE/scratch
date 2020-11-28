@@ -1,5 +1,5 @@
 use super::*;
-use coordinate::{SpriteCoordinate, SpriteRectangle};
+use coordinate::SpriteCoordinate;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -72,10 +72,8 @@ impl Block for MoveSteps {
 
         let steps = value_to_float(&steps_value)?;
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime
-            .rectangle()
-            .translate(&SpriteCoordinate { x: steps, y: 0.0 });
-        runtime.set_rectangle(position);
+        let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
+        runtime.set_center(position);
         Next::continue_(self.next.clone())
     }
 }
@@ -138,12 +136,11 @@ impl Block for GoToXY {
             None => return Next::Err(wrap_err!("y is None")),
         };
 
-        let mut runtime = self.runtime.sprite.write().await;
-        let new_rectangle = SpriteRectangle {
-            center: SpriteCoordinate { x, y },
-            size: runtime.rectangle().size,
-        };
-        runtime.set_rectangle(new_rectangle);
+        self.runtime
+            .sprite
+            .write()
+            .await
+            .set_center(SpriteCoordinate { x, y });
         Next::continue_(self.next.clone())
     }
 }
@@ -200,10 +197,8 @@ impl Block for ChangeXBy {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let rectangle = runtime
-            .rectangle()
-            .translate(&SpriteCoordinate { x, y: 0.0 });
-        runtime.set_rectangle(rectangle);
+        let position = runtime.center().add(&SpriteCoordinate { x, y: 0.0 });
+        runtime.set_center(position);
         Next::continue_(self.next.clone())
     }
 }
@@ -260,10 +255,8 @@ impl Block for ChangeYBy {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let rectangle = runtime
-            .rectangle()
-            .translate(&SpriteCoordinate { x: 0.0, y });
-        runtime.set_rectangle(rectangle);
+        let position = runtime.center().add(&SpriteCoordinate { x: 0.0, y });
+        runtime.set_center(position);
         Next::continue_(self.next.clone())
     }
 }
@@ -320,16 +313,9 @@ impl Block for SetX {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let curr_rectangle = runtime.rectangle();
-        let rectangle = SpriteRectangle {
-            center: SpriteCoordinate {
-                x,
-                y: curr_rectangle.center.y,
-            },
-            size: curr_rectangle.size,
-        };
-
-        runtime.set_rectangle(rectangle);
+        let mut position = runtime.center();
+        position.x = x;
+        runtime.set_center(position);
         Next::continue_(self.next.clone())
     }
 }
@@ -386,16 +372,9 @@ impl Block for SetY {
         };
 
         let mut runtime = self.runtime.sprite.write().await;
-        let curr_rectangle = runtime.rectangle();
-        let rectangle = SpriteRectangle {
-            center: SpriteCoordinate {
-                x: curr_rectangle.center.x,
-                y,
-            },
-            size: curr_rectangle.size,
-        };
-
-        runtime.set_rectangle(rectangle);
+        let mut position = runtime.center();
+        position.y = y;
+        runtime.set_center(position);
         Next::continue_(self.next.clone())
     }
 }

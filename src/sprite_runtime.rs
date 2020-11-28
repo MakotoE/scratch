@@ -1,5 +1,5 @@
 use super::*;
-use crate::coordinate::CanvasRectangle;
+use crate::coordinate::{CanvasRectangle, Scale}; // TODO import with crate::
 use canvas::{CanvasContext, Corner, Direction};
 use coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle, Transformation};
 use palette::IntoColor;
@@ -12,7 +12,8 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 pub struct SpriteRuntime {
     is_a_clone: bool,
     need_redraw: bool,
-    costume_rectangle: SpriteRectangle,
+    center: SpriteCoordinate,
+    scale: Scale,
     costumes: Vec<Costume>,
     current_costume: usize,
     text: Text,
@@ -29,16 +30,11 @@ impl SpriteRuntime {
     ) -> Result<Self> {
         let mut runtime = Self {
             need_redraw: true,
-            costume_rectangle: SpriteRectangle {
-                center: SpriteCoordinate {
-                    x: target.x,
-                    y: target.y,
-                },
-                size: Size {
-                    width: 0.0,
-                    length: 0.0,
-                },
+            center: SpriteCoordinate {
+                x: target.x,
+                y: target.y,
             },
+            scale: Scale { x: 1.0, y: 1.0 },
             costumes: Vec::new(),
             current_costume: 0,
             text: Text {
@@ -57,7 +53,6 @@ impl SpriteRuntime {
             }
         }
 
-        runtime.costume_rectangle.size = runtime.costumes[0].size;
         Ok(runtime)
     }
 
@@ -72,16 +67,18 @@ impl SpriteRuntime {
 
         SpriteRuntime::draw_costume(
             context,
-            &self.costumes[self.current_costume].image,
-            &self.costume_rectangle,
+            &self.costumes[self.current_costume],
+            &self.center,
+            &self.scale,
         )?;
 
         if let Some(text) = &self.text.text {
-            let position: CanvasCoordinate = self.costume_rectangle.center.into();
+            let position: CanvasCoordinate = self.center.into();
+            let size = self.costumes[self.current_costume].size;
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
-                    x: self.costume_rectangle.size.width as f64 / 4.0,
-                    y: -50.0 - self.costume_rectangle.size.length as f64 / 2.0,
+                    x: size.width as f64 / 4.0,
+                    y: -50.0 - size.length as f64 / 2.0,
                 },
             )));
             SpriteRuntime::draw_text_bubble(&context, text)?;
@@ -91,15 +88,19 @@ impl SpriteRuntime {
 
     fn draw_costume(
         context: &CanvasContext,
-        image: &HtmlImageElement,
-        rectangle: &SpriteRectangle,
+        costume: &Costume,
+        center: &SpriteCoordinate,
+        scale: &Scale,
     ) -> Result<()> {
-        let mut rectangle: CanvasRectangle = (*rectangle).into();
-        rectangle = rectangle.translate(&CanvasCoordinate {
-            x: rectangle.size.width / -2.0,
-            y: rectangle.size.length / -2.0,
-        });
-        context.draw_image(image, &rectangle)?;
+        let size = costume.size.multiply(scale);
+        let rectangle = CanvasRectangle {
+            top_left: CanvasCoordinate::from(*center).add(&CanvasCoordinate {
+                x: size.width / -2.0,
+                y: size.length / -2.0,
+            }),
+            size,
+        };
+        context.draw_image(&costume.image, &rectangle)?;
         Ok(())
     }
 
@@ -277,13 +278,27 @@ impl SpriteRuntime {
     }
 
     pub fn rectangle(&self) -> SpriteRectangle {
-        self.costume_rectangle
+        SpriteRectangle {
+            center: self.center,
+            size: self.costumes[self.current_costume]
+                .size
+                .multiply(&self.scale),
+        }
     }
 
-    pub fn set_rectangle(&mut self, rectangle: SpriteRectangle) {
+    pub fn center(&self) -> SpriteCoordinate {
+        self.center
+    }
+
+    pub fn set_center(&mut self, center: SpriteCoordinate) {
         self.need_redraw = true;
-        self.costume_rectangle = rectangle;
-        self.pen().set_position(&rectangle.center);
+        self.center = center;
+        self.pen().set_position(&center);
+    }
+
+    pub fn set_scale(&mut self, scale: Scale) {
+        self.need_redraw = true;
+        self.scale = scale;
     }
 
     pub fn set_hide(&mut self, hide: HideStatus) {
@@ -304,10 +319,6 @@ impl Costume {
             length: image.height() as f64,
         };
         Self { image, size }
-    }
-
-    pub fn size(&self) -> Size {
-        self.size
     }
 }
 

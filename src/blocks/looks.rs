@@ -445,10 +445,11 @@ impl Block for SetSizeTo {
 
         let scale = value_to_float(&size.value().await?)? / 100.0;
 
-        let mut runtime = self.runtime.sprite.write().await;
-        let mut rectangle = runtime.rectangle();
-        rectangle.size = rectangle.size.multiply(&Scale { x: scale, y: scale });
-        runtime.set_rectangle(rectangle);
+        self.runtime
+            .sprite
+            .write()
+            .await
+            .set_scale(Scale { x: scale, y: scale });
 
         Next::continue_(self.next.clone())
     }

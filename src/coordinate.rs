@@ -109,6 +109,7 @@ impl SpriteRectangle {
             && coordinate.y <= top_left.y + self.size.length
     }
 
+    #[allow(dead_code)]
     pub fn translate(&self, coordinate: &SpriteCoordinate) -> SpriteRectangle {
         SpriteRectangle {
             center: self.center.add(coordinate),
