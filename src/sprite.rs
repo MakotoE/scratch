@@ -1,9 +1,9 @@
 use super::*;
+use crate::canvas::CanvasContext;
+use crate::runtime::{Global, Runtime};
+use crate::savefile::{BlockID, Image, Target};
+use crate::sprite_runtime::SpriteRuntime;
 use blocks::*;
-use canvas::CanvasContext;
-use runtime::{Global, Runtime};
-use savefile::{BlockID, Image, Target};
-use sprite_runtime::SpriteRuntime;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};

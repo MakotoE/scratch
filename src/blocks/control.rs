@@ -1,6 +1,6 @@
 use super::*;
+use crate::runtime::BroadcastMsg;
 use gloo_timers::future::TimeoutFuture;
-use runtime::BroadcastMsg;
 use std::str::FromStr;
 use vm::ThreadID;
 

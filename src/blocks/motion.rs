@@ -1,5 +1,5 @@
 use super::*;
-use coordinate::SpriteCoordinate;
+use crate::coordinate::SpriteCoordinate;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {

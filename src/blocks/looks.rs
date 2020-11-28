@@ -1,7 +1,7 @@
 use super::*;
 use crate::coordinate::Scale;
+use crate::sprite_runtime::{HideStatus, Text};
 use gloo_timers::future::TimeoutFuture;
-use sprite_runtime::{HideStatus, Text};
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {

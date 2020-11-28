@@ -1,13 +1,13 @@
 use super::*;
+use crate::canvas::CanvasContext;
 use crate::coordinate::SpriteCoordinate;
+use crate::runtime::{BroadcastMsg, Broadcaster, Global, Stop};
+use crate::savefile::ScratchFile;
 use blocks::{BlockInfo, BlockInputs};
-use canvas::CanvasContext;
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use gloo_timers::future::TimeoutFuture;
-use runtime::{BroadcastMsg, Broadcaster, Global, Stop};
-use savefile::ScratchFile;
 use sprite::{Sprite, SpriteID};
 use std::collections::HashSet;
 use tokio::sync::{broadcast, mpsc};

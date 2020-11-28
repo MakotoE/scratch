@@ -1,6 +1,5 @@
 use super::*;
-use crate::coordinate::CanvasRectangle;
-use coordinate::{CanvasCoordinate, Transformation};
+use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Transformation};
 use std::f64::consts::TAU;
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 

@@ -1,7 +1,7 @@
 use super::*;
+use crate::sprite_runtime::hex_to_color;
 use palette::IntoColor;
 use palette::Mix;
-use sprite_runtime::hex_to_color;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {

@@ -1,7 +1,7 @@
 use super::*;
+use crate::fileinput::FileInput;
+use crate::savefile::ScratchFile;
 use blocks::BlockInputs;
-use fileinput::FileInput;
-use savefile::ScratchFile;
 use sprite::SpriteID;
 use vm::VM;
 use yew::prelude::*;
@@ -77,7 +77,6 @@ impl Component for FileViewer {
                         Ok(b) => set_block_inputs.emit(b),
                         Err(e) => {
                             log::error!("{}", e);
-                            
                         }
                     };
                 });

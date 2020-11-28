@@ -1,8 +1,7 @@
-use super::*;
-use canvas::CanvasContext;
-use coordinate::{CanvasCoordinate, SpriteCoordinate};
-use pen::PenStatus::PenUp;
-use sprite_runtime::color_to_hex;
+use crate::canvas::CanvasContext;
+use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
+use crate::pen::PenStatus::PenUp;
+use crate::sprite_runtime::color_to_hex;
 
 #[derive(Debug)]
 pub struct Pen {

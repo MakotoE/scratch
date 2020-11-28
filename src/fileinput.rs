@@ -1,5 +1,4 @@
-use super::*;
-use savefile::ScratchFile;
+use crate::savefile::ScratchFile;
 use yew::prelude::*;
 use yew::services::reader::{FileData, ReaderService, ReaderTask};
 

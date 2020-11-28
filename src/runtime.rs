@@ -1,11 +1,13 @@
 use super::*;
+use crate::canvas::{CanvasContext, Corner, Direction};
+use crate::coordinate::{
+    CanvasCoordinate, CanvasRectangle, Size, SpriteCoordinate, Transformation,
+};
+use crate::savefile::Monitor;
+use crate::sprite_runtime::SpriteRuntime;
 use blocks::value_to_string;
-use canvas::{CanvasContext, Corner, Direction};
-use coordinate::{CanvasCoordinate, CanvasRectangle, Size, SpriteCoordinate, Transformation};
-use savefile::Monitor;
 use serde_json::Value;
 use sprite::SpriteID;
-use sprite_runtime::SpriteRuntime;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use vm::ThreadID;
 

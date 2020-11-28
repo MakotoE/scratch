@@ -1,5 +1,5 @@
 use super::*;
-use fileviewer::FileViewer;
+use crate::fileviewer::FileViewer;
 use interface::ScratchInterface;
 use yew::prelude::*;
 use yew_router::prelude::*;

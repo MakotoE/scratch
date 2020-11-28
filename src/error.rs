@@ -1,5 +1,5 @@
 use super::*;
-use savefile::BlockID;
+use crate::savefile::BlockID;
 
 error_chain::error_chain! {
     types {

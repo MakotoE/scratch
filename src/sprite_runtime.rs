@@ -1,10 +1,12 @@
 use super::*;
-use crate::coordinate::{CanvasRectangle, Scale}; // TODO import with crate::
-use canvas::{CanvasContext, Corner, Direction};
-use coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle, Transformation};
+use crate::canvas::{CanvasContext, Corner, Direction};
+use crate::coordinate::{
+    CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle, Transformation,
+};
+use crate::coordinate::{CanvasRectangle, Scale};
+use crate::pen::Pen;
+use crate::savefile::{BlockID, Image, Target};
 use palette::IntoColor;
-use pen::Pen;
-use savefile::{BlockID, Image, Target};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
