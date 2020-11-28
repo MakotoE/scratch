@@ -1,11 +1,11 @@
 use super::*;
+use crate::blocks::BlockInfo;
 use crate::coordinate::SpriteCoordinate;
 use crate::fileinput::FileInput;
 use crate::savefile::ScratchFile;
-use blocks::BlockInfo;
-use sprite::SpriteID;
+use crate::sprite::SpriteID;
+use crate::vm::{DebugInfo, VM};
 use tokio::sync::mpsc;
-use vm::{DebugInfo, VM};
 use yew::prelude::*;
 
 pub struct ScratchInterface {

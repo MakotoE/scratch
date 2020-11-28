@@ -1,14 +1,14 @@
 use super::*;
+use crate::blocks::*;
 use crate::canvas::CanvasContext;
 use crate::runtime::{Global, Runtime};
 use crate::savefile::{BlockID, Image, Target};
 use crate::sprite_runtime::SpriteRuntime;
-use blocks::*;
+use crate::thread::Thread;
+use crate::vm::ThreadID;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
-use thread::Thread;
-use vm::ThreadID;
 
 #[derive(Debug)]
 pub struct Sprite {

@@ -142,11 +142,11 @@ pub struct BlockInputs {
 }
 
 impl BlockInputs {
-    #[allow(clippy::type_complexity)]
+    #[allow(clippy::type_complexity, clippy::borrowed_box)]
     fn new<'a>(
         info: BlockInfo,
         mut fields: Vec<(&'static str, String)>,
-        inputs: Vec<(&'static str, &'a Option<Box<dyn Block>>)>,
+        inputs: Vec<(&'static str, &'a Box<dyn Block>)>,
         stacks: Vec<(&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>)>,
     ) -> Self {
         Self {
@@ -154,13 +154,7 @@ impl BlockInputs {
             fields: fields.drain(..).collect(),
             inputs: inputs
                 .iter()
-                .filter_map(|(id, b)| {
-                    if let Some(block) = b {
-                        Some((*id, block.block_inputs()))
-                    } else {
-                        None
-                    }
-                })
+                .map(|(id, b)| (*id, b.block_inputs()))
                 .collect(),
             stacks: stacks
                 .iter()
@@ -280,6 +274,66 @@ pub fn value_to_string(value: Value) -> String {
         Value::String(s) => s,
         Value::Number(n) => n.as_f64().unwrap().to_string(),
         _ => value.to_string(),
+    }
+}
+
+#[derive(Debug)]
+pub struct EmptyInput {}
+
+#[async_trait(?Send)]
+impl Block for EmptyInput {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "EmptyInput",
+            id: BlockID::default(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::default(),
+            inputs: HashMap::default(),
+            stacks: HashMap::default(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {
+        unreachable!()
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Err(wrap_err!("input is unconnected"))
+    }
+}
+
+#[derive(Debug)]
+pub struct EmptyFalse {}
+
+#[async_trait(?Send)]
+impl Block for EmptyFalse {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "EmptyFalse",
+            id: BlockID::default(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputs {
+        BlockInputs {
+            info: self.block_info(),
+            fields: HashMap::default(),
+            inputs: HashMap::default(),
+            stacks: HashMap::default(),
+        }
+    }
+
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {
+        unreachable!()
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(true.into())
     }
 }
 

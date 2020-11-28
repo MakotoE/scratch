@@ -1,9 +1,9 @@
 use super::*;
+use crate::blocks::BlockInputs;
 use crate::fileinput::FileInput;
 use crate::savefile::ScratchFile;
-use blocks::BlockInputs;
-use sprite::SpriteID;
-use vm::VM;
+use crate::sprite::SpriteID;
+use crate::vm::VM;
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
 

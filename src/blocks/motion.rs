@@ -24,7 +24,7 @@ pub struct MoveSteps {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    steps: Option<Box<dyn Block>>,
+    steps: Box<dyn Block>,
 }
 
 impl MoveSteps {
@@ -33,7 +33,7 @@ impl MoveSteps {
             id,
             runtime,
             next: None,
-            steps: None,
+            steps: Box::new(EmptyInput {}),
         }
     }
 }
@@ -58,19 +58,14 @@ impl Block for MoveSteps {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "STEPS" => self.steps = Some(block),
+            "STEPS" => self.steps = block,
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let steps_value = match &self.steps {
-            Some(block) => block.value().await?,
-            None => return Next::Err(wrap_err!("steps is None")),
-        };
-
-        let steps = value_to_float(&steps_value)?;
+        let steps = value_to_float(&self.steps.value().await?)?;
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
         runtime.set_center(position);
@@ -83,8 +78,8 @@ pub struct GoToXY {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    x: Option<Box<dyn Block>>,
-    y: Option<Box<dyn Block>>,
+    x: Box<dyn Block>,
+    y: Box<dyn Block>,
 }
 
 impl GoToXY {
@@ -93,8 +88,8 @@ impl GoToXY {
             id,
             runtime,
             next: None,
-            x: None,
-            y: None,
+            x: Box::new(EmptyInput {}),
+            y: Box::new(EmptyInput {}),
         }
     }
 }
@@ -120,21 +115,15 @@ impl Block for GoToXY {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "X" => self.x = Some(block),
-            "Y" => self.y = Some(block),
+            "X" => self.x = block,
+            "Y" => self.y = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let x = match &self.x {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("x is None")),
-        };
-        let y = match &self.y {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("y is None")),
-        };
+        let x = value_to_float(&self.x.value().await?)?;
+        let y = value_to_float(&self.y.value().await?)?;
 
         self.runtime
             .sprite
@@ -150,7 +139,7 @@ pub struct ChangeXBy {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    dx: Option<Box<dyn Block>>,
+    dx: Box<dyn Block>,
 }
 
 impl ChangeXBy {
@@ -159,7 +148,7 @@ impl ChangeXBy {
             id,
             runtime,
             next: None,
-            dx: None,
+            dx: Box::new(EmptyInput {}),
         }
     }
 }
@@ -185,17 +174,13 @@ impl Block for ChangeXBy {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "DX" => self.dx = Some(block),
+            "DX" => self.dx = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let x = match &self.dx {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("dx is None")),
-        };
-
+        let x = value_to_float(&self.dx.value().await?)?;
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x, y: 0.0 });
         runtime.set_center(position);
@@ -208,7 +193,7 @@ pub struct ChangeYBy {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    dy: Option<Box<dyn Block>>,
+    dy: Box<dyn Block>,
 }
 
 impl ChangeYBy {
@@ -217,7 +202,7 @@ impl ChangeYBy {
             id,
             runtime,
             next: None,
-            dy: None,
+            dy: Box::new(EmptyInput {}),
         }
     }
 }
@@ -243,16 +228,13 @@ impl Block for ChangeYBy {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "DY" => self.dy = Some(block),
+            "DY" => self.dy = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let y = match &self.dy {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("dy is None")),
-        };
+        let y = value_to_float(&self.dy.value().await?)?;
 
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: 0.0, y });
@@ -266,7 +248,7 @@ pub struct SetX {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    x: Option<Box<dyn Block>>,
+    x: Box<dyn Block>,
 }
 
 impl SetX {
@@ -275,7 +257,7 @@ impl SetX {
             id,
             runtime,
             next: None,
-            x: None,
+            x: Box::new(EmptyInput {}),
         }
     }
 }
@@ -301,17 +283,13 @@ impl Block for SetX {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "X" => self.x = Some(block),
+            "X" => self.x = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let x = match &self.x {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("x is None")),
-        };
-
+        let x = value_to_float(&self.x.value().await?)?;
         let mut runtime = self.runtime.sprite.write().await;
         let mut position = runtime.center();
         position.x = x;
@@ -325,7 +303,7 @@ pub struct SetY {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    y: Option<Box<dyn Block>>,
+    y: Box<dyn Block>,
 }
 
 impl SetY {
@@ -334,7 +312,7 @@ impl SetY {
             id,
             runtime,
             next: None,
-            y: None,
+            y: Box::new(EmptyInput {}),
         }
     }
 }
@@ -360,17 +338,13 @@ impl Block for SetY {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "Y" => self.y = Some(block),
+            "Y" => self.y = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let y = match &self.y {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("y is None")),
-        };
-
+        let y = value_to_float(&self.y.value().await?)?;
         let mut runtime = self.runtime.sprite.write().await;
         let mut position = runtime.center();
         position.y = y;

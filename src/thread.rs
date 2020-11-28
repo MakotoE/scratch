@@ -1,6 +1,6 @@
 use super::*;
+use crate::blocks::{Block, BlockInfo, BlockInputs, Next};
 use crate::runtime::Runtime;
-use blocks::{Block, BlockInfo, BlockInputs, Next};
 
 #[derive(Debug)]
 pub struct Thread {

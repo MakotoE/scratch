@@ -15,7 +15,7 @@ pub struct SetVariable {
     id: BlockID,
     runtime: Runtime,
     variable_id: String,
-    value: Option<Box<dyn Block>>,
+    value: Box<dyn Block>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
@@ -25,7 +25,7 @@ impl SetVariable {
             id,
             runtime,
             variable_id: String::new(),
-            value: None,
+            value: Box::new(EmptyInput {}),
             next: None,
         }
     }
@@ -52,7 +52,7 @@ impl Block for SetVariable {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "VALUE" => self.value = Some(block),
+            "VALUE" => self.value = block,
             _ => {}
         }
     }
@@ -67,10 +67,7 @@ impl Block for SetVariable {
     }
 
     async fn execute(&mut self) -> Next {
-        let value = match &self.value {
-            Some(v) => v.value().await?,
-            None => return Next::Err(wrap_err!("value is None")),
-        };
+        let value = self.value.value().await?;
         self.runtime
             .global
             .variables
@@ -85,7 +82,7 @@ pub struct ChangeVariable {
     id: BlockID,
     runtime: Runtime,
     variable_id: String,
-    value: Option<Box<dyn Block>>,
+    value: Box<dyn Block>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
@@ -95,7 +92,7 @@ impl ChangeVariable {
             id,
             runtime,
             variable_id: String::new(),
-            value: None,
+            value: Box::new(EmptyInput {}),
             next: None,
         }
     }
@@ -122,7 +119,7 @@ impl Block for ChangeVariable {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "VALUE" => self.value = Some(block),
+            "VALUE" => self.value = block,
             _ => {}
         }
     }
@@ -137,11 +134,7 @@ impl Block for ChangeVariable {
     }
 
     async fn execute(&mut self) -> Next {
-        let value = match &self.value {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("value is None")),
-        };
-
+        let value = value_to_float(&self.value.value().await?)?;
         self.runtime
             .global
             .variables

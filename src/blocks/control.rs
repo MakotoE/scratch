@@ -1,8 +1,8 @@
 use super::*;
 use crate::runtime::BroadcastMsg;
+use crate::vm::ThreadID;
 use gloo_timers::future::TimeoutFuture;
 use std::str::FromStr;
-use vm::ThreadID;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -25,7 +25,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 #[derive(Debug)]
 pub struct If {
     id: BlockID,
-    condition: Option<Box<dyn Block>>,
+    condition: Box<dyn Block>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
     done: bool,
@@ -35,7 +35,7 @@ impl If {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            condition: None,
+            condition: Box::new(EmptyFalse {}),
             next: None,
             substack: None,
             done: false,
@@ -64,7 +64,7 @@ impl Block for If {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "CONDITION" => self.condition = Some(block),
+            "CONDITION" => self.condition = block,
             "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
             _ => {}
         }
@@ -76,12 +76,7 @@ impl Block for If {
             return Next::continue_(self.next.clone());
         }
 
-        let condition = match &self.condition {
-            Some(id) => id,
-            None => return Next::continue_(self.next.clone()),
-        };
-
-        let value = condition.value().await?;
+        let value = self.condition.value().await?;
         let value_bool = match value.as_bool() {
             Some(b) => b,
             None => {
@@ -106,7 +101,7 @@ impl Block for If {
 pub struct Wait {
     id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    duration: Option<Box<dyn Block>>,
+    duration: Box<dyn Block>,
     runtime: Runtime,
 }
 
@@ -115,7 +110,7 @@ impl Wait {
         Self {
             id,
             next: None,
-            duration: None,
+            duration: Box::new(EmptyInput {}),
             runtime,
         }
     }
@@ -141,18 +136,14 @@ impl Block for Wait {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "DURATION" => self.duration = Some(block),
+            "DURATION" => self.duration = block,
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let duration = match &self.duration {
-            Some(block) => value_to_float(&block.value().await?)?,
-            None => return Next::Err(wrap_err!("duration is None")),
-        };
-
+        let duration = value_to_float(&self.duration.value().await?)?;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
         Next::continue_(self.next.clone())
     }
@@ -205,7 +196,7 @@ impl Block for Forever {
 #[derive(Debug)]
 pub struct Repeat {
     id: BlockID,
-    times: Option<Box<dyn Block>>,
+    times: Box<dyn Block>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
     count: usize,
@@ -215,7 +206,7 @@ impl Repeat {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            times: None,
+            times: Box::new(EmptyInput {}),
             next: None,
             substack: None,
             count: 0,
@@ -243,7 +234,7 @@ impl Block for Repeat {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "TIMES" => self.times = Some(block),
+            "TIMES" => self.times = block,
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
             "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
             _ => {}
@@ -251,12 +242,7 @@ impl Block for Repeat {
     }
 
     async fn execute(&mut self) -> Next {
-        let times = match &self.times {
-            Some(v) => value_to_float(&v.value().await?)?,
-            None => return Next::Err(wrap_err!("times is None")),
-        };
-
-        if self.count < times as usize {
+        if self.count < value_to_float(&self.times.value().await?)? as usize {
             // Loop until count equals times
             self.count += 1;
             return Next::loop_(self.substack.clone());
@@ -272,7 +258,7 @@ pub struct RepeatUntil {
     id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack: Option<Rc<RefCell<Box<dyn Block>>>>,
-    condition: Option<Box<dyn Block>>,
+    condition: Box<dyn Block>,
 }
 
 impl RepeatUntil {
@@ -281,7 +267,7 @@ impl RepeatUntil {
             id,
             next: None,
             substack: None,
-            condition: None,
+            condition: Box::new(EmptyFalse {}),
         }
     }
 }
@@ -308,17 +294,13 @@ impl Block for RepeatUntil {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
             "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
-            "CONDITION" => self.condition = Some(block),
+            "CONDITION" => self.condition = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let condition_value = match &self.condition {
-            Some(block) => block.value().await?,
-            None => return Next::Err(wrap_err!("condition is None")),
-        };
-
+        let condition_value = self.condition.value().await?;
         let condition = match condition_value.as_bool() {
             Some(b) => b,
             None => {
@@ -341,7 +323,7 @@ impl Block for RepeatUntil {
 pub struct IfElse {
     id: BlockID,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    condition: Option<Box<dyn Block>>,
+    condition: Box<dyn Block>,
     substack_true: Option<Rc<RefCell<Box<dyn Block>>>>,
     substack_false: Option<Rc<RefCell<Box<dyn Block>>>>,
     done: bool,
@@ -352,7 +334,7 @@ impl IfElse {
         Self {
             id,
             next: None,
-            condition: None,
+            condition: Box::new(EmptyFalse {}),
             substack_true: None,
             substack_false: None,
             done: false,
@@ -385,7 +367,7 @@ impl Block for IfElse {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "CONDITION" => self.condition = Some(block),
+            "CONDITION" => self.condition = block,
             "SUBSTACK" => self.substack_true = Some(Rc::new(RefCell::new(block))),
             "SUBSTACK2" => self.substack_false = Some(Rc::new(RefCell::new(block))),
             _ => {}
@@ -398,11 +380,7 @@ impl Block for IfElse {
             return Next::continue_(self.next.clone());
         }
 
-        let condition_value = match &self.condition {
-            Some(block) => block.value().await?,
-            None => return Next::Err(wrap_err!("condition is None")),
-        };
-
+        let condition_value = self.condition.value().await?;
         let condition = match condition_value.as_bool() {
             Some(b) => b,
             None => {
@@ -634,7 +612,7 @@ pub struct CreateCloneOf {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    clone_option: Option<Box<dyn Block>>,
+    clone_option: Box<dyn Block>,
 }
 
 impl CreateCloneOf {
@@ -643,7 +621,7 @@ impl CreateCloneOf {
             id,
             runtime,
             next: None,
-            clone_option: None,
+            clone_option: Box::new(EmptyInput {}),
         }
     }
 }
@@ -669,7 +647,7 @@ impl Block for CreateCloneOf {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "CLONE_OPTION" => self.clone_option = Some(block),
+            "CLONE_OPTION" => self.clone_option = block,
             _ => {}
         }
     }

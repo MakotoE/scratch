@@ -24,7 +24,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 pub struct Say {
     id: BlockID,
     runtime: Runtime,
-    message: Option<Box<dyn Block>>,
+    message: Box<dyn Block>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
@@ -33,7 +33,7 @@ impl Say {
         Self {
             id,
             runtime,
-            message: None,
+            message: Box::new(EmptyInput {}),
             next: None,
         }
     }
@@ -60,16 +60,13 @@ impl Block for Say {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "MESSAGE" => self.message = Some(block),
+            "MESSAGE" => self.message = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let message = match &self.message {
-            Some(b) => value_to_string(b.value().await?),
-            None => return Next::Err(wrap_err!("message is None")),
-        };
+        let message = value_to_string(self.message.value().await?);
         self.runtime.sprite.write().await.say(Text {
             id: self.id,
             text: Some(message),
@@ -82,8 +79,8 @@ impl Block for Say {
 pub struct SayForSecs {
     id: BlockID,
     runtime: Runtime,
-    message: Option<Box<dyn Block>>,
-    secs: Option<Box<dyn Block>>,
+    message: Box<dyn Block>,
+    secs: Box<dyn Block>,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
 }
 
@@ -92,8 +89,8 @@ impl SayForSecs {
         Self {
             id,
             runtime,
-            message: None,
-            secs: None,
+            message: Box::new(EmptyInput {}),
+            secs: Box::new(EmptyInput {}),
             next: None,
         }
     }
@@ -120,22 +117,15 @@ impl Block for SayForSecs {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "MESSAGE" => self.message = Some(block),
-            "SECS" => self.secs = Some(block),
+            "MESSAGE" => self.message = block,
+            "SECS" => self.secs = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let message = match &self.message {
-            Some(b) => value_to_string(b.value().await?),
-            None => return Next::Err(wrap_err!("message is None")),
-        };
-
-        let seconds = match &self.secs {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("secs is None")),
-        };
+        let message = value_to_string(self.message.value().await?);
+        let seconds = value_to_float(&self.secs.value().await?)?;
 
         self.runtime.sprite.write().await.say(Text {
             id: self.id,
@@ -397,7 +387,7 @@ pub struct SetSizeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    size: Option<Box<dyn Block>>, // TODO noop block to get rid of Option
+    size: Box<dyn Block>,
 }
 
 impl SetSizeTo {
@@ -406,7 +396,7 @@ impl SetSizeTo {
             id,
             runtime,
             next: None,
-            size: None,
+            size: Box::new(EmptyInput {}),
         }
     }
 }
@@ -432,18 +422,13 @@ impl Block for SetSizeTo {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SIZE" => self.size = Some(block),
+            "SIZE" => self.size = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let size = match &self.size {
-            Some(b) => b,
-            None => return Next::Err(wrap_err!("size is none")),
-        };
-
-        let scale = value_to_float(&size.value().await?)? / 100.0;
+        let scale = value_to_float(&self.size.value().await?)? / 100.0;
 
         self.runtime
             .sprite

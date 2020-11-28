@@ -21,16 +21,16 @@ pub fn get_block(name: &str, id: BlockID, _runtime: Runtime) -> Result<Box<dyn B
 #[derive(Debug)]
 pub struct Equals {
     id: BlockID,
-    operand1: Option<Box<dyn Block>>,
-    operand2: Option<Box<dyn Block>>,
+    operand1: Box<dyn Block>,
+    operand2: Box<dyn Block>,
 }
 
 impl Equals {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            operand1: None,
-            operand2: None,
+            operand1: Box::new(EmptyInput {}),
+            operand2: Box::new(EmptyInput {}),
         }
     }
 
@@ -66,54 +66,32 @@ impl Block for Equals {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "OPERAND1" => self.operand1 = Some(block),
-            "OPERAND2" => self.operand2 = Some(block),
+            "OPERAND1" => self.operand1 = block,
+            "OPERAND2" => self.operand2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let a = match &self.operand1 {
-            Some(a) => a.value().await?,
-            None => return Err(wrap_err!("operand1 is None")),
-        };
-        let b = match &self.operand2 {
-            Some(b) => b.value().await?,
-            None => return Err(wrap_err!("operand2 is None")),
-        };
-
+        let a = self.operand1.value().await?;
+        let b = self.operand2.value().await?;
         Ok(Equals::equal(&a, &b).into())
     }
-}
-
-async fn get_num1_and_num2(
-    num1: &Option<Box<dyn Block>>,
-    num2: &Option<Box<dyn Block>>,
-) -> Result<(f64, f64)> {
-    let a = match num1 {
-        Some(a) => value_to_float(&a.value().await?)?,
-        None => return Err(wrap_err!("num1 is None")),
-    };
-    let b = match num2 {
-        Some(b) => value_to_float(&b.value().await?)?,
-        None => return Err(wrap_err!("num2 is None")),
-    };
-    Ok((a, b))
 }
 
 #[derive(Debug)]
 pub struct Add {
     id: BlockID,
-    num1: Option<Box<dyn Block>>,
-    num2: Option<Box<dyn Block>>,
+    num1: Box<dyn Block>,
+    num2: Box<dyn Block>,
 }
 
 impl Add {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            num1: None,
-            num2: None,
+            num1: Box::new(EmptyInput {}),
+            num2: Box::new(EmptyInput {}),
         }
     }
 }
@@ -138,14 +116,15 @@ impl Block for Add {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "NUM1" => self.num1 = Some(block),
-            "NUM2" => self.num2 = Some(block),
+            "NUM1" => self.num1 = block,
+            "NUM2" => self.num2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
+        let a = value_to_float(&self.num1.value().await?)?;
+        let b = value_to_float(&self.num2.value().await?)?;
         Ok((a + b).into())
     }
 }
@@ -153,16 +132,16 @@ impl Block for Add {
 #[derive(Debug)]
 pub struct Subtract {
     id: BlockID,
-    num1: Option<Box<dyn Block>>,
-    num2: Option<Box<dyn Block>>,
+    num1: Box<dyn Block>,
+    num2: Box<dyn Block>,
 }
 
 impl Subtract {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            num1: None,
-            num2: None,
+            num1: Box::new(EmptyInput {}),
+            num2: Box::new(EmptyInput {}),
         }
     }
 }
@@ -187,14 +166,15 @@ impl Block for Subtract {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "NUM1" => self.num1 = Some(block),
-            "NUM2" => self.num2 = Some(block),
+            "NUM1" => self.num1 = block,
+            "NUM2" => self.num2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
+        let a = value_to_float(&self.num1.value().await?)?;
+        let b = value_to_float(&self.num2.value().await?)?;
         Ok((a - b).into())
     }
 }
@@ -202,16 +182,16 @@ impl Block for Subtract {
 #[derive(Debug)]
 pub struct Multiply {
     id: BlockID,
-    num1: Option<Box<dyn Block>>,
-    num2: Option<Box<dyn Block>>,
+    num1: Box<dyn Block>,
+    num2: Box<dyn Block>,
 }
 
 impl Multiply {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            num1: None,
-            num2: None,
+            num1: Box::new(EmptyInput {}),
+            num2: Box::new(EmptyInput {}),
         }
     }
 }
@@ -236,14 +216,15 @@ impl Block for Multiply {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "NUM1" => self.num1 = Some(block),
-            "NUM2" => self.num2 = Some(block),
+            "NUM1" => self.num1 = block,
+            "NUM2" => self.num2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
+        let a = value_to_float(&self.num1.value().await?)?;
+        let b = value_to_float(&self.num2.value().await?)?;
         Ok((a * b).into())
     }
 }
@@ -251,16 +232,16 @@ impl Block for Multiply {
 #[derive(Debug)]
 pub struct Divide {
     id: BlockID,
-    num1: Option<Box<dyn Block>>,
-    num2: Option<Box<dyn Block>>,
+    num1: Box<dyn Block>,
+    num2: Box<dyn Block>,
 }
 
 impl Divide {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            num1: None,
-            num2: None,
+            num1: Box::new(EmptyInput {}),
+            num2: Box::new(EmptyInput {}),
         }
     }
 }
@@ -285,14 +266,15 @@ impl Block for Divide {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "NUM1" => self.num1 = Some(block),
-            "NUM2" => self.num2 = Some(block),
+            "NUM1" => self.num1 = block,
+            "NUM2" => self.num2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let (a, b) = get_num1_and_num2(&self.num1, &self.num2).await?;
+        let a = value_to_float(&self.num1.value().await?)?;
+        let b = value_to_float(&self.num2.value().await?)?;
         Ok((a / b).into())
     }
 }
@@ -300,16 +282,16 @@ impl Block for Divide {
 #[derive(Debug)]
 pub struct And {
     id: BlockID,
-    operand1: Option<Box<dyn Block>>,
-    operand2: Option<Box<dyn Block>>,
+    operand1: Box<dyn Block>,
+    operand2: Box<dyn Block>,
 }
 
 impl And {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            operand1: None,
-            operand2: None,
+            operand1: Box::new(EmptyFalse {}),
+            operand2: Box::new(EmptyFalse {}),
         }
     }
 }
@@ -334,33 +316,21 @@ impl Block for And {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "OPERAND1" => self.operand1 = Some(block),
-            "OPERAND2" => self.operand2 = Some(block),
+            "OPERAND1" => self.operand1 = block,
+            "OPERAND2" => self.operand2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let left = match &self.operand1 {
-            Some(b) => {
-                let value = b.value().await?;
-                match value {
-                    serde_json::Value::Bool(b) => b,
-                    _ => return Err(wrap_err!(format!("operand1 is not a boolean: {:?}", value))),
-                }
-            }
-            None => return Err(wrap_err!("operand1 is None")),
+        let left = match self.operand1.value().await? {
+            serde_json::Value::Bool(b) => b,
+            _ => return Err(wrap_err!("operand1 is not a boolean")),
         };
 
-        let right = match &self.operand2 {
-            Some(b) => {
-                let value = b.value().await?;
-                match value {
-                    serde_json::Value::Bool(b) => b,
-                    _ => return Err(wrap_err!(format!("operand2 is not a boolean: {:?}", value))),
-                }
-            }
-            None => return Err(wrap_err!("operand2 is None")),
+        let right = match self.operand2.value().await? {
+            serde_json::Value::Bool(b) => b,
+            _ => return Err(wrap_err!("operand2 is not a boolean")),
         };
 
         Ok((left && right).into())
@@ -370,16 +340,16 @@ impl Block for And {
 #[derive(Debug)]
 pub struct Or {
     id: BlockID,
-    operand1: Option<Box<dyn Block>>,
-    operand2: Option<Box<dyn Block>>,
+    operand1: Box<dyn Block>,
+    operand2: Box<dyn Block>,
 }
 
 impl Or {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            operand1: None,
-            operand2: None,
+            operand1: Box::new(EmptyFalse {}),
+            operand2: Box::new(EmptyFalse {}),
         }
     }
 }
@@ -404,33 +374,21 @@ impl Block for Or {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "OPERAND1" => self.operand1 = Some(block),
-            "OPERAND2" => self.operand2 = Some(block),
+            "OPERAND1" => self.operand1 = block,
+            "OPERAND2" => self.operand2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let left = match &self.operand1 {
-            Some(b) => {
-                let value = b.value().await?;
-                match value {
-                    serde_json::Value::Bool(b) => b,
-                    _ => return Err(wrap_err!(format!("operand1 is not a boolean: {:?}", value))),
-                }
-            }
-            None => return Err(wrap_err!("operand1 is None")),
+        let left = match self.operand1.value().await? {
+            serde_json::Value::Bool(b) => b,
+            _ => return Err(wrap_err!("operand1 is not a boolean")),
         };
 
-        let right = match &self.operand2 {
-            Some(b) => {
-                let value = b.value().await?;
-                match value {
-                    serde_json::Value::Bool(b) => b,
-                    _ => return Err(wrap_err!(format!("operand2 is not a boolean: {:?}", value))),
-                }
-            }
-            None => return Err(wrap_err!("operand2 is None")),
+        let right = match self.operand2.value().await? {
+            serde_json::Value::Bool(b) => b,
+            _ => return Err(wrap_err!("operand2 is not a boolean")),
         };
 
         Ok((left || right).into())
@@ -440,12 +398,15 @@ impl Block for Or {
 #[derive(Debug)]
 pub struct Not {
     id: BlockID,
-    operand: Option<Box<dyn Block>>,
+    operand: Box<dyn Block>,
 }
 
 impl Not {
     pub fn new(id: BlockID) -> Self {
-        Self { id, operand: None }
+        Self {
+            id,
+            operand: Box::new(EmptyFalse {}),
+        }
     }
 }
 
@@ -469,24 +430,14 @@ impl Block for Not {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "OPERAND" {
-            self.operand = Some(block);
+            self.operand = block;
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let operand_value = match &self.operand {
-            Some(b) => b.value().await?,
-            None => return Err(wrap_err!("operand is None")),
-        };
-
-        let operand = match operand_value {
+        let operand = match self.operand.value().await? {
             serde_json::Value::Bool(b) => b,
-            _ => {
-                return Err(wrap_err!(format!(
-                    "operand is not a boolean: {}",
-                    operand_value
-                )));
-            }
+            _ => return Err(wrap_err!("operand is not a boolean")),
         };
 
         Ok((!operand).into())
@@ -496,16 +447,16 @@ impl Block for Not {
 #[derive(Debug)]
 pub struct LessThan {
     id: BlockID,
-    operand1: Option<Box<dyn Block>>,
-    operand2: Option<Box<dyn Block>>,
+    operand1: Box<dyn Block>,
+    operand2: Box<dyn Block>,
 }
 
 impl LessThan {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            operand1: None,
-            operand2: None,
+            operand1: Box::new(EmptyInput {}),
+            operand2: Box::new(EmptyInput {}),
         }
     }
 }
@@ -530,23 +481,15 @@ impl Block for LessThan {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "OPERAND1" => self.operand1 = Some(block),
-            "OPERAND2" => self.operand2 = Some(block),
+            "OPERAND1" => self.operand1 = block,
+            "OPERAND2" => self.operand2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let left = match &self.operand1 {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err(wrap_err!("operand1 is None")),
-        };
-
-        let right = match &self.operand2 {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err(wrap_err!("operand2 is None")),
-        };
-
+        let left = value_to_float(&self.operand1.value().await?)?;
+        let right = value_to_float(&self.operand2.value().await?)?;
         Ok((left < right).into())
     }
 }
@@ -554,16 +497,16 @@ impl Block for LessThan {
 #[derive(Debug)]
 pub struct GreaterThan {
     id: BlockID,
-    operand1: Option<Box<dyn Block>>,
-    operand2: Option<Box<dyn Block>>,
+    operand1: Box<dyn Block>,
+    operand2: Box<dyn Block>,
 }
 
 impl GreaterThan {
     pub fn new(id: BlockID) -> Self {
         Self {
             id,
-            operand1: None,
-            operand2: None,
+            operand1: Box::new(EmptyInput {}),
+            operand2: Box::new(EmptyInput {}),
         }
     }
 }
@@ -588,23 +531,15 @@ impl Block for GreaterThan {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "OPERAND1" => self.operand1 = Some(block),
-            "OPERAND2" => self.operand2 = Some(block),
+            "OPERAND1" => self.operand1 = block,
+            "OPERAND2" => self.operand2 = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let left = match &self.operand1 {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err(wrap_err!("operand1 is None")),
-        };
-
-        let right = match &self.operand2 {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Err(wrap_err!("operand2 is None")),
-        };
-
+        let left = value_to_float(&self.operand1.value().await?)?;
+        let right = value_to_float(&self.operand2.value().await?)?;
         Ok((left > right).into())
     }
 }

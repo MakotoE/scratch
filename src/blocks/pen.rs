@@ -117,7 +117,7 @@ pub struct SetPenColorToColor {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    color: Option<Box<dyn Block>>,
+    color: Box<dyn Block>,
 }
 
 impl SetPenColorToColor {
@@ -126,7 +126,7 @@ impl SetPenColorToColor {
             id,
             runtime,
             next: None,
-            color: None,
+            color: Box::new(EmptyInput {}),
         }
     }
 }
@@ -152,16 +152,13 @@ impl Block for SetPenColorToColor {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "COLOR" => self.color = Some(block),
+            "COLOR" => self.color = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let color_value = match &self.color {
-            Some(b) => b.value().await?,
-            None => return Next::Err(wrap_err!("color is None")),
-        };
+        let color_value = self.color.value().await?;
         let color = color_value
             .as_str()
             .ok_or_else(|| Error::from("color is not a string"))?;
@@ -180,7 +177,7 @@ pub struct SetPenSizeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    size: Option<Box<dyn Block>>,
+    size: Box<dyn Block>,
 }
 
 impl SetPenSizeTo {
@@ -189,7 +186,7 @@ impl SetPenSizeTo {
             id,
             runtime,
             next: None,
-            size: None,
+            size: Box::new(EmptyInput {}),
         }
     }
 }
@@ -215,17 +212,13 @@ impl Block for SetPenSizeTo {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SIZE" => self.size = Some(block),
+            "SIZE" => self.size = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let size = match &self.size {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("color is None")),
-        };
-
+        let size = value_to_float(&self.size.value().await?)?;
         self.runtime.sprite.write().await.pen().set_size(size);
         Next::continue_(self.next.clone())
     }
@@ -283,7 +276,7 @@ pub struct SetPenShadeToNumber {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    shade: Option<Box<dyn Block>>,
+    shade: Box<dyn Block>,
 }
 
 impl SetPenShadeToNumber {
@@ -292,7 +285,7 @@ impl SetPenShadeToNumber {
             id,
             runtime,
             next: None,
-            shade: None,
+            shade: Box::new(EmptyInput {}),
         }
     }
 
@@ -340,16 +333,13 @@ impl Block for SetPenShadeToNumber {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SHADE" => self.shade = Some(block),
+            "SHADE" => self.shade = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let shade = match &self.shade {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("shade is None")),
-        };
+        let shade = value_to_float(&self.shade.value().await?)?;
         let mut runtime = self.runtime.sprite.write().await;
         let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
@@ -363,7 +353,7 @@ pub struct SetPenHueToNumber {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    hue: Option<Box<dyn Block>>, // [0, 100]
+    hue: Box<dyn Block>, // [0, 100]
 }
 
 impl SetPenHueToNumber {
@@ -372,7 +362,7 @@ impl SetPenHueToNumber {
             id,
             runtime,
             next: None,
-            hue: None,
+            hue: Box::new(EmptyInput {}),
         }
     }
 
@@ -402,17 +392,13 @@ impl Block for SetPenHueToNumber {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "HUE" => self.hue = Some(block),
+            "HUE" => self.hue = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let hue = match &self.hue {
-            Some(b) => value_to_float(&b.value().await?)?,
-            None => return Next::Err(wrap_err!("hue is None")),
-        };
-
+        let hue = value_to_float(&self.hue.value().await?)?;
         let mut runtime = self.runtime.sprite.write().await;
         let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
         runtime.pen().set_color(&new_color);

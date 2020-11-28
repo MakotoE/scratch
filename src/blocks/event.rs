@@ -144,7 +144,7 @@ pub struct Broadcast {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    message: Option<Box<dyn Block>>,
+    message: Box<dyn Block>,
 }
 
 impl Broadcast {
@@ -153,7 +153,7 @@ impl Broadcast {
             id,
             runtime,
             next: None,
-            message: None,
+            message: Box::new(EmptyInput {}),
         }
     }
 }
@@ -179,18 +179,13 @@ impl Block for Broadcast {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "BROADCAST_INPUT" => self.message = Some(block),
+            "BROADCAST_INPUT" => self.message = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let message_block = match &self.message {
-            Some(b) => b,
-            None => return Next::Err(wrap_err!("message is None")),
-        };
-
-        let msg = value_to_string(message_block.value().await?);
+        let msg = value_to_string(self.message.value().await?);
         self.runtime
             .global
             .broadcaster
@@ -204,7 +199,7 @@ pub struct BroadcastAndWait {
     id: BlockID,
     runtime: Runtime,
     next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    message: Option<Box<dyn Block>>,
+    message: Box<dyn Block>,
 }
 
 impl BroadcastAndWait {
@@ -213,7 +208,7 @@ impl BroadcastAndWait {
             id,
             runtime,
             next: None,
-            message: None,
+            message: Box::new(EmptyInput {}),
         }
     }
 }
@@ -239,18 +234,13 @@ impl Block for BroadcastAndWait {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "BROADCAST_INPUT" => self.message = Some(block),
+            "BROADCAST_INPUT" => self.message = block,
             _ => {}
         }
     }
 
     async fn execute(&mut self) -> Next {
-        let message_block = match &self.message {
-            Some(b) => b,
-            None => return Next::Err(wrap_err!("message is None")),
-        };
-
-        let msg = value_to_string(message_block.value().await?);
+        let msg = value_to_string(self.message.value().await?);
         self.runtime
             .global
             .broadcaster
