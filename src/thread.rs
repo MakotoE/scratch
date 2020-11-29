@@ -1,6 +1,5 @@
 use super::*;
 use crate::blocks::{Block, BlockInfo, BlockInputs, Next};
-use crate::runtime::Runtime;
 
 #[derive(Debug)]
 pub struct Thread {
@@ -11,7 +10,7 @@ pub struct Thread {
 }
 
 impl Thread {
-    pub fn start(hat: Box<dyn Block>, _runtime: Runtime, _thread_id: usize) -> Self {
+    pub fn start(hat: Box<dyn Block>) -> Self {
         let hat = Rc::new(RefCell::new(hat));
         Thread {
             hat: hat.clone(),

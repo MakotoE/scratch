@@ -1,7 +1,9 @@
 use super::*;
 use crate::coordinate::Scale;
+use crate::runtime::{BroadcastMsg, LayerChange};
 use crate::sprite_runtime::{HideStatus, Text};
 use gloo_timers::future::TimeoutFuture;
+use std::str::FromStr;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -143,12 +145,19 @@ impl Block for SayForSecs {
 #[derive(Debug)]
 pub struct GoToFrontBack {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    runtime: Runtime,
+    next: Option<Rc<RefCell<Box<dyn Block>>>>, // TODO store ID instead of block reference
+    front_or_back: FrontBack,
 }
 
 impl GoToFrontBack {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            front_or_back: FrontBack::Front,
+        }
     }
 }
 
@@ -174,6 +183,48 @@ impl Block for GoToFrontBack {
         if key == "next" {
             self.next = Some(Rc::new(RefCell::new(block)));
         }
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "FRONT_BACK" {
+            if let Some(s) = field.get(0).unwrap_or(&None) {
+                self.front_or_back = FrontBack::from_str(s)?;
+            }
+        }
+        Ok(())
+    }
+
+    async fn execute(&mut self) -> Next {
+        let layer_change = match self.front_or_back {
+            FrontBack::Front => LayerChange::Front,
+            FrontBack::Back => LayerChange::Back,
+        };
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::ChangeLayer((
+                self.runtime.thread_id().sprite_id,
+                layer_change,
+            )))?;
+        Next::continue_(self.next.clone())
+    }
+}
+
+#[derive(Debug)]
+enum FrontBack {
+    Front,
+    Back,
+}
+
+impl FromStr for FrontBack {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
+            "front" => Self::Front,
+            "back" => Self::Back,
+            _ => return Err(wrap_err!(format!("s is invalid: {}", s))),
+        })
     }
 }
 

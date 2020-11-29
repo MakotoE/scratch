@@ -220,6 +220,7 @@ pub enum BroadcastMsg {
     DeleteClone(SpriteID),
     Click(SpriteCoordinate),
     Stop(Stop),
+    ChangeLayer((SpriteID, LayerChange)),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -227,6 +228,13 @@ pub enum Stop {
     All,
     ThisThread(ThreadID),
     OtherThreads(ThreadID),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum LayerChange {
+    Front,
+    Back,
+    ChangeBy(i64),
 }
 
 #[derive(Debug)]

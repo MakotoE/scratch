@@ -2,7 +2,7 @@ use super::*;
 use crate::blocks::{BlockInfo, BlockInputs};
 use crate::canvas::CanvasContext;
 use crate::coordinate::SpriteCoordinate;
-use crate::runtime::{BroadcastMsg, Broadcaster, Global, Stop};
+use crate::runtime::{BroadcastMsg, Broadcaster, Global, LayerChange, Stop};
 use crate::savefile::{ScratchFile, Target};
 use crate::sprite::{Sprite, SpriteID};
 use futures::future::LocalBoxFuture;
@@ -244,6 +244,9 @@ impl VM {
                         }
                     }
                 },
+                Event::ChangeLayer(layer_change) => {
+                    sprites.change_layer(layer_change.0, layer_change.1)?;
+                }
             };
         }
     }
@@ -296,6 +299,7 @@ enum Event {
     Clone(SpriteID),
     DeleteClone(SpriteID),
     Stop(Stop),
+    ChangeLayer((SpriteID, LayerChange)),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -346,6 +350,7 @@ impl BroadcastCell {
                 BroadcastMsg::Clone(id) => Event::Clone(id),
                 BroadcastMsg::DeleteClone(id) => Event::DeleteClone(id),
                 BroadcastMsg::Stop(s) => Event::Stop(s),
+                BroadcastMsg::ChangeLayer(l) => Event::ChangeLayer(l),
                 _ => Event::None,
             },
             Err(e) => Event::Err(e.into()),
@@ -356,7 +361,7 @@ impl BroadcastCell {
 #[derive(Debug)]
 struct SpritesCell {
     sprites: RefCell<HashMap<SpriteID, Sprite>>,
-    draw_order: DrawOrder,
+    draw_order: RefCell<DrawOrder>,
     threads_to_stop: RefCell<HashSet<ThreadID>>,
     global: Rc<Global>,
 }
@@ -365,7 +370,7 @@ impl SpritesCell {
     fn new(sprites: HashMap<SpriteID, Sprite>, targets: &[Target], global: Rc<Global>) -> Self {
         Self {
             sprites: RefCell::new(sprites),
-            draw_order: DrawOrder::new(targets),
+            draw_order: RefCell::new(DrawOrder::new(targets)),
             threads_to_stop: RefCell::default(),
             global,
         }
@@ -417,8 +422,7 @@ impl SpritesCell {
         self.global.redraw(context).await?;
 
         let sprites = self.sprites.borrow();
-
-        for id in self.draw_order.iter() {
+        for id in self.draw_order.borrow().iter() {
             match sprites.get(id) {
                 Some(s) => s.redraw(context).await?,
                 None => return Err(wrap_err!(format!("id not found: {}", id))),
@@ -469,6 +473,10 @@ impl SpritesCell {
     fn stop(&self, thread_id: ThreadID) {
         self.threads_to_stop.borrow_mut().insert(thread_id);
     }
+
+    fn change_layer(&self, id: SpriteID, change: LayerChange) -> Result<()> {
+        self.draw_order.borrow_mut().change_layer(id, change)
+    }
 }
 
 #[derive(Debug)]
@@ -496,6 +504,20 @@ impl DrawOrder {
 
     fn iter(&self) -> std::slice::Iter<SpriteID> {
         self.ids.iter()
+    }
+
+    fn change_layer(&mut self, id: SpriteID, change: LayerChange) -> Result<()> {
+        match self.ids.iter().position(|sprite_id| sprite_id == &id) {
+            Some(index) => self.ids.remove(index),
+            None => return Err(wrap_err!(format!("id not found: {}", id))),
+        };
+
+        match change {
+            LayerChange::Front => self.ids.push(id),
+            LayerChange::Back => self.ids.insert(0, id),
+            LayerChange::ChangeBy(_) => unimplemented!(),
+        }
+        Ok(())
     }
 }
 

@@ -47,7 +47,7 @@ impl Sprite {
                 Ok(b) => b,
                 Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
             };
-            let thread = Thread::start(block, runtime.clone(), 0);
+            let thread = Thread::start(block);
             threads.push(RefCell::new(thread));
         }
 

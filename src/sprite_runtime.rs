@@ -354,7 +354,7 @@ pub enum HideStatus {
 }
 
 #[derive(Debug, Clone)]
-/// Text only be hidden by the thread that posted it. It can be replaced with new text by any
+/// Text can only be hidden by the thread that posted it. It can be replaced with new text by any
 /// thread.
 pub struct Text {
     pub id: BlockID,
