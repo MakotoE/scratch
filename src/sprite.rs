@@ -26,10 +26,7 @@ impl Sprite {
         images: Rc<HashMap<String, Image>>,
         is_a_clone: bool,
     ) -> Result<(SpriteID, Self)> {
-        let mut hasher = DefaultHasher::new();
-        target.hash(&mut hasher);
-        is_a_clone.hash(&mut hasher);
-        let sprite_id = SpriteID::from(hasher);
+        let sprite_id = SpriteID::new(&target.name);
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
@@ -138,16 +135,15 @@ pub fn find_hats(block_infos: &HashMap<BlockID, savefile::Block>) -> Vec<BlockID
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct SpriteID {
-    hash: [u8; 8],
+    hash: u64,
 }
 
-impl<H> From<H> for SpriteID
-where
-    H: Hasher,
-{
-    fn from(hasher: H) -> Self {
+impl SpriteID {
+    pub fn new(sprite_name: &str) -> Self {
+        let mut hasher = DefaultHasher::new();
+        sprite_name.hash(&mut hasher);
         Self {
-            hash: hasher.finish().to_le_bytes(),
+            hash: hasher.finish(),
         }
     }
 }
@@ -162,6 +158,6 @@ impl Debug for SpriteID {
 
 impl Display for SpriteID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&hex::encode(&self.hash[..4]))
+        std::fmt::LowerHex::fmt(&self.hash, f)
     }
 }

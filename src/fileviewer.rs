@@ -9,24 +9,30 @@ use yew::virtual_dom::VNode;
 
 pub struct FileViewer {
     link: ComponentLink<Self>,
-    block_inputs: HashMap<SpriteID, Vec<BlockInputs>>,
+    block_inputs: HashMap<SpriteID, BlockInputsName>,
     file_text: String,
 }
 
 pub enum Msg {
     LoadFile(ScratchFile),
-    SetBlockInputs(HashMap<SpriteID, Vec<BlockInputs>>),
+    SetBlockInputs(HashMap<SpriteID, BlockInputsName>),
 }
 
 impl FileViewer {
-    fn sprite(block_inputs: &HashMap<SpriteID, Vec<BlockInputs>>) -> Vec<VNode> {
+    fn sprite(block_inputs: &HashMap<SpriteID, BlockInputsName>) -> Vec<VNode> {
         block_inputs
             .iter()
-            .map(|(sprite_id, thread)| {
+            .map(|(sprite_id, block_inputs)| {
+                let sprite_id_truncated: String =
+                    format!("{}", sprite_id).chars().take(8).collect();
                 html! {
                     <>
-                        <h1><strong>{format!("Sprite {}", sprite_id)}</strong></h1>
-                        {FileViewer::thread(thread)}
+                        <h1>
+                            <strong>
+                                {format!("Sprite {} ({})", sprite_id_truncated, block_inputs.name)}
+                            </strong>
+                        </h1>
+                        {FileViewer::thread(&block_inputs.block_inputs)}
                     </>
                 }
             })
@@ -74,7 +80,27 @@ impl Component for FileViewer {
                 let set_block_inputs = self.link.callback(Msg::SetBlockInputs);
                 wasm_bindgen_futures::spawn_local(async move {
                     match VM::block_inputs(&file).await {
-                        Ok(b) => set_block_inputs.emit(b),
+                        Ok(mut block_input) => {
+                            let mut id_name: HashMap<SpriteID, String> = file
+                                .project
+                                .targets
+                                .iter()
+                                .map(|t| (SpriteID::new(&t.name), t.name.clone()))
+                                .collect();
+                            let block_inputs: HashMap<SpriteID, BlockInputsName> = block_input
+                                .iter_mut()
+                                .map(|(id, block_inputs)| {
+                                    (
+                                        *id,
+                                        BlockInputsName {
+                                            name: id_name.remove(id).expect("id not found"),
+                                            block_inputs: std::mem::take(block_inputs),
+                                        },
+                                    )
+                                })
+                                .collect();
+                            set_block_inputs.emit(block_inputs);
+                        }
                         Err(e) => {
                             log::error!("{}", e);
                         }
@@ -125,6 +151,13 @@ impl Component for FileViewer {
     }
 }
 
+#[derive(Debug)]
+pub struct BlockInputsName {
+    name: String,
+    block_inputs: Vec<BlockInputs>,
+}
+
+#[derive(Debug)]
 struct Diagram {
     block_inputs: RefCell<BlockInputs>,
 }
