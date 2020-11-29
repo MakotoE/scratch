@@ -34,6 +34,8 @@ pub struct Target {
     pub blocks: HashMap<BlockID, Block>,
     pub costumes: Vec<Costume>,
     #[serde(default)]
+    pub layer_order: usize,
+    #[serde(default)]
     pub x: f64,
     #[serde(default)]
     pub y: f64,

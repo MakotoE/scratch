@@ -3,7 +3,7 @@ use crate::blocks::{BlockInfo, BlockInputs};
 use crate::canvas::CanvasContext;
 use crate::coordinate::SpriteCoordinate;
 use crate::runtime::{BroadcastMsg, Broadcaster, Global, Stop};
-use crate::savefile::ScratchFile;
+use crate::savefile::{ScratchFile, Target};
 use crate::sprite::{Sprite, SpriteID};
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
@@ -47,7 +47,8 @@ impl VM {
                             break;
                         }
                     };
-                    let sprites = SpritesCell::new(sprites, global.clone());
+                    let sprites =
+                        SpritesCell::new(sprites, &scratch_file.project.targets, global.clone());
 
                     match VM::run(
                         &sprites,
@@ -355,14 +356,16 @@ impl BroadcastCell {
 #[derive(Debug)]
 struct SpritesCell {
     sprites: RefCell<HashMap<SpriteID, Sprite>>,
+    draw_order: DrawOrder,
     threads_to_stop: RefCell<HashSet<ThreadID>>,
     global: Rc<Global>,
 }
 
 impl SpritesCell {
-    fn new(sprites: HashMap<SpriteID, Sprite>, global: Rc<Global>) -> Self {
+    fn new(sprites: HashMap<SpriteID, Sprite>, targets: &[Target], global: Rc<Global>) -> Self {
         Self {
             sprites: RefCell::new(sprites),
+            draw_order: DrawOrder::new(targets),
             threads_to_stop: RefCell::default(),
             global,
         }
@@ -414,8 +417,12 @@ impl SpritesCell {
         self.global.redraw(context).await?;
 
         let sprites = self.sprites.borrow();
-        for sprite in sprites.values() {
-            sprite.redraw(context).await?;
+
+        for id in self.draw_order.iter() {
+            match sprites.get(id) {
+                Some(s) => s.redraw(context).await?,
+                None => return Err(wrap_err!(format!("id not found: {}", id))),
+            }
         }
         Ok(())
     }
@@ -461,6 +468,34 @@ impl SpritesCell {
 
     fn stop(&self, thread_id: ThreadID) {
         self.threads_to_stop.borrow_mut().insert(thread_id);
+    }
+}
+
+#[derive(Debug)]
+struct DrawOrder {
+    /// Lowest index = back, highest index = Front
+    ids: Vec<SpriteID>,
+}
+
+impl DrawOrder {
+    fn new(targets: &[Target]) -> Self {
+        let mut id_layer_order: Vec<(SpriteID, usize)> = Vec::with_capacity(targets.len() - 1);
+        for target in targets {
+            // Stage has layer 0
+            if target.layer_order > 0 {
+                id_layer_order.push((SpriteID::new(&target.name), target.layer_order));
+            }
+        }
+
+        id_layer_order.sort_unstable_by(|a, b| a.1.cmp(&b.1));
+
+        Self {
+            ids: id_layer_order.iter().map(|i| i.0).collect(),
+        }
+    }
+
+    fn iter(&self) -> std::slice::Iter<SpriteID> {
+        self.ids.iter()
     }
 }
 
