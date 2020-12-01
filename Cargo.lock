@@ -694,6 +694,7 @@ dependencies = [
  "lazy_static",
  "log",
  "palette",
+ "rand",
  "serde",
  "serde_json",
  "tokio",

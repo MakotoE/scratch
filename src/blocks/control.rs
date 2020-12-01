@@ -26,8 +26,8 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 pub struct If {
     id: BlockID,
     condition: Box<dyn Block>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
+    substack: Option<BlockID>,
     done: bool,
 }
 
@@ -62,10 +62,15 @@ impl Block for If {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "CONDITION" {
+            self.condition = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "CONDITION" => self.condition = block,
-            "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Some(block),
+            "SUBSTACK" => self.substack = Some(block),
             _ => {}
         }
     }
@@ -73,7 +78,7 @@ impl Block for If {
     async fn execute(&mut self) -> Next {
         if self.done {
             self.done = false;
-            return Next::continue_(self.next.clone());
+            return Next::continue_(self.next);
         }
 
         let value = self.condition.value().await?;
@@ -100,7 +105,7 @@ impl Block for If {
 #[derive(Debug)]
 pub struct Wait {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     duration: Box<dyn Block>,
     runtime: Runtime,
 }
@@ -135,10 +140,14 @@ impl Block for Wait {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "DURATION" => self.duration = block,
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "DURATION" {
+            self.duration = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block)
         }
     }
 
@@ -152,7 +161,7 @@ impl Block for Wait {
 #[derive(Debug)]
 pub struct Forever {
     id: BlockID,
-    substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    substack: Option<BlockID>,
 }
 
 impl Forever {
@@ -179,9 +188,9 @@ impl Block for Forever {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "SUBSTACK" {
-            self.substack = Some(Rc::new(RefCell::new(block)))
+            self.substack = Some(block)
         }
     }
 
@@ -197,8 +206,8 @@ impl Block for Forever {
 pub struct Repeat {
     id: BlockID,
     times: Box<dyn Block>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
+    substack: Option<BlockID>,
     count: usize,
 }
 
@@ -233,10 +242,15 @@ impl Block for Repeat {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "TIMES" {
+            self.times = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         match key {
-            "TIMES" => self.times = block,
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Some(block),
+            "SUBSTACK" => self.substack = Some(block),
             _ => {}
         }
     }
@@ -256,8 +270,8 @@ impl Block for Repeat {
 #[derive(Debug)]
 pub struct RepeatUntil {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
-    substack: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
+    substack: Option<BlockID>,
     condition: Box<dyn Block>,
 }
 
@@ -291,10 +305,15 @@ impl Block for RepeatUntil {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "CONDITION" {
+            self.condition = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SUBSTACK" => self.substack = Some(Rc::new(RefCell::new(block))),
-            "CONDITION" => self.condition = block,
+            "next" => self.next = Some(block),
+            "SUBSTACK" => self.substack = Some(block),
             _ => {}
         }
     }
@@ -312,7 +331,7 @@ impl Block for RepeatUntil {
         };
 
         if condition {
-            return Next::continue_(self.next.clone());
+            return Next::continue_(self.next);
         }
 
         Next::loop_(self.substack.clone())
@@ -322,10 +341,10 @@ impl Block for RepeatUntil {
 #[derive(Debug)]
 pub struct IfElse {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     condition: Box<dyn Block>,
-    substack_true: Option<Rc<RefCell<Box<dyn Block>>>>,
-    substack_false: Option<Rc<RefCell<Box<dyn Block>>>>,
+    substack_true: Option<BlockID>,
+    substack_false: Option<BlockID>,
     done: bool,
 }
 
@@ -365,11 +384,16 @@ impl Block for IfElse {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "CONDITION" {
+            self.condition = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "CONDITION" => self.condition = block,
-            "SUBSTACK" => self.substack_true = Some(Rc::new(RefCell::new(block))),
-            "SUBSTACK2" => self.substack_false = Some(Rc::new(RefCell::new(block))),
+            "next" => self.next = Some(block),
+            "SUBSTACK" => self.substack_true = Some(block),
+            "SUBSTACK2" => self.substack_false = Some(block),
             _ => {}
         }
     }
@@ -377,7 +401,7 @@ impl Block for IfElse {
     async fn execute(&mut self) -> Next {
         if self.done {
             self.done = false;
-            return Next::continue_(self.next.clone());
+            return Next::continue_(self.next);
         }
 
         let condition_value = self.condition.value().await?;
@@ -432,7 +456,7 @@ impl Block for WaitUntil {
 pub struct StartAsClone {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl StartAsClone {
@@ -463,9 +487,9 @@ impl Block for StartAsClone {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -519,7 +543,7 @@ impl Block for DeleteThisClone {
 pub struct Stop {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     stop_option: StopOption,
 }
 
@@ -552,9 +576,9 @@ impl Block for Stop {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -611,7 +635,7 @@ impl FromStr for StopOption {
 pub struct CreateCloneOf {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     clone_option: Box<dyn Block>,
 }
 
@@ -643,12 +667,15 @@ impl Block for CreateCloneOf {
             vec![("next", &self.next)],
         )
     }
-
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "CLONE_OPTION" => self.clone_option = block,
-            _ => {}
+        if key == "CLONE_OPTION" {
+            self.clone_option = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 

@@ -16,7 +16,7 @@ pub struct SetVariable {
     runtime: Runtime,
     variable_id: String,
     value: Box<dyn Block>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl SetVariable {
@@ -50,10 +50,14 @@ impl Block for SetVariable {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "VALUE" => self.value = block,
-            _ => {}
+        if key == "VALUE" {
+            self.value = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -83,7 +87,7 @@ pub struct ChangeVariable {
     runtime: Runtime,
     variable_id: String,
     value: Box<dyn Block>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl ChangeVariable {
@@ -117,10 +121,14 @@ impl Block for ChangeVariable {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "VALUE" => self.value = block,
-            _ => {}
+        if key == "VALUE" {
+            self.value = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -151,7 +159,7 @@ impl Block for ChangeVariable {
 pub struct HideVariable {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     variable_id: String,
 }
 
@@ -184,9 +192,9 @@ impl Block for HideVariable {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -213,7 +221,7 @@ impl Block for HideVariable {
 pub struct ShowVariable {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     variable_id: String,
 }
 
@@ -246,9 +254,9 @@ impl Block for ShowVariable {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 

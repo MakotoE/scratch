@@ -40,14 +40,11 @@ impl Sprite {
                 global.clone(),
                 ThreadID {
                     sprite_id,
-                    thread_id: 0,
+                    thread_id: 0, // TODO
                 },
             );
-            let block = match block_tree(hat_id, runtime.clone(), &target.blocks) {
-                Ok(b) => b,
-                Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
-            };
-            let thread = Thread::start(block);
+
+            let thread = Thread::start(hat_id, runtime, &target.blocks)?;
             threads.push(RefCell::new(thread));
         }
 

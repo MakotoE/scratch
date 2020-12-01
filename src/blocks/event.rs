@@ -16,7 +16,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 pub struct WhenFlagClicked {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl WhenFlagClicked {
@@ -47,9 +47,9 @@ impl Block for WhenFlagClicked {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -66,7 +66,7 @@ impl Block for WhenFlagClicked {
 pub struct WhenBroadcastReceived {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     broadcast_id: String,
     started: bool,
 }
@@ -101,9 +101,9 @@ impl Block for WhenBroadcastReceived {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -143,7 +143,7 @@ impl Block for WhenBroadcastReceived {
 pub struct Broadcast {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     message: Box<dyn Block>,
 }
 
@@ -177,10 +177,14 @@ impl Block for Broadcast {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "BROADCAST_INPUT" => self.message = block,
-            _ => {}
+        if key == "BROADCAST_INPUT" {
+            self.message = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -198,7 +202,7 @@ impl Block for Broadcast {
 pub struct BroadcastAndWait {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     message: Box<dyn Block>,
 }
 
@@ -232,10 +236,14 @@ impl Block for BroadcastAndWait {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "BROADCAST_INPUT" => self.message = block,
-            _ => {}
+        if key == "BROADCAST_INPUT" {
+            self.message = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -249,7 +257,7 @@ impl Block for BroadcastAndWait {
         loop {
             if let BroadcastMsg::Finished(s) = recv.recv().await? {
                 if s == msg {
-                    return Next::continue_(self.next.clone());
+                    return Next::continue_(self.next);
                 }
             }
         }
@@ -260,7 +268,7 @@ impl Block for BroadcastAndWait {
 pub struct WhenThisSpriteClicked {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl WhenThisSpriteClicked {
@@ -291,9 +299,9 @@ impl Block for WhenThisSpriteClicked {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -302,7 +310,7 @@ impl Block for WhenThisSpriteClicked {
             let msg = self.runtime.global.broadcaster.subscribe().recv().await?;
             if let BroadcastMsg::Click(c) = msg {
                 if self.runtime.sprite.read().await.rectangle().contains(&c) {
-                    return Next::continue_(self.next.clone());
+                    return Next::continue_(self.next);
                 }
             }
         }

@@ -13,7 +13,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 #[derive(Debug)]
 pub struct Play {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl Play {
@@ -40,9 +40,9 @@ impl Block for Play {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -81,7 +81,7 @@ impl Block for SoundsMenu {
 #[derive(Debug)]
 pub struct PlayUntilDone {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl PlayUntilDone {
@@ -103,9 +103,9 @@ impl Block for PlayUntilDone {
         BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 }
@@ -113,7 +113,7 @@ impl Block for PlayUntilDone {
 #[derive(Debug)]
 pub struct StopAllSounds {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl StopAllSounds {
@@ -135,9 +135,9 @@ impl Block for StopAllSounds {
         BlockInputs::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 

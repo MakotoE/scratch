@@ -27,6 +27,7 @@ tokio =  { version = "0.3", features = ["sync", "rt-multi-thread", "macros", "ti
 yew-router = "0.14"
 futures = "0.3"
 hex = "0.4"
+rand = "0.7"
 
 [dependencies.web-sys]
 version = "0.3"

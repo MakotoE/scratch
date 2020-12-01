@@ -27,7 +27,7 @@ pub struct Say {
     id: BlockID,
     runtime: Runtime,
     message: Box<dyn Block>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl Say {
@@ -60,10 +60,14 @@ impl Block for Say {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "MESSAGE" => self.message = block,
-            _ => {}
+        if key == "MESSAGE" {
+            self.message = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -83,7 +87,7 @@ pub struct SayForSecs {
     runtime: Runtime,
     message: Box<dyn Block>,
     secs: Box<dyn Block>,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl SayForSecs {
@@ -118,10 +122,15 @@ impl Block for SayForSecs {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
             "MESSAGE" => self.message = block,
             "SECS" => self.secs = block,
             _ => {}
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -146,7 +155,7 @@ impl Block for SayForSecs {
 pub struct GoToFrontBack {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>, // TODO store ID instead of block reference
+    next: Option<BlockID>, // TODO store ID instead of block reference
     front_or_back: FrontBack,
 }
 
@@ -179,9 +188,9 @@ impl Block for GoToFrontBack {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -232,7 +241,7 @@ impl FromStr for FrontBack {
 pub struct Hide {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl Hide {
@@ -263,9 +272,9 @@ impl Block for Hide {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -279,7 +288,7 @@ impl Block for Hide {
 pub struct Show {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl Show {
@@ -310,9 +319,9 @@ impl Block for Show {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -325,7 +334,7 @@ impl Block for Show {
 #[derive(Debug)]
 pub struct SetEffectTo {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl SetEffectTo {
@@ -352,9 +361,9 @@ impl Block for SetEffectTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 }
@@ -362,7 +371,7 @@ impl Block for SetEffectTo {
 #[derive(Debug)]
 pub struct NextCostume {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl NextCostume {
@@ -389,9 +398,9 @@ impl Block for NextCostume {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 }
@@ -399,7 +408,7 @@ impl Block for NextCostume {
 #[derive(Debug)]
 pub struct ChangeEffectBy {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl ChangeEffectBy {
@@ -426,9 +435,9 @@ impl Block for ChangeEffectBy {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 }
@@ -437,7 +446,7 @@ impl Block for ChangeEffectBy {
 pub struct SetSizeTo {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     size: Box<dyn Block>,
 }
 
@@ -471,10 +480,14 @@ impl Block for SetSizeTo {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SIZE" => self.size = block,
-            _ => {}
+        if key == "SIZE" {
+            self.size = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -494,7 +507,7 @@ impl Block for SetSizeTo {
 #[derive(Debug)]
 pub struct SwitchCostumeTo {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl SwitchCostumeTo {
@@ -521,9 +534,9 @@ impl Block for SwitchCostumeTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 }
@@ -531,7 +544,7 @@ impl Block for SwitchCostumeTo {
 #[derive(Debug)]
 pub struct Costume {
     id: BlockID,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl Costume {
@@ -558,9 +571,9 @@ impl Block for Costume {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 }

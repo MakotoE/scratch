@@ -20,7 +20,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 pub struct PenDown {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl PenDown {
@@ -51,9 +51,9 @@ impl Block for PenDown {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -69,7 +69,7 @@ impl Block for PenDown {
 pub struct PenUp {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl PenUp {
@@ -100,9 +100,9 @@ impl Block for PenUp {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -116,7 +116,7 @@ impl Block for PenUp {
 pub struct SetPenColorToColor {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     color: Box<dyn Block>,
 }
 
@@ -150,10 +150,14 @@ impl Block for SetPenColorToColor {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "COLOR" => self.color = block,
-            _ => {}
+        if key == "COLOR" {
+            self.color = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -176,7 +180,7 @@ impl Block for SetPenColorToColor {
 pub struct SetPenSizeTo {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     size: Box<dyn Block>,
 }
 
@@ -210,10 +214,14 @@ impl Block for SetPenSizeTo {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SIZE" => self.size = block,
-            _ => {}
+        if key == "SIZE" {
+            self.size = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -228,7 +236,7 @@ impl Block for SetPenSizeTo {
 pub struct Clear {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
 }
 
 impl Clear {
@@ -259,9 +267,9 @@ impl Block for Clear {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
-            self.next = Some(Rc::new(RefCell::new(block)));
+            self.next = Some(block);
         }
     }
 
@@ -275,7 +283,7 @@ impl Block for Clear {
 pub struct SetPenShadeToNumber {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     shade: Box<dyn Block>,
 }
 
@@ -331,10 +339,14 @@ impl Block for SetPenShadeToNumber {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "SHADE" => self.shade = block,
-            _ => {}
+        if key == "SHADE" {
+            self.shade = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -352,7 +364,7 @@ impl Block for SetPenShadeToNumber {
 pub struct SetPenHueToNumber {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     hue: Box<dyn Block>, // [0, 100]
 }
 
@@ -390,10 +402,14 @@ impl Block for SetPenHueToNumber {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "HUE" => self.hue = block,
-            _ => {}
+        if key == "HUE" {
+            self.hue = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 

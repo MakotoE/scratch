@@ -55,8 +55,6 @@ impl Block for Value {
         )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-
     async fn value(&self) -> Result<serde_json::Value> {
         Ok(self.value.clone())
     }

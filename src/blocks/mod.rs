@@ -67,7 +67,15 @@ pub trait Block: std::fmt::Debug {
 
     fn block_inputs(&self) -> BlockInputs;
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>);
+    #[allow(unused_variables)]
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        unimplemented!()
+    }
+
+    #[allow(unused_variables)]
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        unimplemented!()
+    }
 
     #[allow(unused_variables)]
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
@@ -87,8 +95,8 @@ pub trait Block: std::fmt::Debug {
 pub enum Next {
     None,
     Err(Error),
-    Continue(Rc<RefCell<Box<dyn Block>>>),
-    Loop(Rc<RefCell<Box<dyn Block>>>),
+    Continue(BlockID),
+    Loop(BlockID),
 }
 
 impl std::ops::Try for Next {
@@ -112,14 +120,14 @@ impl std::ops::Try for Next {
 }
 
 impl Next {
-    pub fn continue_(block: Option<Rc<RefCell<Box<dyn Block>>>>) -> Next {
+    pub fn continue_(block: Option<BlockID>) -> Next {
         match block {
             Some(b) => Next::Continue(b),
             None => Next::None,
         }
     }
 
-    pub fn loop_(block: Option<Rc<RefCell<Box<dyn Block>>>>) -> Next {
+    pub fn loop_(block: Option<BlockID>) -> Next {
         match block {
             Some(b) => Next::Loop(b),
             None => Next::None,
@@ -147,7 +155,7 @@ impl BlockInputs {
         info: BlockInfo,
         mut fields: Vec<(&'static str, String)>,
         inputs: Vec<(&'static str, &'a Box<dyn Block>)>,
-        stacks: Vec<(&'static str, &'a Option<Rc<RefCell<Box<dyn Block>>>>)>,
+        stacks: Vec<(&'static str, &'a Option<BlockID>)>,
     ) -> Self {
         Self {
             info,
@@ -159,8 +167,8 @@ impl BlockInputs {
             stacks: stacks
                 .iter()
                 .filter_map(|(id, b)| {
-                    if let Some(block) = b {
-                        Some((*id, block.borrow().block_inputs()))
+                    if let Some(_block) = b {
+                        Some((*id, BlockInputs::default())) // TODO
                     } else {
                         None
                     }
@@ -174,15 +182,21 @@ pub fn block_tree(
     top_block_id: BlockID,
     runtime: Runtime,
     infos: &HashMap<BlockID, savefile::Block>,
-) -> Result<Box<dyn Block>> {
+) -> Result<(BlockID, HashMap<BlockID, Box<dyn Block>>)> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,
         None => return Err(wrap_err!(format!("could not find block: {}", top_block_id))),
     };
+
+    let mut result: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
     let mut block = get_block(top_block_id, runtime.clone(), &info)?;
+
     if let Some(next_id) = &info.next {
-        block.set_input("next", block_tree(*next_id, runtime.clone(), infos)?);
+        let (id, input_blocks) = block_tree(*next_id, runtime.clone(), infos)?;
+        block.set_substack("next", id);
+        result.extend(input_blocks);
     }
+
     for (k, input) in &info.inputs {
         let input_arr = match input.as_array() {
             Some(a) => a,
@@ -193,56 +207,57 @@ pub fn block_tree(
             }
         };
 
-        match input_block(input_arr, runtime.clone(), infos) {
-            Ok(b) => block.set_input(k, b),
-            Err(e) => {
-                let e = ErrorKind::BlockInput(top_block_id, k.clone(), Box::new(e));
-                return Err(e.into());
+        let input_arr1 = match input_arr.get(1) {
+            Some(v) => v,
+            None => return Err(wrap_err!("invalid type")),
+        };
+
+        match input_arr1 {
+            serde_json::Value::String(block_id) => {
+                let (id, mut blocks) =
+                    block_tree(block_id.as_str().try_into()?, runtime.clone(), infos)?;
+
+                if k.starts_with("SUBSTACK") {
+                    block.set_substack(k, id);
+                    result.extend(blocks);
+                } else {
+                    assert_eq!(blocks.len(), 1);
+                    block.set_input(k, blocks.drain().next().unwrap().1);
+                }
             }
-        }
+            serde_json::Value::Array(arr) => {
+                let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
+                    Some(n) => n,
+                    None => return Err(wrap_err!("invalid type")),
+                };
+
+                let value = match input_type {
+                    // Value
+                    1 => match arr.get(1) {
+                        Some(v) => Box::new(value::Value::from(v.clone())) as Box<dyn Block>,
+                        None => return Err(wrap_err!("invalid input type")),
+                    },
+                    // Variable
+                    2 | 3 => match arr.get(2).and_then(|v| v.as_str()) {
+                        Some(id) => Box::new(value::Variable::new(id.to_string(), runtime.clone()))
+                            as Box<dyn Block>,
+                        None => return Err(wrap_err!("invalid input type")),
+                    },
+                    _ => return Err(wrap_err!("invalid input type id")),
+                };
+                block.set_input(k, value);
+            }
+            _ => return Err(wrap_err!("invalid type")),
+        };
     }
+
     for (k, field) in &info.fields {
         block.set_field(k, field)?;
     }
-    Ok(block)
-}
 
-fn input_block(
-    input_arr: &[serde_json::Value],
-    runtime: Runtime,
-    infos: &HashMap<BlockID, savefile::Block>,
-) -> Result<Box<dyn Block>> {
-    let input_arr1 = match input_arr.get(1) {
-        Some(v) => v,
-        None => return Err(wrap_err!("invalid type")),
-    };
-
-    match input_arr1 {
-        serde_json::Value::String(block_id) => {
-            block_tree(block_id.as_str().try_into()?, runtime, infos)
-        }
-        serde_json::Value::Array(arr) => {
-            let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
-                Some(n) => n,
-                None => return Err(wrap_err!("invalid type")),
-            };
-
-            match input_type {
-                // Value
-                1 => match arr.get(1) {
-                    Some(v) => Ok(Box::new(value::Value::from(v.clone()))),
-                    None => Err(wrap_err!("invalid input type")),
-                },
-                // Variable
-                2 | 3 => match arr.get(2).and_then(|v| v.as_str()) {
-                    Some(id) => Ok(Box::new(value::Variable::new(id.to_string(), runtime))),
-                    None => Err(wrap_err!("invalid input type")),
-                },
-                _ => Err(wrap_err!("invalid input type id")),
-            }
-        }
-        _ => Err(wrap_err!("invalid type")),
-    }
+    let id = block.block_info().id;
+    result.insert(id, block);
+    Ok((id, result))
 }
 
 const MILLIS_PER_SECOND: f64 = 1000.0;
@@ -298,10 +313,6 @@ impl Block for EmptyInput {
         }
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {
-        unreachable!()
-    }
-
     async fn value(&self) -> Result<serde_json::Value> {
         Err(wrap_err!("input is unconnected"))
     }
@@ -326,10 +337,6 @@ impl Block for EmptyFalse {
             inputs: HashMap::default(),
             stacks: HashMap::default(),
         }
-    }
-
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {
-        unreachable!()
     }
 
     async fn value(&self) -> Result<serde_json::Value> {

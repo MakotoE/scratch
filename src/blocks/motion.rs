@@ -23,7 +23,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 pub struct MoveSteps {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     steps: Box<dyn Block>,
 }
 
@@ -57,10 +57,14 @@ impl Block for MoveSteps {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "STEPS" => self.steps = block,
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            _ => {}
+        if key == "STEPS" {
+            self.steps = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -77,7 +81,7 @@ impl Block for MoveSteps {
 pub struct GoToXY {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     x: Box<dyn Block>,
     y: Box<dyn Block>,
 }
@@ -114,10 +118,15 @@ impl Block for GoToXY {
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
             "X" => self.x = block,
             "Y" => self.y = block,
             _ => {}
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -138,7 +147,7 @@ impl Block for GoToXY {
 pub struct ChangeXBy {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     dx: Box<dyn Block>,
 }
 
@@ -172,10 +181,14 @@ impl Block for ChangeXBy {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "DX" => self.dx = block,
-            _ => {}
+        if key == "DX" {
+            self.dx = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -192,7 +205,7 @@ impl Block for ChangeXBy {
 pub struct ChangeYBy {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     dy: Box<dyn Block>,
 }
 
@@ -226,10 +239,14 @@ impl Block for ChangeYBy {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "DY" => self.dy = block,
-            _ => {}
+        if key == "DY" {
+            self.dy = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -247,7 +264,7 @@ impl Block for ChangeYBy {
 pub struct SetX {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     x: Box<dyn Block>,
 }
 
@@ -281,10 +298,14 @@ impl Block for SetX {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "X" => self.x = block,
-            _ => {}
+        if key == "X" {
+            self.x = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
@@ -302,7 +323,7 @@ impl Block for SetX {
 pub struct SetY {
     id: BlockID,
     runtime: Runtime,
-    next: Option<Rc<RefCell<Box<dyn Block>>>>,
+    next: Option<BlockID>,
     y: Box<dyn Block>,
 }
 
@@ -336,10 +357,14 @@ impl Block for SetY {
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        match key {
-            "next" => self.next = Some(Rc::new(RefCell::new(block))),
-            "Y" => self.y = block,
-            _ => {}
+        if key == "Y" {
+            self.y = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
         }
     }
 
