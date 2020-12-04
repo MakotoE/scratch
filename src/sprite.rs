@@ -40,7 +40,7 @@ impl Sprite {
                 global.clone(),
                 ThreadID {
                     sprite_id,
-                    thread_id: 0, // TODO
+                    thread_id: threads.len(),
                 },
             );
 

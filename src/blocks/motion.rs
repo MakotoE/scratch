@@ -73,7 +73,7 @@ impl Block for MoveSteps {
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
         runtime.set_center(position);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -139,7 +139,7 @@ impl Block for GoToXY {
             .write()
             .await
             .set_center(SpriteCoordinate { x, y });
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -197,7 +197,7 @@ impl Block for ChangeXBy {
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x, y: 0.0 });
         runtime.set_center(position);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -256,7 +256,7 @@ impl Block for ChangeYBy {
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: 0.0, y });
         runtime.set_center(position);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -315,7 +315,7 @@ impl Block for SetX {
         let mut position = runtime.center();
         position.x = x;
         runtime.set_center(position);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -374,7 +374,7 @@ impl Block for SetY {
         let mut position = runtime.center();
         position.y = y;
         runtime.set_center(position);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 

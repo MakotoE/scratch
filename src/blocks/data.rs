@@ -77,7 +77,7 @@ impl Block for SetVariable {
             .variables
             .set(&self.variable_id, value)
             .await?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -151,7 +151,7 @@ impl Block for ChangeVariable {
                 (previous_float + value).into()
             })
             .await?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -213,7 +213,7 @@ impl Block for HideVariable {
             .variables
             .set_monitored(&self.variable_id, false)
             .await?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -275,6 +275,6 @@ impl Block for ShowVariable {
             .variables
             .set_monitored(&self.variable_id, true)
             .await?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }

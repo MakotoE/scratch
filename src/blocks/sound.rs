@@ -47,7 +47,7 @@ impl Block for Play {
     }
 
     async fn execute(&mut self) -> Next {
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -142,6 +142,6 @@ impl Block for StopAllSounds {
     }
 
     async fn execute(&mut self) -> Next {
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }

@@ -95,10 +95,10 @@ impl Block for If {
         self.done = true;
 
         if value_bool {
-            return Next::loop_(self.substack.clone());
+            return Next::loop_(self.substack);
         }
 
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -154,7 +154,7 @@ impl Block for Wait {
     async fn execute(&mut self) -> Next {
         let duration = value_to_float(&self.duration.value().await?)?;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -196,7 +196,7 @@ impl Block for Forever {
 
     async fn execute(&mut self) -> Next {
         match &self.substack {
-            Some(b) => Next::Loop(b.clone()),
+            Some(b) => Next::Loop(*b),
             None => Next::None,
         }
     }
@@ -259,11 +259,11 @@ impl Block for Repeat {
         if self.count < value_to_float(&self.times.value().await?)? as usize {
             // Loop until count equals times
             self.count += 1;
-            return Next::loop_(self.substack.clone());
+            return Next::loop_(self.substack);
         }
 
         self.count = 0;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -334,7 +334,7 @@ impl Block for RepeatUntil {
             return Next::continue_(self.next);
         }
 
-        Next::loop_(self.substack.clone())
+        Next::loop_(self.substack)
     }
 }
 
@@ -418,10 +418,10 @@ impl Block for IfElse {
         self.done = true;
 
         if condition {
-            return Next::loop_(self.substack_true.clone());
+            return Next::loop_(self.substack_true);
         }
 
-        Next::loop_(self.substack_false.clone())
+        Next::loop_(self.substack_false)
     }
 }
 
@@ -495,7 +495,7 @@ impl Block for StartAsClone {
 
     async fn execute(&mut self) -> Next {
         if self.runtime.sprite.read().await.is_a_clone() {
-            Next::continue_(self.next.clone())
+            Next::continue_(self.next)
         } else {
             Next::None
         }
@@ -597,7 +597,7 @@ impl Block for Stop {
         self.runtime.global.broadcaster.send(BroadcastMsg::Stop(
             self.stop_option.into_stop(self.runtime.thread_id()),
         ))?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -685,7 +685,7 @@ impl Block for CreateCloneOf {
             .global
             .broadcaster
             .send(BroadcastMsg::Clone(sprite_id))?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 

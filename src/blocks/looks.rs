@@ -77,7 +77,7 @@ impl Block for Say {
             id: self.id,
             text: Some(message),
         });
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -147,7 +147,7 @@ impl Block for SayForSecs {
             id: self.id,
             text: None,
         });
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -155,7 +155,7 @@ impl Block for SayForSecs {
 pub struct GoToFrontBack {
     id: BlockID,
     runtime: Runtime,
-    next: Option<BlockID>, // TODO store ID instead of block reference
+    next: Option<BlockID>,
     front_or_back: FrontBack,
 }
 
@@ -215,7 +215,7 @@ impl Block for GoToFrontBack {
                 self.runtime.thread_id().sprite_id,
                 layer_change,
             )))?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -280,7 +280,7 @@ impl Block for Hide {
 
     async fn execute(&mut self) -> Next {
         self.runtime.sprite.write().await.set_hide(HideStatus::Hide);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -327,7 +327,7 @@ impl Block for Show {
 
     async fn execute(&mut self) -> Next {
         self.runtime.sprite.write().await.set_hide(HideStatus::Show);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -500,7 +500,7 @@ impl Block for SetSizeTo {
             .await
             .set_scale(Scale { x: scale, y: scale });
 
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 

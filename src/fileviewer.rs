@@ -93,7 +93,7 @@ impl Component for FileViewer {
                                     (
                                         *id,
                                         BlockInputsName {
-                                            name: id_name.remove(id).expect("id not found"),
+                                            name: id_name.remove(id).unwrap(),
                                             block_inputs: std::mem::take(block_inputs),
                                         },
                                     )

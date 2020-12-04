@@ -17,7 +17,7 @@ impl Thread {
         runtime: Runtime,
         file_blocks: &HashMap<BlockID, savefile::Block>,
     ) -> Result<Self> {
-        let (_, blocks) = match block_tree(hat, runtime.clone(), file_blocks) {
+        let (_, blocks) = match block_tree(hat, runtime, file_blocks) {
             Ok(b) => b,
             Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
         };
@@ -34,10 +34,7 @@ impl Thread {
             return Ok(());
         }
 
-        let block = self
-            .blocks
-            .get_mut(&self.curr_block)
-            .expect(&format!("curr_block not found: {}", self.curr_block));
+        let block = self.blocks.get_mut(&self.curr_block).unwrap();
         let execute_result = block.execute().await;
         match execute_result {
             Next::None => match self.loop_stack.pop() {
@@ -57,7 +54,7 @@ impl Thread {
             }
             Next::Continue(b) => self.curr_block = b,
             Next::Loop(b) => {
-                self.loop_stack.push(self.curr_block.clone());
+                self.loop_stack.push(self.curr_block);
                 self.curr_block = b;
             }
         }
@@ -66,19 +63,12 @@ impl Thread {
     }
 
     pub fn block_inputs(&self) -> BlockInputs {
-        let block_inputs = self
-            .blocks
-            .get(&self.curr_block)
-            .expect(&format!("curr_block not found: {}", &self.curr_block))
-            .block_inputs();
+        let block_inputs = self.blocks.get(&self.curr_block).unwrap().block_inputs();
         BlockInputs::new(block_inputs, &self.blocks)
     }
 
     pub fn block_info(&self) -> BlockInfo {
-        self.blocks
-            .get(&self.curr_block)
-            .expect(&format!("curr_block not found: {}", &self.curr_block))
-            .block_info()
+        self.blocks.get(&self.curr_block).unwrap().block_info()
     }
 }
 
@@ -111,10 +101,7 @@ impl BlockInputs {
                 .stacks
                 .iter()
                 .map(|(id, block_id)| {
-                    let block_inputs = blocks
-                        .get(block_id)
-                        .expect(&format!("block_id not found: {}", block_id))
-                        .block_inputs();
+                    let block_inputs = blocks.get(block_id).unwrap().block_inputs();
                     (*id, BlockInputs::new(block_inputs, blocks))
                 })
                 .collect(),

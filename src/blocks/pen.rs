@@ -61,7 +61,7 @@ impl Block for PenDown {
         let mut runtime = self.runtime.sprite.write().await;
         let center = runtime.rectangle().center;
         runtime.pen().pen_down(&center);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -108,7 +108,7 @@ impl Block for PenUp {
 
     async fn execute(&mut self) -> Next {
         self.runtime.sprite.write().await.pen().pen_up();
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -172,7 +172,7 @@ impl Block for SetPenColorToColor {
             .await
             .pen()
             .set_color(&hex_to_color(color)?);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -228,7 +228,7 @@ impl Block for SetPenSizeTo {
     async fn execute(&mut self) -> Next {
         let size = value_to_float(&self.size.value().await?)?;
         self.runtime.sprite.write().await.pen().set_size(size);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -275,7 +275,7 @@ impl Block for Clear {
 
     async fn execute(&mut self) -> Next {
         self.runtime.sprite.write().await.pen().clear();
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -356,7 +356,7 @@ impl Block for SetPenShadeToNumber {
         let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
         runtime.pen().set_color(&new_color);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -418,7 +418,7 @@ impl Block for SetPenHueToNumber {
         let mut runtime = self.runtime.sprite.write().await;
         let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
         runtime.pen().set_color(&new_color);
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 

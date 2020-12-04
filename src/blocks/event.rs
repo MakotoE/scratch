@@ -57,7 +57,7 @@ impl Block for WhenFlagClicked {
         if self.runtime.sprite.read().await.is_a_clone() {
             Next::None
         } else {
-            Next::continue_(self.next.clone())
+            Next::continue_(self.next)
         }
     }
 }
@@ -132,7 +132,7 @@ impl Block for WhenBroadcastReceived {
             if let BroadcastMsg::Start(s) = recv.recv().await? {
                 if s == self.broadcast_id {
                     self.started = true;
-                    return Next::loop_(self.next.clone());
+                    return Next::loop_(self.next);
                 }
             }
         }
@@ -194,7 +194,7 @@ impl Block for Broadcast {
             .global
             .broadcaster
             .send(BroadcastMsg::Start(msg))?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
