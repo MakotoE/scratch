@@ -65,7 +65,7 @@ fn add_error_context(id: BlockID, category: &str, e: Error) -> Error {
 pub trait Block: std::fmt::Debug {
     fn block_info(&self) -> BlockInfo;
 
-    fn block_inputs(&self) -> BlockInputs;
+    fn block_inputs(&self) -> BlockInputsPartial;
 
     #[allow(unused_variables)]
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -142,33 +142,33 @@ pub struct BlockInfo {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct BlockInputs {
+pub struct BlockInputsPartial {
     pub info: BlockInfo,
     pub fields: HashMap<&'static str, String>,
-    pub inputs: HashMap<&'static str, BlockInputs>,
-    pub stacks: HashMap<&'static str, BlockInputs>,
+    pub inputs: HashMap<&'static str, BlockInputsPartial>,
+    pub stacks: HashMap<&'static str, BlockID>,
 }
 
-impl BlockInputs {
-    #[allow(clippy::type_complexity, clippy::borrowed_box)]
+impl BlockInputsPartial {
+    #[allow(clippy::borrowed_box)]
     fn new<'a>(
         info: BlockInfo,
         mut fields: Vec<(&'static str, String)>,
-        inputs: Vec<(&'static str, &'a Box<dyn Block>)>,
-        stacks: Vec<(&'static str, &'a Option<BlockID>)>,
+        mut inputs: Vec<(&'static str, &'a Box<dyn Block>)>,
+        mut stacks: Vec<(&'static str, &'a Option<BlockID>)>,
     ) -> Self {
         Self {
             info,
             fields: fields.drain(..).collect(),
             inputs: inputs
-                .iter()
-                .map(|(id, b)| (*id, b.block_inputs()))
+                .drain(..)
+                .map(|(id, b)| (id, b.block_inputs()))
                 .collect(),
             stacks: stacks
-                .iter()
-                .filter_map(|(id, b)| {
-                    if let Some(_block) = b {
-                        Some((*id, BlockInputs::default())) // TODO
+                .drain(..)
+                .filter_map(|(id, &b)| {
+                    if let Some(block_id) = b {
+                        Some((id, block_id))
                     } else {
                         None
                     }
@@ -304,8 +304,8 @@ impl Block for EmptyInput {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial {
             info: self.block_info(),
             fields: HashMap::default(),
             inputs: HashMap::default(),
@@ -330,8 +330,8 @@ impl Block for EmptyFalse {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs {
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial {
             info: self.block_info(),
             fields: HashMap::default(),
             inputs: HashMap::default(),

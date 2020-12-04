@@ -21,8 +21,8 @@ impl Block for Variable {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -46,8 +46,8 @@ impl Block for Value {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![("value", self.value.to_string())],
             vec![],

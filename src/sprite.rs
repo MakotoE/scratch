@@ -4,7 +4,7 @@ use crate::canvas::CanvasContext;
 use crate::runtime::{Global, Runtime};
 use crate::savefile::{BlockID, Image, Target};
 use crate::sprite_runtime::SpriteRuntime;
-use crate::thread::Thread;
+use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};

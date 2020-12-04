@@ -50,8 +50,8 @@ impl Block for Say {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("message", &self.message)],
@@ -111,8 +111,8 @@ impl Block for SayForSecs {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("message", &self.message), ("secs", &self.secs)],
@@ -179,8 +179,8 @@ impl Block for GoToFrontBack {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -263,8 +263,8 @@ impl Block for Hide {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -310,8 +310,8 @@ impl Block for Show {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -352,8 +352,8 @@ impl Block for SetEffectTo {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -389,8 +389,8 @@ impl Block for NextCostume {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -426,8 +426,8 @@ impl Block for ChangeEffectBy {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -470,8 +470,8 @@ impl Block for SetSizeTo {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -525,8 +525,8 @@ impl Block for SwitchCostumeTo {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -562,8 +562,8 @@ impl Block for Costume {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],

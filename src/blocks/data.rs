@@ -40,8 +40,8 @@ impl Block for SetVariable {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![("variable_id", self.variable_id.clone())],
             vec![("value", &self.value)],
@@ -111,8 +111,8 @@ impl Block for ChangeVariable {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![("variable_id", self.variable_id.clone())],
             vec![("value", &self.value)],
@@ -183,8 +183,8 @@ impl Block for HideVariable {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![("variable_id", self.variable_id.clone())],
             vec![],
@@ -245,8 +245,8 @@ impl Block for ShowVariable {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![("variable_id", self.variable_id.clone())],
             vec![],

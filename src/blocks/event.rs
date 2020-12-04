@@ -38,8 +38,8 @@ impl Block for WhenFlagClicked {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -92,8 +92,8 @@ impl Block for WhenBroadcastReceived {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![("BROADCAST_OPTION", self.broadcast_id.clone())],
             vec![],
@@ -167,8 +167,8 @@ impl Block for Broadcast {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("message", &self.message)],
@@ -226,8 +226,8 @@ impl Block for BroadcastAndWait {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("message", &self.message)],
@@ -290,8 +290,8 @@ impl Block for WhenThisSpriteClicked {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],

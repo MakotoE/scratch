@@ -55,8 +55,8 @@ impl Block for Equals {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
@@ -105,8 +105,8 @@ impl Block for Add {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("num1", &self.num1), ("num2", &self.num2)],
@@ -155,8 +155,8 @@ impl Block for Subtract {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("num1", &self.num1), ("num2", &self.num2)],
@@ -205,8 +205,8 @@ impl Block for Multiply {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("num1", &self.num1), ("num2", &self.num2)],
@@ -255,8 +255,8 @@ impl Block for Divide {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("num1", &self.num1), ("num2", &self.num2)],
@@ -305,8 +305,8 @@ impl Block for And {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
@@ -363,8 +363,8 @@ impl Block for Or {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
@@ -419,8 +419,8 @@ impl Block for Not {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("operand", &self.operand)],
@@ -470,8 +470,8 @@ impl Block for LessThan {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
@@ -520,8 +520,8 @@ impl Block for GreaterThan {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("operand1", &self.operand1), ("operand2", &self.operand2)],
@@ -564,8 +564,8 @@ impl Block for Random {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -591,8 +591,8 @@ impl Block for Join {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}

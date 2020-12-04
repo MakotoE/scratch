@@ -31,8 +31,8 @@ impl Block for Play {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -71,8 +71,8 @@ impl Block for SoundsMenu {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -99,8 +99,8 @@ impl Block for PlayUntilDone {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_substack(&mut self, key: &str, block: BlockID) {
@@ -131,8 +131,8 @@ impl Block for StopAllSounds {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_substack(&mut self, key: &str, block: BlockID) {

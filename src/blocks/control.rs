@@ -52,8 +52,8 @@ impl Block for If {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("condition", &self.condition)],
@@ -130,8 +130,8 @@ impl Block for Wait {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("duration", &self.duration)],
@@ -179,8 +179,8 @@ impl Block for Forever {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -232,8 +232,8 @@ impl Block for Repeat {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("times", &self.times)],
@@ -295,8 +295,8 @@ impl Block for RepeatUntil {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("condition", &self.condition)],
@@ -370,8 +370,8 @@ impl Block for IfElse {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("condition", &self.condition)],
@@ -445,8 +445,8 @@ impl Block for WaitUntil {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -478,8 +478,8 @@ impl Block for StartAsClone {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![],
@@ -523,8 +523,8 @@ impl Block for DeleteThisClone {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -567,8 +567,8 @@ impl Block for Stop {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![("stop_option", format!("{:?}", self.stop_option))],
             vec![],
@@ -659,8 +659,8 @@ impl Block for CreateCloneOf {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("clone_option", &self.clone_option)],
@@ -709,8 +709,8 @@ impl Block for CreateCloneOfMenu {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}

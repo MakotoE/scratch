@@ -1,10 +1,11 @@
 use super::*;
-use crate::blocks::{BlockInfo, BlockInputs};
+use crate::blocks::BlockInfo;
 use crate::canvas::CanvasContext;
 use crate::coordinate::SpriteCoordinate;
 use crate::runtime::{BroadcastMsg, Broadcaster, Global, LayerChange, Stop};
 use crate::savefile::{ScratchFile, Target};
 use crate::sprite::{Sprite, SpriteID};
+use crate::thread::BlockInputs;
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};

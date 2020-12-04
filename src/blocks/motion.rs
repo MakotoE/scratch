@@ -47,8 +47,8 @@ impl Block for MoveSteps {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("steps", &self.steps)],
@@ -107,8 +107,8 @@ impl Block for GoToXY {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("x", &self.x), ("y", &self.y)],
@@ -171,8 +171,8 @@ impl Block for ChangeXBy {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("dx", &self.dx)],
@@ -229,8 +229,8 @@ impl Block for ChangeYBy {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("dy", &self.dy)],
@@ -288,8 +288,8 @@ impl Block for SetX {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("x", &self.x)],
@@ -347,8 +347,8 @@ impl Block for SetY {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
             self.block_info(),
             vec![],
             vec![("y", &self.y)],
@@ -399,8 +399,8 @@ impl Block for XPosition {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -432,8 +432,8 @@ impl Block for YPosition {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -465,8 +465,8 @@ impl Block for Direction {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -497,8 +497,8 @@ impl Block for PointingDirection {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -529,8 +529,8 @@ impl Block for GoTo {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
@@ -557,8 +557,8 @@ impl Block for GoToMenu {
         }
     }
 
-    fn block_inputs(&self) -> BlockInputs {
-        BlockInputs::new(self.block_info(), vec![], vec![], vec![])
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
