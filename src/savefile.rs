@@ -212,12 +212,6 @@ pub struct BlockID {
     id: [u8; 20],
 }
 
-impl BlockID {
-    pub fn random() -> BlockID {
-        BlockID { id: rand::random() } // TODO
-    }
-}
-
 impl Debug for BlockID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("BlockID { ")?;
