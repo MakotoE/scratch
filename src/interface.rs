@@ -1,6 +1,6 @@
 use super::*;
 use crate::blocks::BlockInfo;
-use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
+use crate::coordinate::{CanvasCoordinate};
 use crate::fileinput::FileInput;
 use crate::savefile::ScratchFile;
 use crate::sprite::SpriteID;
@@ -15,7 +15,8 @@ pub struct ScratchInterface {
     file: Option<ScratchFile>,
     vm: Option<Rc<VM>>,
     debug_info: HashMap<SpriteID, Vec<Option<BlockInfo>>>,
-    canvas_position: Option<SpriteCoordinate>,
+    canvas_top_left: Option<CanvasCoordinate>,
+    mouse_position: Rc<RefCell<CanvasCoordinate>>, // TODO need state for mouse outside of canvas
 }
 
 impl ScratchInterface {
@@ -35,15 +36,14 @@ impl ScratchInterface {
         result
     }
 
-    fn canvas_position(&mut self) -> &SpriteCoordinate {
-        let canvas: web_sys::Element = self.canvas_ref.cast().unwrap();
-        self.canvas_position.get_or_insert_with(|| {
-            let rect = canvas.get_bounding_client_rect();
-            SpriteCoordinate {
-                x: rect.left(),
-                y: rect.top(),
-            }
-        })
+    fn event_coordinate(
+        canvas_top_left: &CanvasCoordinate,
+        event: &yew::events::MouseEvent,
+    ) -> CanvasCoordinate {
+        CanvasCoordinate {
+            x: event.client_x() as f64 - canvas_top_left.x,
+            y: event.client_y() as f64 - canvas_top_left.y,
+        }
     }
 }
 
@@ -54,7 +54,8 @@ pub enum Msg {
     ContinuePause,
     Step,
     SetDebug(DebugInfo),
-    OnCanvasClick(MouseEvent),
+    OnMouseClick(yew::events::MouseEvent),
+    OnMouseMove(yew::events::MouseEvent),
     Start,
     Stop,
 }
@@ -83,7 +84,8 @@ impl Component for ScratchInterface {
             file: None,
             vm: None,
             debug_info: HashMap::new(),
-            canvas_position: None,
+            canvas_top_left: None,
+            mouse_position: Rc::new(RefCell::new(CanvasCoordinate::default())),
         }
     }
 
@@ -98,24 +100,30 @@ impl Component for ScratchInterface {
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx = canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
-                let scratch_file = self.file.as_ref().unwrap().clone();
-                let set_vm = self.link.callback(Msg::SetVM);
-                let set_debug = self.link.callback(Msg::SetDebug);
-                wasm_bindgen_futures::spawn_local(async move {
-                    let (debug_sender, mut debug_receiver) = mpsc::channel(1);
-                    let vm = match VM::start(ctx, scratch_file, debug_sender).await {
-                        Ok(v) => v,
-                        Err(e) => {
-                            log::error!("{}", e);
-                            return;
-                        }
-                    };
-                    set_vm.emit(vm);
+                wasm_bindgen_futures::spawn_local({
+                    let scratch_file = self.file.as_ref().unwrap().clone();
+                    let set_vm = self.link.callback(Msg::SetVM);
+                    let set_debug = self.link.callback(Msg::SetDebug);
+                    let mouse_position = self.mouse_position.clone();
 
-                    loop {
-                        match debug_receiver.recv().await {
-                            Some(d) => set_debug.emit(d),
-                            None => return,
+                    async move {
+                        let (debug_sender, mut debug_receiver) = mpsc::channel(1);
+                        let vm = match VM::start(ctx, scratch_file, debug_sender, mouse_position)
+                            .await
+                        {
+                            Ok(v) => v,
+                            Err(e) => {
+                                log::error!("{}", e);
+                                return;
+                            }
+                        };
+                        set_vm.emit(vm);
+
+                        loop {
+                            match debug_receiver.recv().await {
+                                Some(d) => set_debug.emit(d),
+                                None => return,
+                            }
                         }
                     }
                 });
@@ -159,14 +167,21 @@ impl Component for ScratchInterface {
                 thread[id.thread_id] = Some(debug.block_info);
                 true
             }
-            Msg::OnCanvasClick(e) => {
-                let canvas_position = *self.canvas_position();
+            Msg::OnMouseClick(e) => {
                 if let Some(vm) = &self.vm {
-                    vm.click(CanvasCoordinate {
-                        x: e.client_x() as f64 - canvas_position.x,
-                        y: e.client_y() as f64 - canvas_position.y,
-                    });
+                    vm.click(ScratchInterface::event_coordinate(
+                        &self.canvas_top_left.unwrap(),
+                        &e,
+                    ));
                 }
+                false
+            }
+            Msg::OnMouseMove(e) => {
+                self.mouse_position
+                    .replace(ScratchInterface::event_coordinate(
+                        &self.canvas_top_left.unwrap(),
+                        &e,
+                    ));
                 false
             }
             Msg::Start => {
@@ -218,7 +233,8 @@ impl Component for ScratchInterface {
                         width="960"
                         height="720"
                         style="width: 480px; height: 360px; border: 1px solid black;"
-                        onclick={self.link.callback(Msg::OnCanvasClick)}
+                        onclick={self.link.callback(Msg::OnMouseClick)}
+                        onmousemove={self.link.callback(Msg::OnMouseMove)}
                     /><br />
                     <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                     <br />
@@ -256,6 +272,17 @@ impl Component for ScratchInterface {
                     </pre>
                 </div>
             </div>
+        }
+    }
+
+    fn rendered(&mut self, first_render: bool) {
+        if first_render {
+            let canvas: web_sys::Element = self.canvas_ref.cast().unwrap();
+            let rect = canvas.get_bounding_client_rect();
+            self.canvas_top_left = Some(CanvasCoordinate {
+                x: rect.left(),
+                y: rect.top(),
+            });
         }
     }
 }

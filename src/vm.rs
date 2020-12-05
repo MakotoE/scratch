@@ -1,7 +1,7 @@
 use super::*;
 use crate::blocks::BlockInfo;
 use crate::canvas::CanvasContext;
-use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
+use crate::coordinate::{CanvasCoordinate};
 use crate::runtime::{BroadcastMsg, Broadcaster, Global, LayerChange, Stop};
 use crate::savefile::{ScratchFile, Target};
 use crate::sprite::{Sprite, SpriteID};
@@ -24,6 +24,7 @@ impl VM {
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: ScratchFile,
         debug_sender: mpsc::Sender<DebugInfo>,
+        mouse_position: Rc<RefCell<CanvasCoordinate>>,
     ) -> Result<Self> {
         let global = Rc::new(Global::new(
             &scratch_file.project.targets[0].variables,
@@ -57,6 +58,7 @@ impl VM {
                         &context,
                         &debug_sender,
                         &broadcaster,
+                        mouse_position.clone(),
                     )
                     .await
                     {
@@ -125,6 +127,7 @@ impl VM {
         ctx: &web_sys::CanvasRenderingContext2d,
         debug_sender: &mpsc::Sender<DebugInfo>,
         broadcaster: &BroadcastCell,
+        mouse_position: Rc<RefCell<CanvasCoordinate>>,
     ) -> Result<Loop> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
@@ -248,6 +251,9 @@ impl VM {
                 Event::ChangeLayer(layer_change) => {
                     sprites.change_layer(layer_change.0, layer_change.1)?;
                 }
+                Event::RequestMousePosition => {
+                    broadcaster.send(BroadcastMsg::MousePosition(*mouse_position.borrow()))?;
+                }
             };
         }
     }
@@ -301,6 +307,7 @@ enum Event {
     DeleteClone(SpriteID),
     Stop(Stop),
     ChangeLayer((SpriteID, LayerChange)),
+    RequestMousePosition,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -335,6 +342,7 @@ pub struct DebugInfo {
 
 #[derive(Debug)]
 struct BroadcastCell {
+    broadcaster: Broadcaster,
     receiver: RefCell<broadcast::Receiver<BroadcastMsg>>,
 }
 
@@ -342,6 +350,7 @@ impl BroadcastCell {
     fn new(broadcaster: Broadcaster) -> Self {
         Self {
             receiver: RefCell::new(broadcaster.subscribe()),
+            broadcaster,
         }
     }
 
@@ -352,10 +361,15 @@ impl BroadcastCell {
                 BroadcastMsg::DeleteClone(id) => Event::DeleteClone(id),
                 BroadcastMsg::Stop(s) => Event::Stop(s),
                 BroadcastMsg::ChangeLayer(l) => Event::ChangeLayer(l),
+                BroadcastMsg::RequestMousePosition => Event::RequestMousePosition,
                 _ => Event::None,
             },
             Err(e) => Event::Err(e.into()),
         }
+    }
+
+    fn send(&self, msg: BroadcastMsg) -> Result<()> {
+        self.broadcaster.send(msg)
     }
 }
 
