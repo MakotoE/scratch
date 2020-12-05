@@ -68,14 +68,10 @@ pub trait Block: std::fmt::Debug {
     fn block_inputs(&self) -> BlockInputsPartial;
 
     #[allow(unused_variables)]
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
-        unimplemented!()
-    }
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {}
 
     #[allow(unused_variables)]
-    fn set_substack(&mut self, key: &str, block: BlockID) {
-        unimplemented!()
-    }
+    fn set_substack(&mut self, key: &str, block: BlockID) {}
 
     #[allow(unused_variables)]
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {

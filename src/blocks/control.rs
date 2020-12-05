@@ -1,7 +1,8 @@
 use super::*;
 use crate::runtime::BroadcastMsg;
 use crate::vm::ThreadID;
-use gloo_timers::future::TimeoutFuture;
+use futures::StreamExt;
+use gloo_timers::future::{IntervalStream, TimeoutFuture};
 use std::str::FromStr;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
@@ -428,11 +429,17 @@ impl Block for IfElse {
 #[derive(Debug)]
 pub struct WaitUntil {
     id: BlockID,
+    next: Option<BlockID>,
+    condition: Box<dyn Block>,
 }
 
 impl WaitUntil {
     pub fn new(id: BlockID) -> Self {
-        Self { id }
+        Self {
+            id,
+            next: None,
+            condition: Box::new(EmptyFalse {}),
+        }
     }
 }
 
@@ -446,10 +453,39 @@ impl Block for WaitUntil {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("condition", &self.condition)],
+            vec![("next", &self.next)],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "CONDITION" {
+            self.condition = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        let mut interval = IntervalStream::new(100);
+        while interval.next().await.is_some() {
+            if let Some(condition) = self.condition.value().await?.as_bool() {
+                if condition {
+                    return Next::continue_(self.next);
+                }
+            } else {
+                return Next::Err(wrap_err!("condition is not bool"));
+            }
+        }
+        unreachable!()
+    }
 }
 
 #[derive(Debug)]
@@ -526,8 +562,6 @@ impl Block for DeleteThisClone {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
-
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn execute(&mut self) -> Next {
         let sprite_id = self.runtime.thread_id().sprite_id;
@@ -712,6 +746,4 @@ impl Block for CreateCloneOfMenu {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
-
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 }
