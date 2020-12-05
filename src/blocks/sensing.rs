@@ -1,4 +1,7 @@
 use super::*;
+use std::fmt::Display;
+use std::str::FromStr;
+use wasm_bindgen::__rt::core::fmt::Formatter;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -123,11 +126,15 @@ impl Block for TouchingColor {
 #[derive(Debug)]
 pub struct TouchingObject {
     id: BlockID,
+    menu: Box<dyn Block>,
 }
 
 impl TouchingObject {
     pub fn new(id: BlockID) -> Self {
-        Self { id }
+        Self {
+            id,
+            menu: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -144,17 +151,29 @@ impl Block for TouchingObject {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "TOUCHINGOBJECTMENU" {
+            self.menu = block;
+        }
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Err(wrap_err!("this block does not return a value"))
+    }
 }
 
 #[derive(Debug)]
 pub struct TouchingObjectMenu {
     id: BlockID,
+    option: TouchingObjectOption,
 }
 
 impl TouchingObjectMenu {
     pub fn new(id: BlockID) -> Self {
-        Self { id }
+        Self {
+            id,
+            option: TouchingObjectOption::MousePointer,
+        }
     }
 }
 
@@ -171,5 +190,41 @@ impl Block for TouchingObjectMenu {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "TOUCHINGOBJECTMENU" {
+            self.option = TouchingObjectOption::from_str(get_field_value(field, 0)?)?;
+        }
+        Ok(())
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.option.to_string().into())
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+enum TouchingObjectOption {
+    MousePointer,
+    Edge,
+}
+
+impl FromStr for TouchingObjectOption {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
+            "_mouse_" => Self::MousePointer,
+            "_edge_" => Self::Edge,
+            _ => unimplemented!(),
+        })
+    }
+}
+
+impl Display for TouchingObjectOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            TouchingObjectOption::MousePointer => "_mouse_",
+            TouchingObjectOption::Edge => "_edge_",
+        })
+    }
 }

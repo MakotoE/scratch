@@ -196,9 +196,7 @@ impl Block for GoToFrontBack {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "FRONT_BACK" {
-            if let Some(s) = field.get(0).unwrap_or(&None) {
-                self.front_or_back = FrontBack::from_str(s)?;
-            }
+            self.front_or_back = FrontBack::from_str(get_field_value(field, 0)?)?;
         }
         Ok(())
     }

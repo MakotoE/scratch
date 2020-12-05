@@ -618,11 +618,7 @@ impl Block for Stop {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "STOP_OPTION" {
-            if let Some(o) = field.get(0) {
-                if let Some(s) = o {
-                    self.stop_option = StopOption::from_str(s)?;
-                }
-            }
+            self.stop_option = StopOption::from_str(get_field_value(field, 0)?)?;
         }
         Ok(())
     }

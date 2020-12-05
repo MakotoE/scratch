@@ -63,9 +63,7 @@ impl Block for SetVariable {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            if let Some(s) = field.get(1).cloned().flatten() {
-                self.variable_id = s;
-            }
+            self.variable_id = get_field_value(field, 1)?.to_string();
         }
         Ok(())
     }
@@ -134,9 +132,7 @@ impl Block for ChangeVariable {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            if let Some(s) = field.get(1).cloned().flatten() {
-                self.variable_id = s;
-            }
+            self.variable_id = get_field_value(field, 1)?.to_string();
         }
         Ok(())
     }
@@ -200,9 +196,7 @@ impl Block for HideVariable {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            if let Some(s) = field.get(1).cloned().flatten() {
-                self.variable_id = s;
-            }
+            self.variable_id = get_field_value(field, 1)?.to_string();
         }
         Ok(())
     }
@@ -262,9 +256,7 @@ impl Block for ShowVariable {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "VARIABLE" {
-            if let Some(s) = field.get(1).cloned().flatten() {
-                self.variable_id = s;
-            }
+            self.variable_id = get_field_value(field, 1)?.to_string();
         }
         Ok(())
     }
