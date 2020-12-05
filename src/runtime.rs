@@ -218,9 +218,11 @@ pub enum BroadcastMsg {
     Finished(String),
     Clone(SpriteID),
     DeleteClone(SpriteID),
-    Click(SpriteCoordinate),
+    Click(CanvasCoordinate),
     Stop(Stop),
     ChangeLayer((SpriteID, LayerChange)),
+    RequestMousePosition,
+    MousePosition(CanvasCoordinate),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

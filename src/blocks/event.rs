@@ -306,7 +306,14 @@ impl Block for WhenThisSpriteClicked {
         loop {
             let msg = self.runtime.global.broadcaster.subscribe().recv().await?;
             if let BroadcastMsg::Click(c) = msg {
-                if self.runtime.sprite.read().await.rectangle().contains(&c) {
+                if self
+                    .runtime
+                    .sprite
+                    .read()
+                    .await
+                    .rectangle()
+                    .contains(&c.into())
+                {
                     return Next::continue_(self.next);
                 }
             }

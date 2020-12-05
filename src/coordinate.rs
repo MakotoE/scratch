@@ -16,6 +16,15 @@ impl SpriteCoordinate {
     }
 }
 
+impl From<CanvasCoordinate> for SpriteCoordinate {
+    fn from(c: CanvasCoordinate) -> Self {
+        Self {
+            x: c.x - 240.0,
+            y: -c.y + 180.0,
+        }
+    }
+}
+
 /// Left = 0, right = +x
 /// Top = 0, bottom + y
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -191,14 +200,18 @@ impl Transformation {
 mod tests {
     use super::*;
 
-    mod sprite_coordinate {
+    mod coordinate {
         use super::*;
 
         #[test]
-        fn as_canvas_coordinate() {
+        fn conversion() {
             assert_eq!(
                 CanvasCoordinate::from(SpriteCoordinate { x: 0.0, y: 0.0 }),
                 CanvasCoordinate { x: 240.0, y: 180.0 }
+            );
+            assert_eq!(
+                SpriteCoordinate::from(CanvasCoordinate { x: 240.0, y: 180.0 }),
+                SpriteCoordinate { x: 0.0, y: 0.0 }
             );
             assert_eq!(
                 CanvasCoordinate::from(SpriteCoordinate {
@@ -206,6 +219,13 @@ mod tests {
                     y: 180.0
                 }),
                 CanvasCoordinate { x: 0.0, y: 0.0 }
+            );
+            assert_eq!(
+                SpriteCoordinate::from(CanvasCoordinate { x: 0.0, y: 0.0 }),
+                SpriteCoordinate {
+                    x: -240.0,
+                    y: 180.0,
+                }
             );
         }
     }

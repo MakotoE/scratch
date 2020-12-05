@@ -158,7 +158,7 @@ impl Block for TouchingObject {
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Err(wrap_err!("this block does not return a value"))
+        todo!()
     }
 }
 

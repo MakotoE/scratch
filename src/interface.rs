@@ -1,6 +1,6 @@
 use super::*;
 use crate::blocks::BlockInfo;
-use crate::coordinate::SpriteCoordinate;
+use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::fileinput::FileInput;
 use crate::savefile::ScratchFile;
 use crate::sprite::SpriteID;
@@ -162,9 +162,9 @@ impl Component for ScratchInterface {
             Msg::OnCanvasClick(e) => {
                 let canvas_position = *self.canvas_position();
                 if let Some(vm) = &self.vm {
-                    vm.click(SpriteCoordinate {
-                        x: e.client_x() as f64 - canvas_position.x - 240.0,
-                        y: e.client_y() as f64 - canvas_position.y - 180.0,
+                    vm.click(CanvasCoordinate {
+                        x: e.client_x() as f64 - canvas_position.x,
+                        y: e.client_y() as f64 - canvas_position.y,
                     });
                 }
                 false

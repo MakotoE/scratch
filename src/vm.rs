@@ -1,7 +1,7 @@
 use super::*;
 use crate::blocks::BlockInfo;
 use crate::canvas::CanvasContext;
-use crate::coordinate::SpriteCoordinate;
+use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::runtime::{BroadcastMsg, Broadcaster, Global, LayerChange, Stop};
 use crate::savefile::{ScratchFile, Target};
 use crate::sprite::{Sprite, SpriteID};
@@ -264,7 +264,7 @@ impl VM {
         self.control_sender.send(Control::Step).await.unwrap();
     }
 
-    pub fn click(&self, coordinate: SpriteCoordinate) {
+    pub fn click(&self, coordinate: CanvasCoordinate) {
         self.broadcaster
             .send(BroadcastMsg::Click(coordinate))
             .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)))
