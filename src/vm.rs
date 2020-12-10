@@ -1,7 +1,7 @@
 use super::*;
 use crate::blocks::BlockInfo;
 use crate::canvas::CanvasContext;
-use crate::coordinate::{CanvasCoordinate};
+use crate::coordinate::CanvasCoordinate;
 use crate::runtime::{BroadcastMsg, Broadcaster, Global, LayerChange, Stop};
 use crate::savefile::{ScratchFile, Target};
 use crate::sprite::{Sprite, SpriteID};
@@ -165,7 +165,9 @@ impl VM {
             }
 
             match futures.next().await.unwrap() {
-                Event::None => {}
+                Event::None => {
+                    futures.push(Box::pin(broadcaster.recv()));
+                }
                 Event::Thread(thread_id) => match current_state {
                     Control::Continue => futures.push(Box::pin(sprites.step(thread_id))),
                     Control::Step | Control::Pause => {
@@ -253,6 +255,7 @@ impl VM {
                 }
                 Event::RequestMousePosition => {
                     broadcaster.send(BroadcastMsg::MousePosition(*mouse_position.borrow()))?;
+                    futures.push(Box::pin(broadcaster.recv()));
                 }
             };
         }

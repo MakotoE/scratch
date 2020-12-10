@@ -1,6 +1,6 @@
 /// Center = 0, 0
-/// Left = -x, right = +x
-/// Top = -y, bottom = +y
+/// Left = -240, right = +240
+/// Top = -180, bottom = +180
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SpriteCoordinate {
     pub x: f64,
@@ -25,8 +25,8 @@ impl From<CanvasCoordinate> for SpriteCoordinate {
     }
 }
 
-/// Left = 0, right = +x
-/// Top = 0, bottom + y
+/// Left = 0, right = +480
+/// Top = 0, bottom +360
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CanvasCoordinate {
     pub x: f64,
@@ -146,6 +146,13 @@ impl CanvasRectangle {
             top_left: self.top_left,
             size: self.size.multiply(scale),
         }
+    }
+
+    pub fn contains(&self, coordinate: &CanvasCoordinate) -> bool {
+        coordinate.x >= self.top_left.x
+            && coordinate.y >= self.top_left.y
+            && coordinate.x <= self.top_left.x + self.size.width
+            && coordinate.y <= self.top_left.y + self.size.length
     }
 }
 

@@ -1,9 +1,7 @@
 use super::*;
 use crate::blocks::value_to_string;
 use crate::canvas::{CanvasContext, Corner, Direction};
-use crate::coordinate::{
-    CanvasCoordinate, CanvasRectangle, Size, Transformation,
-};
+use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation};
 use crate::savefile::Monitor;
 use crate::sprite::SpriteID;
 use crate::sprite_runtime::SpriteRuntime;

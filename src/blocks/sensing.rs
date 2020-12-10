@@ -1,4 +1,6 @@
 use super::*;
+use crate::coordinate::{CanvasRectangle};
+use crate::runtime::BroadcastMsg;
 use std::fmt::Display;
 use std::str::FromStr;
 use wasm_bindgen::__rt::core::fmt::Formatter;
@@ -9,7 +11,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "keyoptions" => Box::new(KeyOptions::new(id, runtime)),
         "coloristouchingcolor" => Box::new(ColorIsTouchingColor::new(id, runtime)),
         "touchingcolor" => Box::new(TouchingColor::new(id)),
-        "touchingobject" => Box::new(TouchingObject::new(id)),
+        "touchingobject" => Box::new(TouchingObject::new(id, runtime)),
         "touchingobjectmenu" => Box::new(TouchingObjectMenu::new(id)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
@@ -126,15 +128,24 @@ impl Block for TouchingColor {
 #[derive(Debug)]
 pub struct TouchingObject {
     id: BlockID,
+    runtime: Runtime,
     menu: Box<dyn Block>,
 }
 
 impl TouchingObject {
-    pub fn new(id: BlockID) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
+            runtime,
             menu: Box::new(EmptyInput {}),
         }
+    }
+
+    fn sprite_on_edge(rectangle: &CanvasRectangle) -> bool {
+        rectangle.top_left.x < 0.0
+            || rectangle.top_left.y < 0.0
+            || rectangle.top_left.x + rectangle.size.width > 460.0
+            || rectangle.top_left.y + rectangle.size.length > 180.0
     }
 }
 
@@ -158,7 +169,33 @@ impl Block for TouchingObject {
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        todo!()
+        let option = match self.menu.value().await?.as_str() {
+            Some(s) => TouchingObjectOption::from_str(s)?,
+            None => return Err(wrap_err!("menu value is not string")),
+        };
+
+        let rectangle = self.runtime.sprite.read().await.rectangle();
+
+        match option {
+            TouchingObjectOption::MousePointer => {
+                self.runtime
+                    .global
+                    .broadcaster
+                    .send(BroadcastMsg::RequestMousePosition)?;
+
+                let canvas_rectangle: CanvasRectangle = rectangle.into();
+                loop {
+                    if let BroadcastMsg::MousePosition(position) =
+                        self.runtime.global.broadcaster.subscribe().recv().await?
+                    {
+                        return Ok(canvas_rectangle.contains(&position).into());
+                    }
+                }
+            }
+            TouchingObjectOption::Edge => {
+                return Ok(TouchingObject::sprite_on_edge(&rectangle.into()).into())
+            }
+        }
     }
 }
 
