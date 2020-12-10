@@ -16,7 +16,6 @@ pub struct Sprite {
     runtime: Runtime,
     target: Rc<Target>,
     images: Rc<HashMap<String, Image>>,
-    sprite_removed: RefCell<bool>,
 }
 
 impl Sprite {
@@ -62,7 +61,6 @@ impl Sprite {
                 ),
                 target,
                 images,
-                sprite_removed: RefCell::new(false),
             },
         ))
     }
@@ -76,11 +74,7 @@ impl Sprite {
     }
 
     pub async fn step(&self, thread_id: usize) -> Result<()> {
-        if *self.sprite_removed.borrow() {
-            Ok(())
-        } else {
-            self.threads[thread_id].borrow_mut().step().await
-        }
+        self.threads[thread_id].borrow_mut().step().await
     }
 
     pub async fn need_redraw(&self) -> bool {
@@ -88,11 +82,7 @@ impl Sprite {
     }
 
     pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-        if *self.sprite_removed.borrow() {
-            Ok(())
-        } else {
-            self.runtime.sprite.write().await.redraw(context)
-        }
+        self.runtime.sprite.write().await.redraw(context)
     }
 
     pub fn block_inputs(&self) -> Vec<BlockInputs> {
@@ -110,10 +100,6 @@ impl Sprite {
             true,
         )
         .await
-    }
-
-    pub fn remove(&self) {
-        self.sprite_removed.replace(true);
     }
 }
 

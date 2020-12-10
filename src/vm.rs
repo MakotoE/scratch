@@ -225,7 +225,7 @@ impl VM {
                             }
                         }
                         BroadcastMsg::DeleteClone(sprite_id) => {
-                            sprites.remove(&sprite_id);
+                            sprites.remove(sprite_id);
                             sprites.force_redraw(context).await?;
                             TimeoutFuture::new(0).await;
                             last_redraw = performance.now();
@@ -372,7 +372,8 @@ impl BroadcastCell {
 struct SpritesCell {
     sprites: RefCell<HashMap<SpriteID, Sprite>>,
     draw_order: RefCell<DrawOrder>,
-    threads_to_stop: RefCell<HashSet<ThreadID>>,
+    removed_sprites: RefCell<HashSet<SpriteID>>,
+    stopped_threads: RefCell<HashSet<ThreadID>>,
     global: Rc<Global>,
 }
 
@@ -381,13 +382,16 @@ impl SpritesCell {
         Self {
             sprites: RefCell::new(sprites),
             draw_order: RefCell::new(DrawOrder::new(targets)),
-            threads_to_stop: RefCell::default(),
+            removed_sprites: RefCell::default(),
+            stopped_threads: RefCell::default(),
             global,
         }
     }
 
     async fn step(&self, thread_id: ThreadID) -> Event {
-        if self.threads_to_stop.borrow_mut().remove(&thread_id) {
+        if self.stopped_threads.borrow_mut().remove(&thread_id)
+            || self.removed_sprites.borrow().contains(&thread_id.sprite_id)
+        {
             return Event::None;
         }
 
@@ -400,10 +404,8 @@ impl SpritesCell {
         }
     }
 
-    fn remove(&self, sprite_id: &SpriteID) {
-        if let Some(s) = self.sprites.borrow().get(&sprite_id) {
-            s.remove()
-        }
+    fn remove(&self, sprite_id: SpriteID) {
+        self.removed_sprites.borrow_mut().insert(sprite_id);
     }
 
     async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
@@ -432,10 +434,13 @@ impl SpritesCell {
         self.global.redraw(context).await?;
 
         let sprites = self.sprites.borrow();
+        let removed_sprites = self.removed_sprites.borrow();
         for id in self.draw_order.borrow().iter() {
-            match sprites.get(id) {
-                Some(s) => s.redraw(context).await?,
-                None => return Err(wrap_err!(format!("id not found: {}", id))),
+            if !removed_sprites.contains(id) {
+                match sprites.get(id) {
+                    Some(s) => s.redraw(context).await?,
+                    None => return Err(wrap_err!(format!("id not found: {}", id))),
+                }
             }
         }
         Ok(())
@@ -481,7 +486,7 @@ impl SpritesCell {
     }
 
     fn stop(&self, thread_id: ThreadID) {
-        self.threads_to_stop.borrow_mut().insert(thread_id);
+        self.stopped_threads.borrow_mut().insert(thread_id);
     }
 
     fn change_layer(&self, id: SpriteID, change: LayerChange) -> Result<()> {
