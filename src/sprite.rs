@@ -25,7 +25,11 @@ impl Sprite {
         images: Rc<HashMap<String, Image>>,
         is_a_clone: bool,
     ) -> Result<(SpriteID, Self)> {
-        let sprite_id = SpriteID::new(&target.name);
+        let mut sprite_name = target.name.to_string();
+        if is_a_clone {
+            sprite_name += "-char";
+        };
+        let sprite_id = SpriteID::new(&sprite_name);
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
@@ -107,7 +111,9 @@ pub fn find_hats(block_infos: &HashMap<BlockID, savefile::Block>) -> Vec<BlockID
     let mut hats: Vec<BlockID> = Vec::new();
     for (id, block_info) in block_infos {
         // Blocks without event watcher (has rounded top in editor) are ignored
-        if block_info.opcode.contains("_when") && block_info.top_level {
+        if (block_info.opcode == "control_start_as_clone" || block_info.opcode.contains("_when"))
+            && block_info.top_level
+        {
             hats.push(*id);
         }
     }
