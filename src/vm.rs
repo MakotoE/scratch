@@ -165,9 +165,7 @@ impl VM {
             }
 
             match futures.next().await.unwrap() {
-                Event::None => {
-                    futures.push(Box::pin(broadcaster.recv()));
-                }
+                Event::None => {}
                 Event::Thread(thread_id) => match current_state {
                     Control::Continue => futures.push(Box::pin(sprites.step(thread_id))),
                     Control::Step | Control::Pause => {
@@ -208,53 +206,58 @@ impl VM {
                         TimeoutFuture::new(REDRAW_INTERVAL_MILLIS as u32).map(|_| Event::Redraw),
                     ));
                 }
-                Event::Clone(from_sprite) => {
-                    let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
-                    for thread_id in 0..sprites.number_of_threads(new_sprite_id) {
-                        let id = ThreadID {
-                            sprite_id: new_sprite_id,
-                            thread_id,
-                        };
-                        match current_state {
-                            Control::Continue | Control::Step => {
-                                futures.push(Box::pin(sprites.step(id)))
+                Event::BroadcastMsg(msg) => {
+                    match msg {
+                        BroadcastMsg::Clone(from_sprite) => {
+                            let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
+                            for thread_id in 0..sprites.number_of_threads(new_sprite_id) {
+                                let id = ThreadID {
+                                    sprite_id: new_sprite_id,
+                                    thread_id,
+                                };
+                                match current_state {
+                                    Control::Continue | Control::Step => {
+                                        futures.push(Box::pin(sprites.step(id)))
+                                    }
+                                    Control::Pause => paused_threads.push(id),
+                                    _ => unreachable!(),
+                                }
                             }
-                            Control::Pause => paused_threads.push(id),
-                            _ => unreachable!(),
                         }
-                    }
-                    futures.push(Box::pin(broadcaster.recv()));
-                }
-                Event::DeleteClone(sprite_id) => {
-                    sprites.remove(&sprite_id);
-                    sprites.force_redraw(context).await?;
-                    TimeoutFuture::new(0).await;
-                    last_redraw = performance.now();
-                }
-                Event::Stop(s) => match s {
-                    Stop::All => {
-                        for thread_id in sprites.all_thread_ids() {
-                            sprites.stop(thread_id);
+                        BroadcastMsg::DeleteClone(sprite_id) => {
+                            sprites.remove(&sprite_id);
+                            sprites.force_redraw(context).await?;
+                            TimeoutFuture::new(0).await;
+                            last_redraw = performance.now();
                         }
-                    }
-                    Stop::ThisThread(thread_id) => {
-                        sprites.stop(thread_id);
-                    }
-                    Stop::OtherThreads(thread_id) => {
-                        for id in sprites.all_thread_ids() {
-                            if id.sprite_id == thread_id.sprite_id
-                                && id.thread_id != thread_id.thread_id
-                            {
+                        BroadcastMsg::Stop(s) => match s {
+                            Stop::All => {
+                                for thread_id in sprites.all_thread_ids() {
+                                    sprites.stop(thread_id);
+                                }
+                            }
+                            Stop::ThisThread(thread_id) => {
                                 sprites.stop(thread_id);
                             }
+                            Stop::OtherThreads(thread_id) => {
+                                for id in sprites.all_thread_ids() {
+                                    if id.sprite_id == thread_id.sprite_id
+                                        && id.thread_id != thread_id.thread_id
+                                    {
+                                        sprites.stop(thread_id);
+                                    }
+                                }
+                            }
+                        },
+                        BroadcastMsg::ChangeLayer { sprite, action } => {
+                            sprites.change_layer(sprite, action)?;
                         }
+                        BroadcastMsg::RequestMousePosition => {
+                            broadcaster
+                                .send(BroadcastMsg::MousePosition(*mouse_position.borrow()))?;
+                        }
+                        _ => {}
                     }
-                },
-                Event::ChangeLayer { sprite, action } => {
-                    sprites.change_layer(sprite, action)?;
-                }
-                Event::RequestMousePosition => {
-                    broadcaster.send(BroadcastMsg::MousePosition(*mouse_position.borrow()))?;
                     futures.push(Box::pin(broadcaster.recv()));
                 }
             };
@@ -306,14 +309,7 @@ enum Event {
     Err(Error),
     Control(Option<Control>),
     Redraw,
-    Clone(SpriteID),
-    DeleteClone(SpriteID),
-    Stop(Stop),
-    ChangeLayer {
-        sprite: SpriteID,
-        action: LayerChange,
-    },
-    RequestMousePosition,
+    BroadcastMsg(BroadcastMsg),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -362,16 +358,7 @@ impl BroadcastCell {
 
     async fn recv(&self) -> Event {
         match self.receiver.borrow_mut().recv().await {
-            Ok(msg) => match msg {
-                BroadcastMsg::Clone(id) => Event::Clone(id),
-                BroadcastMsg::DeleteClone(id) => Event::DeleteClone(id),
-                BroadcastMsg::Stop(s) => Event::Stop(s),
-                BroadcastMsg::ChangeLayer { sprite, action } => {
-                    Event::ChangeLayer { sprite, action }
-                }
-                BroadcastMsg::RequestMousePosition => Event::RequestMousePosition,
-                _ => Event::None,
-            },
+            Ok(msg) => Event::BroadcastMsg(msg),
             Err(e) => Event::Err(e.into()),
         }
     }
