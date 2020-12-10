@@ -209,10 +209,10 @@ impl Block for GoToFrontBack {
         self.runtime
             .global
             .broadcaster
-            .send(BroadcastMsg::ChangeLayer((
-                self.runtime.thread_id().sprite_id,
-                layer_change,
-            )))?;
+            .send(BroadcastMsg::ChangeLayer {
+                sprite: self.runtime.thread_id().sprite_id,
+                action: layer_change,
+            })?;
         Next::continue_(self.next)
     }
 }

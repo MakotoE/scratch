@@ -218,7 +218,10 @@ pub enum BroadcastMsg {
     DeleteClone(SpriteID),
     Click(CanvasCoordinate),
     Stop(Stop),
-    ChangeLayer((SpriteID, LayerChange)),
+    ChangeLayer {
+        sprite: SpriteID,
+        action: LayerChange,
+    },
     RequestMousePosition,
     MousePosition(CanvasCoordinate),
 }

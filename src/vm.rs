@@ -250,8 +250,8 @@ impl VM {
                         }
                     }
                 },
-                Event::ChangeLayer(layer_change) => {
-                    sprites.change_layer(layer_change.0, layer_change.1)?;
+                Event::ChangeLayer { sprite, action } => {
+                    sprites.change_layer(sprite, action)?;
                 }
                 Event::RequestMousePosition => {
                     broadcaster.send(BroadcastMsg::MousePosition(*mouse_position.borrow()))?;
@@ -309,7 +309,10 @@ enum Event {
     Clone(SpriteID),
     DeleteClone(SpriteID),
     Stop(Stop),
-    ChangeLayer((SpriteID, LayerChange)),
+    ChangeLayer {
+        sprite: SpriteID,
+        action: LayerChange,
+    },
     RequestMousePosition,
 }
 
@@ -363,7 +366,9 @@ impl BroadcastCell {
                 BroadcastMsg::Clone(id) => Event::Clone(id),
                 BroadcastMsg::DeleteClone(id) => Event::DeleteClone(id),
                 BroadcastMsg::Stop(s) => Event::Stop(s),
-                BroadcastMsg::ChangeLayer(l) => Event::ChangeLayer(l),
+                BroadcastMsg::ChangeLayer { sprite, action } => {
+                    Event::ChangeLayer { sprite, action }
+                }
                 BroadcastMsg::RequestMousePosition => Event::RequestMousePosition,
                 _ => Event::None,
             },
