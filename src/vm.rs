@@ -474,6 +474,11 @@ impl SpritesCell {
             None => return Err(wrap_err!("sprite_id is invalid")),
         };
         sprites.insert(new_sprite_id, new_sprite);
+
+        let mut draw_order = self.draw_order.borrow_mut();
+        let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
+        draw_order.insert(index + 1, new_sprite_id);
+
         Ok(new_sprite_id)
     }
 
@@ -533,6 +538,10 @@ impl DrawOrder {
             LayerChange::ChangeBy(_) => unimplemented!(),
         }
         Ok(())
+    }
+
+    fn insert(&mut self, index: usize, id: SpriteID) {
+        self.ids.insert(index, id)
     }
 }
 
