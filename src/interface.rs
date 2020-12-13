@@ -1,6 +1,6 @@
 use super::*;
 use crate::blocks::BlockInfo;
-use crate::coordinate::{CanvasCoordinate};
+use crate::coordinate::CanvasCoordinate;
 use crate::fileinput::FileInput;
 use crate::savefile::ScratchFile;
 use crate::sprite::SpriteID;
@@ -16,7 +16,7 @@ pub struct ScratchInterface {
     vm: Option<Rc<VM>>,
     debug_info: HashMap<SpriteID, Vec<Option<BlockInfo>>>,
     canvas_top_left: Option<CanvasCoordinate>,
-    mouse_position: Rc<RefCell<CanvasCoordinate>>, // TODO need state for mouse outside of canvas
+    mouse_position: Rc<RefCell<CanvasCoordinate>>,
 }
 
 impl ScratchInterface {
@@ -211,7 +211,7 @@ impl Component for ScratchInterface {
     fn view(&self) -> Html {
         html! {
             <div style="font-family: sans-serif; display: flex;">
-                <div>
+                <div onmousemove={self.link.callback(Msg::OnMouseMove)}>
                     <div style="margin-bottom: 5px;">
                         <a style="cursor: pointer;" onclick={self.link.callback(|_| Msg::Start)}>
                             <img
@@ -234,7 +234,6 @@ impl Component for ScratchInterface {
                         height="720"
                         style="width: 480px; height: 360px; border: 1px solid black;"
                         onclick={self.link.callback(Msg::OnMouseClick)}
-                        onmousemove={self.link.callback(Msg::OnMouseMove)}
                     /><br />
                     <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                     <br />
