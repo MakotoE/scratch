@@ -1,6 +1,7 @@
 use super::*;
 use crate::blocks::*;
 use crate::canvas::CanvasContext;
+use crate::coordinate::SpriteRectangle;
 use crate::runtime::{Global, Runtime};
 use crate::savefile::{BlockID, Image, Target};
 use crate::sprite_runtime::SpriteRuntime;
@@ -29,7 +30,7 @@ impl Sprite {
         if is_a_clone {
             sprite_name += "-char";
         };
-        let sprite_id = SpriteID::new(&sprite_name);
+        let sprite_id = SpriteID::from_sprite_name(&sprite_name);
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
@@ -105,6 +106,10 @@ impl Sprite {
         )
         .await
     }
+
+    pub async fn rectangle(&self) -> SpriteRectangle {
+        self.runtime.sprite.read().await.rectangle()
+    }
 }
 
 pub fn find_hats(block_infos: &HashMap<BlockID, savefile::Block>) -> Vec<BlockID> {
@@ -128,7 +133,7 @@ pub struct SpriteID {
 }
 
 impl SpriteID {
-    pub fn new(sprite_name: &str) -> Self {
+    pub fn from_sprite_name(sprite_name: &str) -> Self {
         let mut hasher = DefaultHasher::new();
         sprite_name.hash(&mut hasher);
         Self {

@@ -1,12 +1,9 @@
-use std::fmt::Display;
-use std::str::FromStr;
-
-use wasm_bindgen::__rt::core::fmt::Formatter;
-
+use super::*;
 use crate::broadcaster::BroadcastMsg;
 use crate::coordinate::CanvasRectangle;
-
-use super::*;
+use crate::sprite::SpriteID;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -203,7 +200,23 @@ impl Block for TouchingObject {
             TouchingObjectOption::Edge => {
                 return Ok(TouchingObject::sprite_on_edge(&rectangle.into()).into())
             }
-            TouchingObjectOption::Sprite(_) => todo!(),
+            TouchingObjectOption::Sprite(sprite_name) => {
+                let current_rectangle = self.runtime.sprite.read().await.rectangle();
+
+                let id = SpriteID::from_sprite_name(&sprite_name);
+                let msg = BroadcastMsg::RequestSpriteRectangle(id);
+                self.runtime.global.broadcaster.send(msg)?;
+
+                loop {
+                    if let BroadcastMsg::SpriteRectangle { sprite, rectangle } =
+                        self.runtime.global.broadcaster.subscribe().recv().await?
+                    {
+                        if sprite == id {
+                            return Ok(current_rectangle.intersects(&rectangle).into());
+                        }
+                    }
+                }
+            }
         }
     }
 }

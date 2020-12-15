@@ -1,10 +1,8 @@
-use tokio::sync::broadcast::{channel, Receiver, Sender};
-
-use crate::coordinate::CanvasCoordinate;
+use super::*;
+use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
-
-use super::*;
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 #[derive(Debug, Clone)]
 pub struct Broadcaster {
@@ -43,6 +41,11 @@ pub enum BroadcastMsg {
     },
     RequestMousePosition,
     MousePosition(CanvasCoordinate),
+    RequestSpriteRectangle(SpriteID),
+    SpriteRectangle {
+        sprite: SpriteID,
+        rectangle: SpriteRectangle,
+    },
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

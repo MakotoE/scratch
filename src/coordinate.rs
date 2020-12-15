@@ -108,14 +108,36 @@ pub struct SpriteRectangle {
 
 impl SpriteRectangle {
     pub fn contains(&self, coordinate: &SpriteCoordinate) -> bool {
-        let top_left = self.center.add(&SpriteCoordinate {
-            x: self.size.width / -2.0,
-            y: self.size.length / -2.0,
-        });
+        let top_left = self.top_left();
         coordinate.x >= top_left.x
             && coordinate.y >= top_left.y
             && coordinate.x <= top_left.x + self.size.width
             && coordinate.y <= top_left.y + self.size.length
+    }
+
+    fn top_left(&self) -> SpriteCoordinate {
+        self.center.add(&SpriteCoordinate {
+            x: self.size.width / -2.0,
+            y: self.size.length / -2.0,
+        })
+    }
+
+    fn bottom_right(&self) -> SpriteCoordinate {
+        self.center.add(&SpriteCoordinate {
+            x: self.size.width / 2.0,
+            y: self.size.length / 2.0,
+        })
+    }
+
+    pub fn intersects(&self, other: &SpriteRectangle) -> bool {
+        let self_top_left = self.top_left();
+        let self_bottom_right = self.bottom_right();
+        let other_top_left = other.top_left();
+        let other_bottom_right = other.bottom_right();
+        !(self_top_left.x > other_bottom_right.x
+            || self_bottom_right.x < other_top_left.x
+            || self_top_left.y > other_bottom_right.y
+            || self_bottom_right.y < other_top_left.y)
     }
 
     #[allow(dead_code)]
@@ -341,6 +363,73 @@ mod tests {
 
             for (i, test) in tests.iter().enumerate() {
                 assert_eq!(test.rect.contains(&test.coordinate), test.expected, "{}", i);
+            }
+        }
+
+        #[test]
+        fn intersects() {
+            struct Test {
+                a: SpriteRectangle,
+                b: SpriteRectangle,
+                expected: bool,
+            }
+
+            let tests = vec![
+                Test {
+                    a: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 0.0,
+                            length: 0.0,
+                        },
+                    },
+                    b: SpriteRectangle {
+                        center: SpriteCoordinate { x: 0.0, y: 0.0 },
+                        size: Size {
+                            width: 0.0,
+                            length: 0.0,
+                        },
+                    },
+                    expected: true,
+                },
+                Test {
+                    a: SpriteRectangle {
+                        center: SpriteCoordinate { x: 1.0, y: 1.0 },
+                        size: Size {
+                            width: 2.0,
+                            length: 2.0,
+                        },
+                    },
+                    b: SpriteRectangle {
+                        center: SpriteCoordinate { x: 1.0, y: 1.0 },
+                        size: Size {
+                            width: 2.0,
+                            length: 2.0,
+                        },
+                    },
+                    expected: true,
+                },
+                Test {
+                    a: SpriteRectangle {
+                        center: SpriteCoordinate { x: 1.0, y: 1.0 },
+                        size: Size {
+                            width: 2.0,
+                            length: 2.0,
+                        },
+                    },
+                    b: SpriteRectangle {
+                        center: SpriteCoordinate { x: 2.0, y: 2.0 },
+                        size: Size {
+                            width: 2.0,
+                            length: 2.0,
+                        },
+                    },
+                    expected: true,
+                },
+            ];
+
+            for (i, test) in tests.iter().enumerate() {
+                assert_eq!(test.a.intersects(&test.b), test.expected, "{}", i);
             }
         }
     }

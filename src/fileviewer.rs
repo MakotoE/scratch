@@ -1,11 +1,13 @@
-use super::*;
+use yew::prelude::*;
+use yew::virtual_dom::VNode;
+
 use crate::fileinput::FileInput;
 use crate::savefile::ScratchFile;
 use crate::sprite::SpriteID;
 use crate::thread::BlockInputs;
 use crate::vm::VM;
-use yew::prelude::*;
-use yew::virtual_dom::VNode;
+
+use super::*;
 
 pub struct FileViewer {
     link: ComponentLink<Self>,
@@ -85,7 +87,7 @@ impl Component for FileViewer {
                                 .project
                                 .targets
                                 .iter()
-                                .map(|t| (SpriteID::new(&t.name), t.name.clone()))
+                                .map(|t| (SpriteID::from_sprite_name(&t.name), t.name.clone()))
                                 .collect();
                             let block_inputs: HashMap<SpriteID, BlockInputsName> = block_input
                                 .iter_mut()

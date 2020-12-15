@@ -1,19 +1,17 @@
-use std::collections::HashSet;
-
-use futures::future::LocalBoxFuture;
-use futures::stream::FuturesUnordered;
-use futures::{FutureExt, StreamExt};
-use gloo_timers::future::TimeoutFuture;
-use tokio::sync::{broadcast, mpsc};
-
 use crate::blocks::BlockInfo;
 use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
 use crate::canvas::CanvasContext;
-use crate::coordinate::CanvasCoordinate;
+use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
 use crate::runtime::Global;
 use crate::savefile::{ScratchFile, Target};
 use crate::sprite::{Sprite, SpriteID};
 use crate::thread::BlockInputs;
+use futures::future::LocalBoxFuture;
+use futures::stream::FuturesUnordered;
+use futures::{FutureExt, StreamExt};
+use gloo_timers::future::TimeoutFuture;
+use std::collections::HashSet;
+use tokio::sync::{broadcast, mpsc};
 
 use super::*;
 
@@ -260,6 +258,13 @@ impl VM {
                             broadcaster
                                 .send(BroadcastMsg::MousePosition(*mouse_position.borrow()))?;
                         }
+                        BroadcastMsg::RequestSpriteRectangle(sprite_id) => {
+                            let rectangle = sprites.sprite_rectangle(&sprite_id).await?;
+                            broadcaster.send(BroadcastMsg::SpriteRectangle {
+                                sprite: sprite_id,
+                                rectangle,
+                            })?;
+                        }
                         _ => {}
                     }
                     futures.push(Box::pin(broadcaster.recv()));
@@ -501,6 +506,13 @@ impl SpritesCell {
     fn change_layer(&self, id: SpriteID, change: LayerChange) -> Result<()> {
         self.draw_order.borrow_mut().change_layer(id, change)
     }
+
+    async fn sprite_rectangle(&self, id: &SpriteID) -> Result<SpriteRectangle> {
+        match self.sprites.borrow().get(id) {
+            Some(sprite) => Ok(sprite.rectangle().await),
+            None => Err(wrap_err!(format!("id not found: {}", id))),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -515,7 +527,7 @@ impl DrawOrder {
         for target in targets {
             // Stage has layer 0
             if target.layer_order > 0 {
-                id_layer_order.push((SpriteID::new(&target.name), target.layer_order));
+                id_layer_order.push((SpriteID::from_sprite_name(&target.name), target.layer_order));
             }
         }
 
