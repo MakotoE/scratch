@@ -1,8 +1,11 @@
-use super::*;
-use crate::fileviewer::FileViewer;
-use interface::ScratchInterface;
 use yew::prelude::*;
 use yew_router::prelude::*;
+
+use interface::ScratchInterface;
+
+use crate::fileviewer::FileViewer;
+
+use super::*;
 
 #[derive(Switch, Debug, Clone)]
 pub enum Route {
@@ -23,7 +26,7 @@ impl Component for App {
     }
 
     fn update(&mut self, _: ()) -> bool {
-        true
+        false
     }
 
     fn change(&mut self, _: ()) -> bool {

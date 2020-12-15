@@ -1,9 +1,12 @@
-use super::*;
-use crate::coordinate::{CanvasRectangle};
-use crate::runtime::BroadcastMsg;
 use std::fmt::Display;
 use std::str::FromStr;
+
 use wasm_bindgen::__rt::core::fmt::Formatter;
+
+use crate::coordinate::CanvasRectangle;
+use crate::runtime::BroadcastMsg;
+
+use super::*;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -159,7 +162,12 @@ impl Block for TouchingObject {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("menu", &self.menu)],
+            vec![],
+        )
     }
 
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
@@ -195,6 +203,7 @@ impl Block for TouchingObject {
             TouchingObjectOption::Edge => {
                 return Ok(TouchingObject::sprite_on_edge(&rectangle.into()).into())
             }
+            TouchingObjectOption::Sprite(_) => todo!(),
         }
     }
 }
@@ -224,7 +233,12 @@ impl Block for TouchingObjectMenu {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![("option", self.option.to_string())],
+            vec![],
+            vec![],
+        )
     }
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
@@ -239,10 +253,11 @@ impl Block for TouchingObjectMenu {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 enum TouchingObjectOption {
     MousePointer,
     Edge,
+    Sprite(String),
 }
 
 impl FromStr for TouchingObjectOption {
@@ -252,7 +267,7 @@ impl FromStr for TouchingObjectOption {
         Ok(match s {
             "_mouse_" => Self::MousePointer,
             "_edge_" => Self::Edge,
-            _ => unimplemented!(),
+            _ => Self::Sprite(s.to_string()),
         })
     }
 }
@@ -262,6 +277,7 @@ impl Display for TouchingObjectOption {
         f.write_str(match self {
             TouchingObjectOption::MousePointer => "_mouse_",
             TouchingObjectOption::Edge => "_edge_",
+            TouchingObjectOption::Sprite(s) => &s,
         })
     }
 }
