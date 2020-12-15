@@ -1,5 +1,6 @@
-use super::*;
 use crate::savefile::BlockID;
+
+use super::*;
 
 error_chain::error_chain! {
     types {
@@ -12,7 +13,7 @@ error_chain::error_chain! {
         IO(std::io::Error);
         ParseFloatError(std::num::ParseFloatError);
         ParseIntError(std::num::ParseIntError);
-        BroadcastSendError(tokio::sync::broadcast::error::SendError<runtime::BroadcastMsg>);
+        BroadcastSendError(tokio::sync::broadcast::error::SendError<broadcaster::BroadcastMsg>);
         RecvError(tokio::sync::broadcast::error::RecvError);
         DebugSendError(tokio::sync::mpsc::error::SendError<vm::DebugInfo>);
         FromHexError(hex::FromHexError);

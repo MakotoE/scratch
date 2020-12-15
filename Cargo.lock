@@ -145,6 +145,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "debug-macro"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "105067a8125216e9ea7d13d2ed7da7b5dfe601db5c9207d660efc3fa0403b285"
+
+[[package]]
 name = "error-chain"
 version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -686,6 +692,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "console_error_panic_hook",
+ "debug-macro",
  "error-chain",
  "futures",
  "gloo-timers",

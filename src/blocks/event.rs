@@ -1,5 +1,6 @@
+use crate::broadcaster::BroadcastMsg;
+
 use super::*;
-use crate::runtime::BroadcastMsg;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {

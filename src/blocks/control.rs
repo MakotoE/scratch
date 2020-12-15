@@ -1,9 +1,13 @@
-use super::*;
-use crate::runtime::BroadcastMsg;
-use crate::vm::ThreadID;
+use std::str::FromStr;
+
 use futures::StreamExt;
 use gloo_timers::future::{IntervalStream, TimeoutFuture};
-use std::str::FromStr;
+
+use crate::broadcaster;
+use crate::broadcaster::BroadcastMsg;
+use crate::vm::ThreadID;
+
+use super::*;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -639,11 +643,11 @@ enum StopOption {
 }
 
 impl StopOption {
-    fn into_stop(self, thread_id: ThreadID) -> runtime::Stop {
+    fn into_stop(self, thread_id: ThreadID) -> broadcaster::Stop {
         match self {
-            StopOption::All => runtime::Stop::All,
-            StopOption::ThisThread => runtime::Stop::ThisThread(thread_id),
-            StopOption::OtherThreads => runtime::Stop::OtherThreads(thread_id),
+            StopOption::All => broadcaster::Stop::All,
+            StopOption::ThisThread => broadcaster::Stop::ThisThread(thread_id),
+            StopOption::OtherThreads => broadcaster::Stop::OtherThreads(thread_id),
         }
     }
 }

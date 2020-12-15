@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 use wasm_bindgen::__rt::core::fmt::Formatter;
 
+use crate::broadcaster::BroadcastMsg;
 use crate::coordinate::CanvasRectangle;
-use crate::runtime::BroadcastMsg;
 
 use super::*;
 

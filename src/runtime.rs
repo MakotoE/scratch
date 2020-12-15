@@ -1,13 +1,14 @@
-use super::*;
+use serde_json::Value;
+
 use crate::blocks::value_to_string;
+use crate::broadcaster::Broadcaster;
 use crate::canvas::{CanvasContext, Corner, Direction};
 use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation};
 use crate::savefile::Monitor;
-use crate::sprite::SpriteID;
 use crate::sprite_runtime::SpriteRuntime;
 use crate::vm::ThreadID;
-use serde_json::Value;
-use tokio::sync::broadcast::{channel, Receiver, Sender};
+
+use super::*;
 
 #[derive(Debug, Clone)]
 pub struct Runtime {
@@ -185,59 +186,6 @@ impl Global {
         context.close_path();
         Ok(())
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct Broadcaster {
-    sender: Sender<BroadcastMsg>,
-}
-
-impl Broadcaster {
-    fn new() -> Self {
-        Self {
-            sender: channel(1).0,
-        }
-    }
-
-    pub fn send(&self, m: BroadcastMsg) -> Result<()> {
-        log::info!("broadcast: {:?}", &m);
-        self.sender.send(m)?;
-        Ok(())
-    }
-
-    pub fn subscribe(&self) -> Receiver<BroadcastMsg> {
-        self.sender.subscribe()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum BroadcastMsg {
-    Start(String),
-    Finished(String),
-    Clone(SpriteID),
-    DeleteClone(SpriteID),
-    Click(CanvasCoordinate),
-    Stop(Stop),
-    ChangeLayer {
-        sprite: SpriteID,
-        action: LayerChange,
-    },
-    RequestMousePosition,
-    MousePosition(CanvasCoordinate),
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Stop {
-    All,
-    ThisThread(ThreadID),
-    OtherThreads(ThreadID),
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum LayerChange {
-    Front,
-    Back,
-    ChangeBy(i64),
 }
 
 #[derive(Debug)]

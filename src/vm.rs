@@ -1,17 +1,21 @@
-use super::*;
-use crate::blocks::BlockInfo;
-use crate::canvas::CanvasContext;
-use crate::coordinate::CanvasCoordinate;
-use crate::runtime::{BroadcastMsg, Broadcaster, Global, LayerChange, Stop};
-use crate::savefile::{ScratchFile, Target};
-use crate::sprite::{Sprite, SpriteID};
-use crate::thread::BlockInputs;
+use std::collections::HashSet;
+
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use gloo_timers::future::TimeoutFuture;
-use std::collections::HashSet;
 use tokio::sync::{broadcast, mpsc};
+
+use crate::blocks::BlockInfo;
+use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
+use crate::canvas::CanvasContext;
+use crate::coordinate::CanvasCoordinate;
+use crate::runtime::Global;
+use crate::savefile::{ScratchFile, Target};
+use crate::sprite::{Sprite, SpriteID};
+use crate::thread::BlockInputs;
+
+use super::*;
 
 #[derive(Debug)]
 pub struct VM {

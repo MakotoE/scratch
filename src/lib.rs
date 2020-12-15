@@ -4,10 +4,21 @@
 #![recursion_limit = "512"]
 #![allow(clippy::await_holding_refcell_ref)]
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+use tokio::sync::RwLock;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+
+use error::*;
+
 #[macro_use]
 mod error;
 mod app;
 mod blocks;
+mod broadcaster;
 mod canvas;
 mod coordinate;
 mod fileinput;
@@ -20,14 +31,6 @@ mod sprite;
 mod sprite_runtime;
 mod thread;
 mod vm;
-
-use error::*;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
-use tokio::sync::RwLock;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<()> {
