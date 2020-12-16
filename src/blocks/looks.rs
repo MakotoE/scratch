@@ -397,7 +397,7 @@ impl Block for SetEffectTo {
             _ => unimplemented!(),
         }
 
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -487,7 +487,7 @@ impl Block for NextCostume {
 
     async fn execute(&mut self) -> Next {
         self.runtime.sprite.write().await.costumes().next_costume();
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -560,7 +560,7 @@ impl Block for ChangeEffectBy {
             _ => unimplemented!(),
         }
 
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 
@@ -683,7 +683,7 @@ impl Block for SwitchCostumeTo {
             .await
             .costumes()
             .set_current_costume(costume_name)?;
-        Next::continue_(self.next.clone())
+        Next::continue_(self.next)
     }
 }
 

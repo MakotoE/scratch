@@ -108,6 +108,10 @@ impl Block for PlayUntilDone {
             self.next = Some(block);
         }
     }
+
+    async fn execute(&mut self) -> Next {
+        Next::continue_(self.next)
+    }
 }
 
 #[derive(Debug)]
