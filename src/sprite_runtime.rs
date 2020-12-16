@@ -16,8 +16,8 @@ pub struct SpriteRuntime {
     need_redraw: bool,
     center: SpriteCoordinate,
     scale: Scale,
-    costumes: Vec<Costume>,
-    current_costume: usize,
+    costumes: HashMap<String, Costume>,
+    current_costume: String,
     text: Text,
     pen: Pen,
     hide: HideStatus,
@@ -30,15 +30,30 @@ impl SpriteRuntime {
         images: &HashMap<String, Image>,
         is_a_clone: bool,
     ) -> Result<Self> {
-        let mut runtime = Self {
+        let mut costumes: HashMap<String, Costume> = HashMap::new();
+
+        for costume in &target.costumes {
+            match images.get(&costume.md5ext) {
+                Some(file) => {
+                    costumes.insert(costume.name.clone(), Costume::new(file).await?);
+                }
+                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
+            }
+        }
+
+        Ok(Self {
             need_redraw: true,
             center: SpriteCoordinate {
                 x: target.x,
                 y: target.y,
             },
             scale: Scale { x: 1.0, y: 1.0 },
-            costumes: Vec::new(),
-            current_costume: 0,
+            costumes,
+            current_costume: target
+                .costumes
+                .get(0)
+                .map(|c| c.name.clone())
+                .unwrap_or_default(),
             text: Text {
                 id: BlockID::default(),
                 text: None,
@@ -46,16 +61,7 @@ impl SpriteRuntime {
             pen: Pen::new(),
             is_a_clone,
             hide: HideStatus::Show,
-        };
-
-        for costume in &target.costumes {
-            match images.get(&costume.md5ext) {
-                Some(file) => runtime.load_costume(file).await?,
-                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
-            }
-        }
-
-        Ok(runtime)
+        })
     }
 
     pub fn redraw(&mut self, context: &CanvasContext) -> Result<()> {
@@ -69,14 +75,14 @@ impl SpriteRuntime {
 
         SpriteRuntime::draw_costume(
             context,
-            &self.costumes[self.current_costume],
+            &self.costumes.get(&self.current_costume).unwrap(),
             &self.center,
             &self.scale,
         )?;
 
         if let Some(text) = &self.text.text {
             let position: CanvasCoordinate = self.center.into();
-            let size = self.costumes[self.current_costume].size;
+            let size = self.costumes.get(&self.current_costume).unwrap().size;
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
                     x: size.width as f64 / 4.0,
@@ -220,48 +226,17 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    async fn load_costume(&mut self, file: &Image) -> Result<()> {
-        let parts = js_sys::Array::new_with_length(1);
-        let arr: js_sys::Uint8Array = match file {
-            Image::SVG(b) => b.as_slice().into(),
-            Image::PNG(b) => b.as_slice().into(),
-        };
-        parts.set(0, arr.unchecked_into());
-
-        let mut properties = BlobPropertyBag::new();
-        let image_type = match file {
-            Image::SVG(_) => "image/svg+xml",
-            Image::PNG(_) => "image/png",
-        };
-        properties.type_(image_type);
-
-        let blob = Blob::new_with_u8_array_sequence_and_options(&parts, &properties)?;
-        let url = Url::create_object_url_with_blob(&blob)?;
-
-        let image = HtmlImageElement::new()?;
-        image.set_src(&url);
-        JsFuture::from(image.decode()).await?;
-
-        Url::revoke_object_url(&url)?;
-
-        self.costumes.push(Costume::new(image));
-        Ok(())
-    }
-
     pub fn need_redraw(&self) -> bool {
         self.need_redraw
     }
 
-    pub fn set_costume_index(&mut self, index: usize) -> Result<()> {
-        if index >= self.costumes.len() {
-            return Err(wrap_err!(format!(
-                "current_costume is out of range: {}",
-                self.current_costume
-            )));
+    pub fn set_costume(&mut self, name: String) -> Result<()> {
+        if !self.costumes.contains_key(&name) {
+            return Err(wrap_err!(format!("costume {} does not exist", name)));
         }
 
         self.need_redraw = true;
-        self.current_costume = index;
+        self.current_costume = name;
         Ok(())
     }
 
@@ -282,7 +257,10 @@ impl SpriteRuntime {
     pub fn rectangle(&self) -> SpriteRectangle {
         SpriteRectangle {
             center: self.center,
-            size: self.costumes[self.current_costume]
+            size: self
+                .costumes
+                .get(&self.current_costume)
+                .unwrap()
                 .size
                 .multiply(&self.scale),
         }
@@ -315,12 +293,37 @@ pub struct Costume {
 }
 
 impl Costume {
-    pub fn new(image: HtmlImageElement) -> Self {
-        let size = Size {
-            width: image.width() as f64,
-            length: image.height() as f64,
+    pub async fn new(image_file: &Image) -> Result<Self> {
+        let parts = js_sys::Array::new_with_length(1);
+        let arr: js_sys::Uint8Array = match image_file {
+            Image::SVG(b) => b.as_slice().into(),
+            Image::PNG(b) => b.as_slice().into(),
         };
-        Self { image, size }
+        parts.set(0, arr.unchecked_into());
+
+        let mut properties = BlobPropertyBag::new();
+        let image_type = match image_file {
+            Image::SVG(_) => "image/svg+xml",
+            Image::PNG(_) => "image/png",
+        };
+        properties.type_(image_type);
+
+        let blob = Blob::new_with_u8_array_sequence_and_options(&parts, &properties)?;
+        let url = Url::create_object_url_with_blob(&blob)?;
+
+        let image = HtmlImageElement::new()?;
+        image.set_src(&url);
+        JsFuture::from(image.decode()).await?;
+
+        Url::revoke_object_url(&url)?;
+
+        Ok(Self {
+            size: Size {
+                width: image.width() as f64,
+                length: image.height() as f64,
+            },
+            image,
+        })
     }
 }
 

@@ -508,14 +508,16 @@ impl Block for SetSizeTo {
 #[derive(Debug)]
 pub struct SwitchCostumeTo {
     id: BlockID,
+    runtime: Runtime,
     next: Option<BlockID>,
     costume: Box<dyn Block>,
 }
 
 impl SwitchCostumeTo {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
+            runtime,
             next: None,
             costume: Box::new(EmptyInput {}),
         }
@@ -550,6 +552,16 @@ impl Block for SwitchCostumeTo {
         if key == "next" {
             self.next = Some(block);
         }
+    }
+
+    async fn execute(&mut self) -> Next {
+        let costume_name = value_to_string(self.costume.value().await?);
+        self.runtime
+            .sprite
+            .write()
+            .await
+            .set_costume(costume_name)?;
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -599,5 +611,9 @@ impl Block for Costume {
             self.name = get_field_value(field, 0)?.to_string();
         }
         Ok(())
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(self.name.clone().into())
     }
 }
