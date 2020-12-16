@@ -390,8 +390,8 @@ impl Block for SetEffectTo {
     }
 
     async fn execute(&mut self) -> Next {
-        let mut runtime = self.runtime.sprite.write().await;
         let value = value_to_float(&self.value.value().await?)?;
+        let mut runtime = self.runtime.sprite.write().await;
         match self.effect {
             Effect::Ghost => runtime.set_transparency((100.0 - value) / 100.0),
             _ => unimplemented!(),
@@ -484,12 +484,21 @@ impl Block for NextCostume {
 #[derive(Debug)]
 pub struct ChangeEffectBy {
     id: BlockID,
+    runtime: Runtime,
     next: Option<BlockID>,
+    effect: Effect,
+    change: Box<dyn Block>,
 }
 
 impl ChangeEffectBy {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            effect: Effect::Color,
+            change: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -505,16 +514,43 @@ impl Block for ChangeEffectBy {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![],
-            vec![],
+            vec![("effect", self.effect.to_string())],
+            vec![("change", &self.change)],
             vec![("next", &self.next)],
         )
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "CHANGE" {
+            self.change = block;
+        }
     }
 
     fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
             self.next = Some(block);
         }
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "EFFECT" {
+            self.effect = Effect::from_str(get_field_value(field, 0)?)?;
+        }
+        Ok(())
+    }
+
+    async fn execute(&mut self) -> Next {
+        let value = value_to_float(&self.change.value().await?)?;
+        let mut runtime = self.runtime.sprite.write().await;
+        match self.effect {
+            Effect::Ghost => {
+                let current_transparency = runtime.transparency();
+                runtime.set_transparency(current_transparency - value / 100.0);
+            }
+            _ => unimplemented!(),
+        }
+
+        Next::continue_(self.next.clone())
     }
 }
 
