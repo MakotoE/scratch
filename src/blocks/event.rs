@@ -304,9 +304,9 @@ impl Block for WhenThisSpriteClicked {
     }
 
     async fn execute(&mut self) -> Next {
+        let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
-            let msg = self.runtime.global.broadcaster.subscribe().recv().await?;
-            if let BroadcastMsg::Click(c) = msg {
+            if let BroadcastMsg::Click(c) = channel.recv().await? {
                 if self
                     .runtime
                     .sprite

@@ -189,10 +189,9 @@ impl Block for TouchingObject {
                     .send(BroadcastMsg::RequestMousePosition)?;
 
                 let canvas_rectangle: CanvasRectangle = rectangle.into();
+                let mut channel = self.runtime.global.broadcaster.subscribe();
                 loop {
-                    if let BroadcastMsg::MousePosition(position) =
-                        self.runtime.global.broadcaster.subscribe().recv().await?
-                    {
+                    if let BroadcastMsg::MousePosition(position) = channel.recv().await? {
                         return Ok(canvas_rectangle.contains(&position).into());
                     }
                 }
@@ -207,9 +206,10 @@ impl Block for TouchingObject {
                 let msg = BroadcastMsg::RequestSpriteRectangle(id);
                 self.runtime.global.broadcaster.send(msg)?;
 
+                let mut channel = self.runtime.global.broadcaster.subscribe();
                 loop {
                     if let BroadcastMsg::SpriteRectangle { sprite, rectangle } =
-                        self.runtime.global.broadcaster.subscribe().recv().await?
+                        channel.recv().await?
                     {
                         if sprite == id {
                             return Ok(current_rectangle.intersects(&rectangle).into());
