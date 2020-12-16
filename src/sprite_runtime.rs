@@ -16,8 +16,7 @@ pub struct SpriteRuntime {
     need_redraw: bool,
     center: SpriteCoordinate,
     scale: Scale,
-    costumes: HashMap<String, Costume>,
-    current_costume: String,
+    costumes: Costumes,
     /// 0.0 = transparent, 1.0 = opaque
     costume_transparency: f64,
     text: Text,
@@ -32,17 +31,6 @@ impl SpriteRuntime {
         images: &HashMap<String, Image>,
         is_a_clone: bool,
     ) -> Result<Self> {
-        let mut costumes: HashMap<String, Costume> = HashMap::new();
-
-        for costume in &target.costumes {
-            match images.get(&costume.md5ext) {
-                Some(file) => {
-                    costumes.insert(costume.name.clone(), Costume::new(file).await?);
-                }
-                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
-            }
-        }
-
         Ok(Self {
             need_redraw: true,
             center: SpriteCoordinate {
@@ -50,12 +38,7 @@ impl SpriteRuntime {
                 y: target.y,
             },
             scale: Scale { x: 1.0, y: 1.0 },
-            costumes,
-            current_costume: target
-                .costumes
-                .get(0)
-                .map(|c| c.name.clone())
-                .unwrap_or_default(),
+            costumes: Costumes::new(&target.costumes, images).await?,
             costume_transparency: 1.0,
             text: Text {
                 id: BlockID::default(),
@@ -78,7 +61,7 @@ impl SpriteRuntime {
 
         SpriteRuntime::draw_costume(
             context,
-            &self.costumes.get(&self.current_costume).unwrap(),
+            self.costumes.current_costume(),
             &self.center,
             &self.scale,
             self.costume_transparency,
@@ -86,7 +69,7 @@ impl SpriteRuntime {
 
         if let Some(text) = &self.text.text {
             let position: CanvasCoordinate = self.center.into();
-            let size = self.costumes.get(&self.current_costume).unwrap().size;
+            let size = self.costumes.current_costume().size;
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
                     x: size.width as f64 / 4.0,
@@ -238,13 +221,8 @@ impl SpriteRuntime {
     }
 
     pub fn set_costume(&mut self, name: String) -> Result<()> {
-        if !self.costumes.contains_key(&name) {
-            return Err(wrap_err!(format!("costume {} does not exist", name)));
-        }
-
         self.need_redraw = true;
-        self.current_costume = name;
-        Ok(())
+        self.costumes.set_current_costume(name)
     }
 
     pub fn say(&mut self, text: Text) {
@@ -264,12 +242,7 @@ impl SpriteRuntime {
     pub fn rectangle(&self) -> SpriteRectangle {
         SpriteRectangle {
             center: self.center,
-            size: self
-                .costumes
-                .get(&self.current_costume)
-                .unwrap()
-                .size
-                .multiply(&self.scale),
+            size: self.costumes.current_costume().size.multiply(&self.scale),
         }
     }
 
@@ -340,6 +313,52 @@ impl Costume {
             },
             image,
         })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Costumes {
+    costumes: HashMap<String, Costume>,
+    current_costume: String,
+}
+
+impl Costumes {
+    async fn new(
+        costume_data: &[savefile::Costume],
+        images: &HashMap<String, Image>,
+    ) -> Result<Self> {
+        let mut costumes: HashMap<String, Costume> = HashMap::with_capacity(costume_data.len());
+        for costume in costume_data {
+            match images.get(&costume.md5ext) {
+                Some(file) => {
+                    costumes.insert(costume.name.clone(), Costume::new(file).await?);
+                }
+                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
+            }
+        }
+        Ok(Self {
+            costumes,
+            current_costume: costume_data
+                .get(0)
+                .map(|c| c.name.clone())
+                .unwrap_or_default(),
+        })
+    }
+
+    fn current_costume(&self) -> &Costume {
+        self.costumes.get(&self.current_costume).unwrap()
+    }
+
+    fn set_current_costume(&mut self, current_costume: String) -> Result<()> {
+        if !self.costumes.contains_key(&current_costume) {
+            return Err(wrap_err!(format!(
+                "costume {} does not exist",
+                current_costume
+            )));
+        }
+
+        self.current_costume = current_costume;
+        Ok(())
     }
 }
 
