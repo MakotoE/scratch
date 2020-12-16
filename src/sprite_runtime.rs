@@ -220,9 +220,8 @@ impl SpriteRuntime {
         self.need_redraw
     }
 
-    pub fn set_costume(&mut self, name: String) -> Result<()> {
-        self.need_redraw = true;
-        self.costumes.set_current_costume(name)
+    pub fn costumes(&mut self) -> &mut Costumes {
+        &mut self.costumes
     }
 
     pub fn say(&mut self, text: Text) {
@@ -279,10 +278,11 @@ impl SpriteRuntime {
 pub struct Costume {
     image: HtmlImageElement,
     size: Size,
+    name: String,
 }
 
 impl Costume {
-    pub async fn new(image_file: &Image) -> Result<Self> {
+    pub async fn new(name: String, image_file: &Image) -> Result<Self> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = match image_file {
             Image::SVG(b) => b.as_slice().into(),
@@ -312,14 +312,15 @@ impl Costume {
                 length: image.height() as f64,
             },
             image,
+            name,
         })
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Costumes {
-    costumes: HashMap<String, Costume>,
-    current_costume: String,
+    costumes: Vec<Costume>,
+    current_costume: usize,
 }
 
 impl Costumes {
@@ -327,38 +328,44 @@ impl Costumes {
         costume_data: &[savefile::Costume],
         images: &HashMap<String, Image>,
     ) -> Result<Self> {
-        let mut costumes: HashMap<String, Costume> = HashMap::with_capacity(costume_data.len());
+        let mut costumes: Vec<Costume> = Vec::with_capacity(costume_data.len());
         for costume in costume_data {
             match images.get(&costume.md5ext) {
                 Some(file) => {
-                    costumes.insert(costume.name.clone(), Costume::new(file).await?);
+                    costumes.push(Costume::new(costume.name.clone(), file).await?);
                 }
                 None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
             }
         }
         Ok(Self {
             costumes,
-            current_costume: costume_data
-                .get(0)
-                .map(|c| c.name.clone())
-                .unwrap_or_default(),
+            current_costume: 0,
         })
     }
 
     fn current_costume(&self) -> &Costume {
-        self.costumes.get(&self.current_costume).unwrap()
+        &self.costumes[self.current_costume]
     }
 
-    fn set_current_costume(&mut self, current_costume: String) -> Result<()> {
-        if !self.costumes.contains_key(&current_costume) {
-            return Err(wrap_err!(format!(
+    pub fn set_current_costume(&mut self, current_costume: String) -> Result<()> {
+        match self
+            .costumes
+            .iter()
+            .position(|costume| costume.name == current_costume)
+        {
+            Some(n) => {
+                self.current_costume = n;
+                Ok(())
+            }
+            None => Err(wrap_err!(format!(
                 "costume {} does not exist",
                 current_costume
-            )));
+            ))),
         }
+    }
 
-        self.current_costume = current_costume;
-        Ok(())
+    pub fn next_costume(&mut self) {
+        self.current_costume = (self.current_costume + 1) % self.costumes.len();
     }
 }
 

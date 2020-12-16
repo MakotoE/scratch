@@ -447,12 +447,17 @@ impl Display for Effect {
 #[derive(Debug)]
 pub struct NextCostume {
     id: BlockID,
+    runtime: Runtime,
     next: Option<BlockID>,
 }
 
 impl NextCostume {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+        }
     }
 }
 
@@ -478,6 +483,11 @@ impl Block for NextCostume {
         if key == "next" {
             self.next = Some(block);
         }
+    }
+
+    async fn execute(&mut self) -> Next {
+        self.runtime.sprite.write().await.costumes().next_costume();
+        Next::continue_(self.next.clone())
     }
 }
 
@@ -671,7 +681,8 @@ impl Block for SwitchCostumeTo {
             .sprite
             .write()
             .await
-            .set_costume(costume_name)?;
+            .costumes()
+            .set_current_costume(costume_name)?;
         Next::continue_(self.next.clone())
     }
 }
