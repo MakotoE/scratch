@@ -145,6 +145,10 @@ impl<'a> CanvasContext<'a> {
     pub fn clear(&self) {
         self.context.clear_rect(0.0, 0.0, 480.0, 360.0);
     }
+
+    pub fn set_global_alpha(&self, value: f64) {
+        self.context.set_global_alpha(value)
+    }
 }
 
 #[derive(Debug, Copy, Clone)]

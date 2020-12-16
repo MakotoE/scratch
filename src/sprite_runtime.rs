@@ -18,6 +18,8 @@ pub struct SpriteRuntime {
     scale: Scale,
     costumes: HashMap<String, Costume>,
     current_costume: String,
+    /// 0.0 = transparent, 1.0 = opaque
+    costume_transparency: f64,
     text: Text,
     pen: Pen,
     hide: HideStatus,
@@ -54,6 +56,7 @@ impl SpriteRuntime {
                 .get(0)
                 .map(|c| c.name.clone())
                 .unwrap_or_default(),
+            costume_transparency: 1.0,
             text: Text {
                 id: BlockID::default(),
                 text: None,
@@ -78,6 +81,7 @@ impl SpriteRuntime {
             &self.costumes.get(&self.current_costume).unwrap(),
             &self.center,
             &self.scale,
+            self.costume_transparency,
         )?;
 
         if let Some(text) = &self.text.text {
@@ -99,6 +103,7 @@ impl SpriteRuntime {
         costume: &Costume,
         center: &SpriteCoordinate,
         scale: &Scale,
+        alpha: f64,
     ) -> Result<()> {
         let size = costume.size.multiply(scale);
         let rectangle = CanvasRectangle {
@@ -108,7 +113,9 @@ impl SpriteRuntime {
             }),
             size,
         };
+        context.set_global_alpha(alpha);
         context.draw_image(&costume.image, &rectangle)?;
+        context.set_global_alpha(1.0);
         Ok(())
     }
 
@@ -283,6 +290,15 @@ impl SpriteRuntime {
 
     pub fn set_hide(&mut self, hide: HideStatus) {
         self.hide = hide;
+    }
+
+    pub fn transparency(&self) -> f64 {
+        self.costume_transparency
+    }
+
+    /// 0.0 = transparent, 1.0 = opaque
+    pub fn set_transparency(&mut self, transparency: f64) {
+        self.costume_transparency = transparency;
     }
 }
 

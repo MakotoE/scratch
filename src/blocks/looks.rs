@@ -1,12 +1,11 @@
-use std::str::FromStr;
-
-use gloo_timers::future::TimeoutFuture;
-
+use super::*;
 use crate::broadcaster::{BroadcastMsg, LayerChange};
 use crate::coordinate::Scale;
 use crate::sprite_runtime::{HideStatus, Text};
-
-use super::*;
+use gloo_timers::future::TimeoutFuture;
+use std::fmt::Display;
+use std::str::FromStr;
+use wasm_bindgen::__rt::core::fmt::Formatter;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -335,12 +334,21 @@ impl Block for Show {
 #[derive(Debug)]
 pub struct SetEffectTo {
     id: BlockID,
+    runtime: Runtime,
     next: Option<BlockID>,
+    effect: Effect,
+    value: Box<dyn Block>,
 }
 
 impl SetEffectTo {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            effect: Effect::Color,
+            value: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -356,16 +364,83 @@ impl Block for SetEffectTo {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![],
-            vec![],
+            vec![("effect", self.effect.to_string())],
+            vec![("value", &self.value)],
             vec![("next", &self.next)],
         )
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "VALUE" {
+            self.value = block;
+        }
     }
 
     fn set_substack(&mut self, key: &str, block: BlockID) {
         if key == "next" {
             self.next = Some(block);
         }
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "EFFECT" {
+            self.effect = Effect::from_str(get_field_value(field, 0)?)?;
+        }
+        Ok(())
+    }
+
+    async fn execute(&mut self) -> Next {
+        let mut runtime = self.runtime.sprite.write().await;
+        let value = value_to_float(&self.value.value().await?)?;
+        match self.effect {
+            Effect::Ghost => runtime.set_transparency((100.0 - value) / 100.0),
+            _ => unimplemented!(),
+        }
+
+        Next::continue_(self.next.clone())
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+enum Effect {
+    Color,
+    Fisheye,
+    Whirl,
+    Pixelate,
+    Mosaic,
+    Brightness,
+    Ghost,
+}
+
+impl FromStr for Effect {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s.to_ascii_lowercase().as_str() {
+            "color" => Self::Color,
+            "fisheye" => Self::Fisheye,
+            "whirl" => Self::Whirl,
+            "pixelate" => Self::Pixelate,
+            "mosaic" => Self::Mosaic,
+            "brightness" => Self::Brightness,
+            "ghost" => Self::Ghost,
+            _ => return Err(wrap_err!(format!("s is invalid: {}", s))),
+        })
+    }
+}
+
+impl Display for Effect {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Effect::Color => "color",
+            Effect::Fisheye => "fisheye",
+            Effect::Whirl => "whirl",
+            Effect::Pixelate => "pixelate",
+            Effect::Mosaic => "mosaic",
+            Effect::Brightness => "brightness",
+            Effect::Ghost => "ghost",
+        };
+        f.write_str(s)
     }
 }
 
