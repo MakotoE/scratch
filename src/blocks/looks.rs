@@ -509,11 +509,16 @@ impl Block for SetSizeTo {
 pub struct SwitchCostumeTo {
     id: BlockID,
     next: Option<BlockID>,
+    costume: Box<dyn Block>,
 }
 
 impl SwitchCostumeTo {
     pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+        Self {
+            id,
+            next: None,
+            costume: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -530,9 +535,15 @@ impl Block for SwitchCostumeTo {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![],
+            vec![("costume", &self.costume)],
             vec![("next", &self.next)],
         )
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "COSTUME" {
+            self.costume = block;
+        }
     }
 
     fn set_substack(&mut self, key: &str, block: BlockID) {
@@ -546,11 +557,16 @@ impl Block for SwitchCostumeTo {
 pub struct Costume {
     id: BlockID,
     next: Option<BlockID>,
+    name: String,
 }
 
 impl Costume {
     pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id, next: None }
+        Self {
+            id,
+            next: None,
+            name: String::new(),
+        }
     }
 }
 
@@ -566,7 +582,7 @@ impl Block for Costume {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![],
+            vec![("name", self.name.clone())],
             vec![],
             vec![("next", &self.next)],
         )
@@ -576,5 +592,12 @@ impl Block for Costume {
         if key == "next" {
             self.next = Some(block);
         }
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "COSTUME" {
+            self.name = get_field_value(field, 0)?.to_string();
+        }
+        Ok(())
     }
 }
