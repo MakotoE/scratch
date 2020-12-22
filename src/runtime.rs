@@ -3,7 +3,7 @@ use crate::blocks::value_to_string;
 use crate::broadcaster::Broadcaster;
 use crate::canvas::{CanvasContext, Corner, Direction};
 use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation};
-use crate::savefile::Monitor;
+use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
 use crate::vm::ThreadID;
 use serde_json::Value;
@@ -36,7 +36,7 @@ pub struct Global {
 
 impl Global {
     pub fn new(
-        scratch_file_variables: &HashMap<String, savefile::Variable>,
+        scratch_file_variables: &HashMap<String, file::Variable>,
         monitors: &[Monitor],
     ) -> Self {
         Self {
@@ -192,10 +192,7 @@ pub struct Variables {
 }
 
 impl Variables {
-    fn new(
-        scratch_file_variables: &HashMap<String, savefile::Variable>,
-        monitors: &[Monitor],
-    ) -> Self {
+    fn new(scratch_file_variables: &HashMap<String, file::Variable>, monitors: &[Monitor]) -> Self {
         let mut variables: HashMap<String, Variable> = HashMap::new();
         for (key, v) in scratch_file_variables {
             let monitor = monitors.iter().find(|m| &m.id == key);

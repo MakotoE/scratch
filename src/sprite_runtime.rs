@@ -4,8 +4,8 @@ use crate::coordinate::{
     CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle, Transformation,
 };
 use crate::coordinate::{CanvasRectangle, Scale};
+use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
-use crate::savefile::{BlockID, Image, Target};
 use palette::IntoColor;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
@@ -324,10 +324,7 @@ pub struct Costumes {
 }
 
 impl Costumes {
-    async fn new(
-        costume_data: &[savefile::Costume],
-        images: &HashMap<String, Image>,
-    ) -> Result<Self> {
+    async fn new(costume_data: &[file::Costume], images: &HashMap<String, Image>) -> Result<Self> {
         let mut costumes: Vec<Costume> = Vec::with_capacity(costume_data.len());
         for costume in costume_data {
             match images.get(&costume.md5ext) {

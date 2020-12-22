@@ -1,7 +1,7 @@
 use super::*;
 use crate::blocks::{block_tree, Block, BlockInfo, BlockInputsPartial, Next};
+use crate::file::BlockID;
 use crate::runtime::Runtime;
-use crate::savefile::BlockID;
 
 #[derive(Debug)]
 pub struct Thread {
@@ -15,7 +15,7 @@ impl Thread {
     pub fn start(
         hat: BlockID,
         runtime: Runtime,
-        file_blocks: &HashMap<BlockID, savefile::Block>,
+        file_blocks: &HashMap<BlockID, file::Block>,
     ) -> Result<Self> {
         let (_, blocks) = match block_tree(hat, runtime, file_blocks) {
             Ok(b) => b,

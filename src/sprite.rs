@@ -2,8 +2,8 @@ use super::*;
 use crate::blocks::*;
 use crate::canvas::CanvasContext;
 use crate::coordinate::SpriteRectangle;
+use crate::file::{BlockID, Image, Target};
 use crate::runtime::{Global, Runtime};
-use crate::savefile::{BlockID, Image, Target};
 use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
@@ -112,7 +112,7 @@ impl Sprite {
     }
 }
 
-pub fn find_hats(block_infos: &HashMap<BlockID, savefile::Block>) -> Vec<BlockID> {
+pub fn find_hats(block_infos: &HashMap<BlockID, file::Block>) -> Vec<BlockID> {
     let mut hats: Vec<BlockID> = Vec::new();
     for (id, block_info) in block_infos {
         // Blocks without event watcher (has rounded top in editor) are ignored

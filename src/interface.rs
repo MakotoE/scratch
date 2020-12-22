@@ -1,8 +1,8 @@
 use super::*;
 use crate::blocks::BlockInfo;
 use crate::coordinate::CanvasCoordinate;
+use crate::file::ScratchFile;
 use crate::fileinput::FileInput;
-use crate::savefile::ScratchFile;
 use crate::sprite::SpriteID;
 use crate::vm::{DebugInfo, VM};
 use tokio::sync::mpsc;

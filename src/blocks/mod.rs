@@ -10,13 +10,13 @@ mod sound;
 mod value;
 
 use super::*;
+use crate::file::BlockID;
 use crate::runtime::Runtime;
-use crate::savefile::BlockID;
 use async_trait::async_trait;
 use serde_json::Value;
 use std::convert::TryInto;
 
-fn get_block(id: BlockID, runtime: Runtime, info: &savefile::Block) -> Result<Box<dyn Block>> {
+fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
         Some(s) => s,
         None => {
@@ -177,7 +177,7 @@ impl BlockInputsPartial {
 pub fn block_tree(
     top_block_id: BlockID,
     runtime: Runtime,
-    infos: &HashMap<BlockID, savefile::Block>,
+    infos: &HashMap<BlockID, file::Block>,
 ) -> Result<(BlockID, HashMap<BlockID, Box<dyn Block>>)> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,

@@ -1,4 +1,4 @@
-use crate::savefile::BlockID;
+use crate::file::BlockID;
 
 use super::*;
 
