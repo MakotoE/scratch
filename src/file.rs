@@ -145,13 +145,27 @@ where
     value.to_string().hash(state)
 }
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Costume {
     pub name: String,
     pub md5ext: String,
     pub rotation_center_x: f64,
     pub rotation_center_y: f64,
+    #[serde(default)]
+    pub bitmap_resolution: f64,
+}
+
+impl Default for Costume {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            md5ext: String::new(),
+            rotation_center_x: 0.0,
+            rotation_center_y: 0.0,
+            bitmap_resolution: 1.0,
+        }
+    }
 }
 
 impl Hash for Costume {

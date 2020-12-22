@@ -285,7 +285,7 @@ pub struct Costume {
 }
 
 impl Costume {
-    pub async fn new(name: String, image_file: &Image) -> Result<Self> {
+    pub async fn new(costume: &file::Costume, image_file: &Image) -> Result<Self> {
         let parts = js_sys::Array::new_with_length(1);
         let arr: js_sys::Uint8Array = match image_file {
             Image::SVG(b) => b.as_slice().into(),
@@ -311,11 +311,11 @@ impl Costume {
 
         Ok(Self {
             size: Size {
-                width: image.width() as f64,
-                height: image.height() as f64,
+                width: image.width() as f64 / costume.bitmap_resolution,
+                height: image.height() as f64 / costume.bitmap_resolution,
             },
             image,
-            name,
+            name: costume.name.clone(),
         })
     }
 }
@@ -332,7 +332,7 @@ impl Costumes {
         for costume in costume_data {
             match images.get(&costume.md5ext) {
                 Some(file) => {
-                    costumes.push(Costume::new(costume.name.clone(), file).await?);
+                    costumes.push(Costume::new(&costume, file).await?);
                 }
                 None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
             }
