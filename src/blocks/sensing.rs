@@ -2,6 +2,7 @@ use super::*;
 use crate::broadcaster::BroadcastMsg;
 use crate::coordinate::CanvasRectangle;
 use crate::sprite::SpriteID;
+use gloo_timers::future::TimeoutFuture;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -179,16 +180,17 @@ impl Block for TouchingObject {
             None => return Err(wrap_err!("menu value is not string")),
         };
 
-        let rectangle = self.runtime.sprite.read().await.rectangle();
+        let sprite_rectangle = self.runtime.sprite.read().await.rectangle();
 
         match option {
             TouchingObjectOption::MousePointer => {
+                TimeoutFuture::new(0).await; // Prevents unresponsiveness
                 self.runtime
                     .global
                     .broadcaster
                     .send(BroadcastMsg::RequestMousePosition)?;
 
-                let canvas_rectangle: CanvasRectangle = rectangle.into();
+                let canvas_rectangle: CanvasRectangle = sprite_rectangle.into();
                 let mut channel = self.runtime.global.broadcaster.subscribe();
                 loop {
                     if let BroadcastMsg::MousePosition(position) = channel.recv().await? {
@@ -197,11 +199,9 @@ impl Block for TouchingObject {
                 }
             }
             TouchingObjectOption::Edge => {
-                return Ok(TouchingObject::sprite_on_edge(&rectangle.into()).into())
+                return Ok(TouchingObject::sprite_on_edge(&sprite_rectangle.into()).into())
             }
             TouchingObjectOption::Sprite(sprite_name) => {
-                let current_rectangle = self.runtime.sprite.read().await.rectangle();
-
                 let id = SpriteID::from_sprite_name(&sprite_name);
                 let msg = BroadcastMsg::RequestSpriteRectangle(id);
                 self.runtime.global.broadcaster.send(msg)?;
@@ -212,7 +212,7 @@ impl Block for TouchingObject {
                         channel.recv().await?
                     {
                         if sprite == id {
-                            return Ok(current_rectangle.intersects(&rectangle).into());
+                            return Ok(sprite_rectangle.intersects(&rectangle).into());
                         }
                     }
                 }

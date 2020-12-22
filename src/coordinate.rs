@@ -1,6 +1,6 @@
 /// Center = 0, 0
 /// Left = -240, right = +240
-/// Top = -180, bottom = +180
+/// Top = +180, bottom = -180
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SpriteCoordinate {
     pub x: f64,
@@ -118,14 +118,14 @@ impl SpriteRectangle {
     fn top_left(&self) -> SpriteCoordinate {
         self.center.add(&SpriteCoordinate {
             x: self.size.width / -2.0,
-            y: self.size.length / -2.0,
+            y: self.size.length / 2.0,
         })
     }
 
     fn bottom_right(&self) -> SpriteCoordinate {
         self.center.add(&SpriteCoordinate {
             x: self.size.width / 2.0,
-            y: self.size.length / 2.0,
+            y: self.size.length / -2.0,
         })
     }
 
@@ -181,7 +181,7 @@ impl CanvasRectangle {
 impl From<SpriteRectangle> for CanvasRectangle {
     fn from(s: SpriteRectangle) -> Self {
         Self {
-            top_left: s.center.into(),
+            top_left: s.top_left().into(),
             size: s.size,
         }
     }
