@@ -37,7 +37,10 @@ impl SpriteRuntime {
                 x: target.x,
                 y: target.y,
             },
-            scale: Scale { x: 1.0, y: 1.0 },
+            scale: Scale {
+                x: target.size / 100.0,
+                y: target.size / 100.0,
+            },
             costumes: Costumes::new(&target.costumes, images).await?,
             costume_transparency: 1.0,
             text: Text {
