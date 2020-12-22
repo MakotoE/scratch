@@ -67,14 +67,14 @@ impl From<SpriteCoordinate> for CanvasCoordinate {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Size {
     pub width: f64,
-    pub length: f64,
+    pub height: f64,
 }
 
 impl Size {
     pub fn multiply(&self, scale: &Scale) -> Self {
         Self {
             width: self.width * scale.x,
-            length: self.length * scale.y,
+            height: self.height * scale.y,
         }
     }
 }
@@ -112,20 +112,20 @@ impl SpriteRectangle {
         coordinate.x >= top_left.x
             && coordinate.y >= top_left.y
             && coordinate.x <= top_left.x + self.size.width
-            && coordinate.y <= top_left.y + self.size.length
+            && coordinate.y <= top_left.y + self.size.height
     }
 
     fn top_left(&self) -> SpriteCoordinate {
         self.center.add(&SpriteCoordinate {
             x: self.size.width / -2.0,
-            y: self.size.length / 2.0,
+            y: self.size.height / 2.0,
         })
     }
 
     fn bottom_right(&self) -> SpriteCoordinate {
         self.center.add(&SpriteCoordinate {
             x: self.size.width / 2.0,
-            y: self.size.length / -2.0,
+            y: self.size.height / -2.0,
         })
     }
 
@@ -174,7 +174,7 @@ impl CanvasRectangle {
         coordinate.x >= self.top_left.x
             && coordinate.y >= self.top_left.y
             && coordinate.x <= self.top_left.x + self.size.width
-            && coordinate.y <= self.top_left.y + self.size.length
+            && coordinate.y <= self.top_left.y + self.size.height
     }
 }
 
@@ -276,7 +276,7 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 0.0,
-                            length: 0.0,
+                            height: 0.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
@@ -287,7 +287,7 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 1.0,
-                            length: 1.0,
+                            height: 1.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: 0.0, y: 0.0 },
@@ -298,7 +298,7 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 2.0,
-                            length: 2.0,
+                            height: 2.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
@@ -309,7 +309,7 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 1.0,
-                            length: 1.0,
+                            height: 1.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: 1.0, y: 1.0 },
@@ -320,7 +320,7 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 1.0,
-                            length: 1.0,
+                            height: 1.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: -1.0, y: -1.0 },
@@ -331,7 +331,7 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 1.0,
-                            length: 1.0,
+                            height: 1.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: -2.0, y: 0.0 },
@@ -342,7 +342,7 @@ mod tests {
                         center: SpriteCoordinate { x: 1.0, y: 1.0 },
                         size: Size {
                             width: 1.0,
-                            length: 1.0,
+                            height: 1.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: 1.0, y: 0.0 },
@@ -353,7 +353,7 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 1.0,
-                            length: 1.0,
+                            height: 1.0,
                         },
                     },
                     coordinate: SpriteCoordinate { x: 1.0, y: 2.0 },
@@ -380,14 +380,14 @@ mod tests {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 0.0,
-                            length: 0.0,
+                            height: 0.0,
                         },
                     },
                     b: SpriteRectangle {
                         center: SpriteCoordinate { x: 0.0, y: 0.0 },
                         size: Size {
                             width: 0.0,
-                            length: 0.0,
+                            height: 0.0,
                         },
                     },
                     expected: true,
@@ -397,14 +397,14 @@ mod tests {
                         center: SpriteCoordinate { x: 1.0, y: 1.0 },
                         size: Size {
                             width: 2.0,
-                            length: 2.0,
+                            height: 2.0,
                         },
                     },
                     b: SpriteRectangle {
                         center: SpriteCoordinate { x: 1.0, y: 1.0 },
                         size: Size {
                             width: 2.0,
-                            length: 2.0,
+                            height: 2.0,
                         },
                     },
                     expected: true,
@@ -414,14 +414,14 @@ mod tests {
                         center: SpriteCoordinate { x: 1.0, y: 1.0 },
                         size: Size {
                             width: 2.0,
-                            length: 2.0,
+                            height: 2.0,
                         },
                     },
                     b: SpriteRectangle {
                         center: SpriteCoordinate { x: 2.0, y: 2.0 },
                         size: Size {
                             width: 2.0,
-                            length: 2.0,
+                            height: 2.0,
                         },
                     },
                     expected: true,

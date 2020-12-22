@@ -146,7 +146,7 @@ impl TouchingObject {
         rectangle.top_left.x < 0.0
             || rectangle.top_left.y < 0.0
             || rectangle.top_left.x + rectangle.size.width > 460.0
-            || rectangle.top_left.y + rectangle.size.length > 180.0
+            || rectangle.top_left.y + rectangle.size.height > 180.0
     }
 }
 

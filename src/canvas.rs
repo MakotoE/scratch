@@ -138,7 +138,7 @@ impl<'a> CanvasContext<'a> {
                 rectangle.top_left.x,
                 rectangle.top_left.y,
                 rectangle.size.width,
-                rectangle.size.length,
+                rectangle.size.height,
             )?)
     }
 

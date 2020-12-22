@@ -73,7 +73,7 @@ impl SpriteRuntime {
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
                     x: size.width as f64 / 4.0,
-                    y: -50.0 - size.length as f64 / 2.0,
+                    y: -50.0 - size.height as f64 / 2.0,
                 },
             )));
             SpriteRuntime::draw_text_bubble(&context, text)?;
@@ -92,7 +92,7 @@ impl SpriteRuntime {
         let rectangle = CanvasRectangle {
             top_left: CanvasCoordinate::from(*center).add(&CanvasCoordinate {
                 x: size.width / -2.0,
-                y: size.length / -2.0,
+                y: size.height / -2.0,
             }),
             size,
         };
@@ -309,7 +309,7 @@ impl Costume {
         Ok(Self {
             size: Size {
                 width: image.width() as f64,
-                length: image.height() as f64,
+                height: image.height() as f64,
             },
             image,
             name,

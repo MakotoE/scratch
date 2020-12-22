@@ -86,7 +86,7 @@ impl Global {
                 top_left: *position,
                 size: Size {
                     width: name_width + orange_rectangle_width + 24.0,
-                    length: 20.0,
+                    height: 20.0,
                 },
             },
             3.5,
@@ -114,7 +114,7 @@ impl Global {
                 top_left: orange_position,
                 size: Size {
                     width: orange_rectangle_width,
-                    length: 14.0,
+                    height: 14.0,
                 },
             },
             3.5,
@@ -157,7 +157,7 @@ impl Global {
         context.rounded_corner(
             &CanvasCoordinate {
                 x: rectangle.size.width - corner_radius,
-                y: rectangle.size.length - corner_radius,
+                y: rectangle.size.height - corner_radius,
             },
             corner_radius,
             Corner::BottomRight,
@@ -166,7 +166,7 @@ impl Global {
         context.rounded_corner(
             &CanvasCoordinate {
                 x: corner_radius,
-                y: rectangle.size.length - corner_radius,
+                y: rectangle.size.height - corner_radius,
             },
             corner_radius,
             Corner::BottomLeft,
