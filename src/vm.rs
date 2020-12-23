@@ -101,7 +101,7 @@ impl VM {
         let images = Rc::new(scratch_file.images.clone());
 
         let mut futures = FuturesUnordered::new();
-        for target in &scratch_file.project.targets[1..] {
+        for target in &scratch_file.project.targets {
             futures.push(Sprite::new(
                 global.clone(),
                 Rc::new(target.clone()),
@@ -111,7 +111,7 @@ impl VM {
         }
 
         let mut sprites: HashMap<SpriteID, Sprite> =
-            HashMap::with_capacity(scratch_file.project.targets.len() - 1);
+            HashMap::with_capacity(scratch_file.project.targets.len());
         loop {
             match futures.next().await {
                 Some(r) => {
