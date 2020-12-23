@@ -149,7 +149,8 @@ where
 #[serde(rename_all = "camelCase")]
 pub struct Costume {
     pub name: String,
-    pub md5ext: String,
+    pub md5ext: Option<String>,
+    pub asset_id: String,
     pub rotation_center_x: f64,
     pub rotation_center_y: f64,
     #[serde(default)]
@@ -160,7 +161,8 @@ impl Default for Costume {
     fn default() -> Self {
         Self {
             name: String::new(),
-            md5ext: String::new(),
+            md5ext: None,
+            asset_id: String::new(),
             rotation_center_x: 0.0,
             rotation_center_y: 0.0,
             bitmap_resolution: 1.0,

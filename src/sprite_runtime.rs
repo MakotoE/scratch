@@ -318,6 +318,17 @@ impl Costume {
             name: costume.name.clone(),
         })
     }
+
+    pub fn new_blank(costume: &file::Costume) -> Result<Self> {
+        Ok(Self {
+            size: Size {
+                width: 1.0,
+                height: 1.0,
+            },
+            image: HtmlImageElement::new()?,
+            name: costume.name.clone(),
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -330,12 +341,15 @@ impl Costumes {
     async fn new(costume_data: &[file::Costume], images: &HashMap<String, Image>) -> Result<Self> {
         let mut costumes: Vec<Costume> = Vec::with_capacity(costume_data.len());
         for costume in costume_data {
-            match images.get(&costume.md5ext) {
-                Some(file) => {
-                    costumes.push(Costume::new(&costume, file).await?);
+            let costume = if let Some(md5ext) = &costume.md5ext {
+                match images.get(md5ext) {
+                    Some(file) => Costume::new(&costume, file).await?,
+                    None => return Err(wrap_err!(format!("image not found: {}", md5ext))),
                 }
-                None => return Err(wrap_err!(format!("image not found: {}", costume.md5ext))),
-            }
+            } else {
+                Costume::new_blank(&costume)?
+            };
+            costumes.push(costume);
         }
         Ok(Self {
             costumes,

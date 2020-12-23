@@ -523,13 +523,10 @@ struct DrawOrder {
 
 impl DrawOrder {
     fn new(targets: &[Target]) -> Self {
-        let mut id_layer_order: Vec<(SpriteID, usize)> = Vec::with_capacity(targets.len() - 1);
-        for target in targets {
-            // Stage has layer 0
-            if target.layer_order > 0 {
-                id_layer_order.push((SpriteID::from_sprite_name(&target.name), target.layer_order));
-            }
-        }
+        let mut id_layer_order: Vec<(SpriteID, usize)> = targets
+            .iter()
+            .map(|t| (SpriteID::from_sprite_name(&t.name), t.layer_order))
+            .collect();
 
         id_layer_order.sort_unstable_by(|a, b| a.1.cmp(&b.1));
 

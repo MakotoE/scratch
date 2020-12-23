@@ -837,6 +837,6 @@ impl Block for Backdrops {
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        Err(wrap_err!("this block does not return a value"))
+        Ok(self.backdrop.clone().into())
     }
 }
