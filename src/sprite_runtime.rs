@@ -14,7 +14,7 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 pub struct SpriteRuntime {
     is_a_clone: bool,
     need_redraw: bool,
-    center: SpriteCoordinate,
+    position: SpriteCoordinate,
     scale: Scale,
     costumes: Costumes,
     /// 0.0 = transparent, 1.0 = opaque
@@ -31,16 +31,18 @@ impl SpriteRuntime {
         images: &HashMap<String, Image>,
         is_a_clone: bool,
     ) -> Result<Self> {
+        let scale = if target.is_stage {
+            1.0
+        } else {
+            target.size / 100.0
+        };
         Ok(Self {
             need_redraw: true,
-            center: SpriteCoordinate {
+            position: SpriteCoordinate {
                 x: target.x,
                 y: target.y,
             },
-            scale: Scale {
-                x: target.size / 100.0,
-                y: target.size / 100.0,
-            },
+            scale: Scale { x: scale, y: scale },
             costumes: Costumes::new(&target.costumes, images).await?,
             costume_transparency: 1.0,
             text: Text {
@@ -65,13 +67,13 @@ impl SpriteRuntime {
         SpriteRuntime::draw_costume(
             context,
             self.costumes.current_costume(),
-            &self.center,
+            &self.position,
             &self.scale,
             self.costume_transparency,
         )?;
 
         if let Some(text) = &self.text.text {
-            let position: CanvasCoordinate = self.center.into();
+            let position: CanvasCoordinate = self.position.into();
             let size = self.costumes.current_costume().size;
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
@@ -87,18 +89,16 @@ impl SpriteRuntime {
     fn draw_costume(
         context: &CanvasContext,
         costume: &Costume,
-        center: &SpriteCoordinate,
+        position: &SpriteCoordinate,
         scale: &Scale,
         alpha: f64,
     ) -> Result<()> {
         let size = costume.size.multiply(scale);
-        let rectangle = CanvasRectangle {
-            top_left: CanvasCoordinate::from(*center).add(&CanvasCoordinate {
-                x: size.width / -2.0,
-                y: size.height / -2.0,
-            }),
-            size,
-        };
+        let top_left = CanvasCoordinate::from(*position).add(&CanvasCoordinate {
+            x: -costume.center.x,
+            y: -costume.center.y,
+        });
+        let rectangle = CanvasRectangle { top_left, size };
         context.set_global_alpha(alpha);
         context.draw_image(&costume.image, &rectangle)?;
         context.set_global_alpha(1.0);
@@ -243,18 +243,18 @@ impl SpriteRuntime {
 
     pub fn rectangle(&self) -> SpriteRectangle {
         SpriteRectangle {
-            center: self.center,
+            center: self.position,
             size: self.costumes.current_costume().size.multiply(&self.scale),
         }
     }
 
     pub fn center(&self) -> SpriteCoordinate {
-        self.center
+        self.position
     }
 
     pub fn set_center(&mut self, center: SpriteCoordinate) {
         self.need_redraw = true;
-        self.center = center;
+        self.position = center;
         self.pen().set_position(&center);
     }
 
@@ -282,6 +282,7 @@ pub struct Costume {
     image: HtmlImageElement,
     size: Size,
     name: String,
+    center: SpriteCoordinate,
 }
 
 impl Costume {
@@ -316,6 +317,10 @@ impl Costume {
             },
             image,
             name: costume.name.clone(),
+            center: SpriteCoordinate {
+                x: costume.rotation_center_x,
+                y: costume.rotation_center_y,
+            },
         })
     }
 
@@ -327,6 +332,10 @@ impl Costume {
             },
             image: HtmlImageElement::new()?,
             name: costume.name.clone(),
+            center: SpriteCoordinate {
+                x: costume.rotation_center_x,
+                y: costume.rotation_center_y,
+            },
         })
     }
 }
