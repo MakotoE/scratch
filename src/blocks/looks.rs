@@ -20,6 +20,8 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "setsizeto" => Box::new(SetSizeTo::new(id, runtime)),
         "switchcostumeto" => Box::new(SwitchCostumeTo::new(id, runtime)),
         "costume" => Box::new(Costume::new(id, runtime)),
+        "switchbackdropto" => Box::new(SwitchBackdropTo::new(id, runtime)),
+        "backdrops" => Box::new(Backdrops::new(id, runtime)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
     })
 }
@@ -737,5 +739,104 @@ impl Block for Costume {
 
     async fn value(&self) -> Result<serde_json::Value> {
         Ok(self.name.clone().into())
+    }
+}
+
+#[derive(Debug)]
+pub struct SwitchBackdropTo {
+    id: BlockID,
+    runtime: Runtime,
+    next: Option<BlockID>,
+    backdrop: Box<dyn Block>,
+}
+
+impl SwitchBackdropTo {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            next: None,
+            backdrop: Box::new(EmptyInput {}),
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for SwitchBackdropTo {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "SwitchBackdropTo",
+            id: self.id,
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("backdrop", &self.backdrop)],
+            vec![("next", &self.next)],
+        )
+    }
+
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "BACKDROP" {
+            self.backdrop = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        Next::Err(wrap_err!("this block cannot be executed"))
+    }
+}
+
+#[derive(Debug)]
+pub struct Backdrops {
+    id: BlockID,
+    backdrop: String,
+}
+
+impl Backdrops {
+    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
+        Self {
+            id,
+            backdrop: String::new(),
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for Backdrops {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Backdrops",
+            id: self.id,
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![("backdrop", self.backdrop.clone())],
+            vec![],
+            vec![],
+        )
+    }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "BACKDROP" {
+            self.backdrop = get_field_value(field, 0)?.to_string();
+        }
+        Ok(())
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Err(wrap_err!("this block does not return a value"))
     }
 }
