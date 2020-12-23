@@ -792,7 +792,14 @@ impl Block for SwitchBackdropTo {
     }
 
     async fn execute(&mut self) -> Next {
-        Next::Err(wrap_err!("this block cannot be executed"))
+        let backdrop = value_to_string(self.backdrop.value().await?);
+        self.runtime
+            .sprite
+            .write()
+            .await
+            .costumes()
+            .set_current_costume(backdrop)?;
+        Next::continue_(self.next)
     }
 }
 
