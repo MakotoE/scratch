@@ -78,7 +78,7 @@ impl SpriteRuntime {
 
         if let Some(text) = &self.text.text {
             let position: CanvasCoordinate = self.position.into();
-            let size = self.costumes.current_costume().size;
+            let size = self.costumes.current_costume().image_size;
             let context = context.with_transformation(Transformation::translate(position.add(
                 &CanvasCoordinate {
                     x: size.width as f64 / 4.0,
@@ -97,12 +97,13 @@ impl SpriteRuntime {
         scale: &Scale,
         alpha: f64,
     ) -> Result<()> {
-        let size = costume.size.multiply(scale);
-        let top_left = CanvasCoordinate::from(*position).add(&CanvasCoordinate {
-            x: -costume.center.x,
-            y: -costume.center.y,
-        });
-        let rectangle = CanvasRectangle { top_left, size };
+        let rectangle = CanvasRectangle {
+            top_left: CanvasCoordinate::from(*position).add(&CanvasCoordinate {
+                x: -costume.center.x * costume.scale * scale.x,
+                y: -costume.center.y * costume.scale * scale.y,
+            }),
+            size: costume.image_size.multiply(scale),
+        };
         context.set_global_alpha(alpha);
         context.draw_image(&costume.image, &rectangle)?;
         context.set_global_alpha(1.0);
@@ -248,7 +249,11 @@ impl SpriteRuntime {
     pub fn rectangle(&self) -> SpriteRectangle {
         SpriteRectangle {
             center: self.position,
-            size: self.costumes.current_costume().size.multiply(&self.scale),
+            size: self
+                .costumes
+                .current_costume()
+                .image_size
+                .multiply(&self.scale),
         }
     }
 
@@ -284,7 +289,8 @@ impl SpriteRuntime {
 #[derive(Debug, Clone)]
 pub struct Costume {
     image: HtmlImageElement,
-    size: Size,
+    image_size: Size,
+    scale: f64,
     name: String,
     center: SpriteCoordinate,
 }
@@ -315,11 +321,12 @@ impl Costume {
         Url::revoke_object_url(&url)?;
 
         Ok(Self {
-            size: Size {
+            image_size: Size {
                 width: image.width() as f64 / costume.bitmap_resolution,
                 height: image.height() as f64 / costume.bitmap_resolution,
             },
             image,
+            scale: 1.0 / costume.bitmap_resolution,
             name: costume.name.clone(),
             center: SpriteCoordinate {
                 x: costume.rotation_center_x,
@@ -330,7 +337,7 @@ impl Costume {
 
     pub fn new_blank(costume: &file::Costume) -> Result<Self> {
         Ok(Self {
-            size: Size {
+            image_size: Size {
                 width: 1.0,
                 height: 1.0,
             },
@@ -340,6 +347,7 @@ impl Costume {
                 x: costume.rotation_center_x,
                 y: costume.rotation_center_y,
             },
+            scale: 1.0,
         })
     }
 }
