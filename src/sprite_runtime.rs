@@ -12,6 +12,8 @@ use web_sys::{Blob, BlobPropertyBag, HtmlImageElement, Url};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
+    /// To make debugging easier
+    sprite_name: String,
     is_a_clone: bool,
     need_redraw: bool,
     position: SpriteCoordinate,
@@ -30,6 +32,7 @@ impl SpriteRuntime {
         target: &Rc<Target>,
         images: &HashMap<String, Image>,
         is_a_clone: bool,
+        sprite_name: String,
     ) -> Result<Self> {
         let scale = if target.is_stage {
             1.0
@@ -37,6 +40,7 @@ impl SpriteRuntime {
             target.size / 100.0
         };
         Ok(Self {
+            sprite_name,
             need_redraw: true,
             position: SpriteCoordinate {
                 x: target.x,

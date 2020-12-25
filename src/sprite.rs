@@ -28,14 +28,14 @@ impl Sprite {
     ) -> Result<(SpriteID, Self)> {
         let mut sprite_name = target.name.to_string();
         if is_a_clone {
-            sprite_name += "-char";
+            sprite_name += "-clone";
         };
         let sprite_id = SpriteID::from_sprite_name(&sprite_name);
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
         let sprite_runtime = Rc::new(RwLock::new(
-            SpriteRuntime::new(&target, &images, is_a_clone).await?,
+            SpriteRuntime::new(&target, &images, is_a_clone, sprite_name).await?,
         ));
 
         for hat_id in find_hats(&target.blocks) {
