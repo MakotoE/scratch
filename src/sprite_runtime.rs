@@ -51,7 +51,11 @@ impl SpriteRuntime {
             },
             pen: Pen::new(),
             is_a_clone,
-            hide: HideStatus::Show,
+            hide: if target.visible {
+                HideStatus::Show
+            } else {
+                HideStatus::Hide
+            },
         })
     }
 

@@ -25,7 +25,7 @@ pub struct Project {
     pub meta: Meta,
 }
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Target {
     pub is_stage: bool,
@@ -41,6 +41,25 @@ pub struct Target {
     pub y: f64,
     #[serde(default)]
     pub size: f64,
+    #[serde(default)]
+    pub visible: bool,
+}
+
+impl Default for Target {
+    fn default() -> Self {
+        Self {
+            is_stage: false,
+            name: String::new(),
+            variables: HashMap::new(),
+            blocks: HashMap::new(),
+            costumes: Vec::new(),
+            layer_order: 0,
+            x: 0.0,
+            y: 0.0,
+            size: 0.0,
+            visible: true,
+        }
+    }
 }
 
 impl Hash for Target {
