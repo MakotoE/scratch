@@ -55,7 +55,7 @@ impl SpriteRuntime {
             },
             pen: Pen::new(),
             is_a_clone,
-            hide: if target.visible {
+            hide: if target.is_stage || target.visible {
                 HideStatus::Show
             } else {
                 HideStatus::Hide

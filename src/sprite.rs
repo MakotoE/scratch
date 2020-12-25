@@ -152,6 +152,6 @@ impl Debug for SpriteID {
 
 impl Display for SpriteID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        std::fmt::LowerHex::fmt(&self.hash, f)
+        write!(f, "{:x}", self.hash)
     }
 }
