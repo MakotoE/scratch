@@ -16,6 +16,8 @@ use wasm_bindgen::JsCast;
 
 #[macro_use]
 mod error;
+#[macro_use]
+mod logger;
 mod app;
 mod blocks;
 mod broadcaster;

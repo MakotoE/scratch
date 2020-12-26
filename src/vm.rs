@@ -185,7 +185,7 @@ impl VM {
                 Event::Err(e) => return Err(e),
                 Event::Control(control) => {
                     if let Some(c) = control {
-                        log::info!("control: {:?}", &c);
+                        debug_log!("control: {:?}", &c);
                         current_state = c;
                         match c {
                             Control::Continue | Control::Step => {
