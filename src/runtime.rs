@@ -189,7 +189,7 @@ impl Global {
 
 #[derive(Debug)]
 pub struct Variables {
-    variables: RwLock<HashMap<String, Variable>>,
+    variables: RwLock<HashMap<String, Variable>>, // TODO don't need RwLock
 }
 
 impl Variables {

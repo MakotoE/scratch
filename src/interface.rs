@@ -6,7 +6,7 @@ use crate::file::ScratchFile;
 use crate::fileinput::FileInput;
 use crate::sprite::SpriteID;
 use crate::vm::{DebugInfo, VM};
-use tokio::sync::broadcast::Receiver;
+use std::collections::HashSet;
 use tokio::sync::mpsc;
 use yew::prelude::*;
 
@@ -59,6 +59,7 @@ pub enum Msg {
     OnMouseClick(yew::events::MouseEvent),
     OnMouseMove(yew::events::MouseEvent),
     OnKeyDown(yew::events::KeyboardEvent),
+    OnKeyUp(yew::events::KeyboardEvent),
     Start,
     Stop,
 }
@@ -180,10 +181,21 @@ impl Component for ScratchInterface {
             Msg::OnMouseMove(e) => {
                 let coordinate =
                     ScratchInterface::event_coordinate(&self.canvas_top_left.unwrap(), &e);
-                self.event_sender.mouse_move(coordinate).unwrap();
+                self.event_sender.mouse_move(coordinate);
                 false
             }
-            Msg::OnKeyDown(e) => false, // TODO
+            Msg::OnKeyDown(e) => {
+                if let Some(k) = KeyboardKey::from_key(&e.key()) {
+                    self.event_sender.key_down(k);
+                }
+                false
+            }
+            Msg::OnKeyUp(e) => {
+                if let Some(k) = KeyboardKey::from_key(&e.key()) {
+                    self.event_sender.key_up(&k);
+                }
+                false
+            }
             Msg::Start => {
                 if let Some(vm) = self.vm.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
@@ -235,6 +247,7 @@ impl Component for ScratchInterface {
                         style="width: 480px; height: 360px; border: 1px solid black;"
                         onclick={self.link.callback(Msg::OnMouseClick)}
                         onkeydown={self.link.callback(Msg::OnKeyDown)}
+                        onkeyup={self.link.callback(Msg::OnKeyUp)}
                     /><br />
                     <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                     <br />
@@ -290,44 +303,33 @@ impl Component for ScratchInterface {
 #[derive(Debug)]
 struct EventSender {
     broadcaster: Broadcaster,
-    requests: Rc<RefCell<Requests>>,
-}
-
-#[derive(Debug)]
-struct Requests {
-    requesting_mouse_position: bool,
+    data: Rc<RefCell<Data>>,
 }
 
 impl EventSender {
     fn new(broadcaster: Broadcaster) -> Self {
-        let requests: Rc<RefCell<Requests>> = Rc::new(RefCell::new(Requests {
-            requesting_mouse_position: false,
+        let data = Rc::new(RefCell::new(Data {
+            mouse_position: CanvasCoordinate::default(),
+            pressed_keys: HashSet::with_capacity(1),
         }));
         wasm_bindgen_futures::spawn_local({
-            let requests = requests.clone();
+            let data = data.clone();
             let broadcaster = broadcaster.clone();
             async move {
-                EventSender::listen_loop(broadcaster.subscribe(), requests)
-                    .await
-                    .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)));
+                if let Err(e) = EventSender::msg_loop(data, broadcaster).await {
+                    log::error!("{}", wrap_err!(e));
+                }
             }
         });
-        Self {
-            broadcaster,
-            requests,
-        }
+        Self { broadcaster, data }
     }
 
-    async fn listen_loop(
-        mut receiver: Receiver<BroadcastMsg>,
-        requests: Rc<RefCell<Requests>>,
-    ) -> Result<()> {
+    async fn msg_loop(data: Rc<RefCell<Data>>, broadcaster: Broadcaster) -> Result<()> {
+        let mut receiver = broadcaster.subscribe();
         loop {
-            match receiver.recv().await? {
-                BroadcastMsg::RequestMousePosition => {
-                    requests.borrow_mut().requesting_mouse_position = true;
-                }
-                _ => {}
+            let msg = receiver.recv().await?;
+            if let Some(m) = data.borrow().respond(msg) {
+                broadcaster.send(m)?;
             }
         }
     }
@@ -336,13 +338,127 @@ impl EventSender {
         self.broadcaster.send(BroadcastMsg::MouseClick(coordinate))
     }
 
-    fn mouse_move(&mut self, coordinate: CanvasCoordinate) -> Result<()> {
-        let mut requests = self.requests.borrow_mut();
-        if requests.requesting_mouse_position {
-            self.broadcaster
-                .send(BroadcastMsg::MousePosition(coordinate))?;
-        }
-        requests.requesting_mouse_position = false;
-        Ok(())
+    fn mouse_move(&mut self, coordinate: CanvasCoordinate) {
+        self.data.borrow_mut().mouse_position = coordinate;
+    }
+
+    fn key_down(&mut self, key: KeyboardKey) {
+        self.data.borrow_mut().pressed_keys.insert(key);
+    }
+
+    fn key_up(&mut self, key: &KeyboardKey) {
+        self.data.borrow_mut().pressed_keys.remove(key);
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Data {
+    mouse_position: CanvasCoordinate,
+    pressed_keys: HashSet<KeyboardKey>,
+}
+
+impl Data {
+    fn respond(&self, msg: BroadcastMsg) -> Option<BroadcastMsg> {
+        Some(match msg {
+            BroadcastMsg::RequestMousePosition => BroadcastMsg::MousePosition(self.mouse_position),
+            BroadcastMsg::RequestPressedKeys => {
+                BroadcastMsg::PressedKeys(self.pressed_keys.clone())
+            }
+            _ => return None,
+        })
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum KeyboardKey {
+    Space,
+    Up,
+    Down,
+    Right,
+    Left,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+    N0,
+    N1,
+    N2,
+    N3,
+    N4,
+    N5,
+    N6,
+    N7,
+    N8,
+    N9,
+}
+
+impl KeyboardKey {
+    fn from_key(key: &str) -> Option<Self> {
+        Some(match key {
+            " " => Self::Space,
+            "ArrowUp" => Self::Up,
+            "ArrowDown" => Self::Down,
+            "ArrowRight" => Self::Right,
+            "ArrowLeft" => Self::Left,
+            "a" => Self::A,
+            "b" => Self::B,
+            "c" => Self::C,
+            "d" => Self::D,
+            "e" => Self::E,
+            "f" => Self::F,
+            "g" => Self::G,
+            "h" => Self::H,
+            "i" => Self::I,
+            "j" => Self::J,
+            "k" => Self::K,
+            "l" => Self::L,
+            "m" => Self::M,
+            "n" => Self::N,
+            "o" => Self::O,
+            "p" => Self::P,
+            "q" => Self::Q,
+            "r" => Self::R,
+            "s" => Self::S,
+            "t" => Self::T,
+            "u" => Self::U,
+            "v" => Self::V,
+            "w" => Self::W,
+            "x" => Self::X,
+            "y" => Self::Y,
+            "z" => Self::Z,
+            "0" => Self::N0,
+            "1" => Self::N1,
+            "2" => Self::N2,
+            "3" => Self::N3,
+            "4" => Self::N4,
+            "5" => Self::N5,
+            "6" => Self::N6,
+            "7" => Self::N7,
+            "8" => Self::N8,
+            "9" => Self::N9,
+            _ => return None,
+        })
     }
 }

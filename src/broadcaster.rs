@@ -1,7 +1,9 @@
 use super::*;
 use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
+use crate::interface::KeyboardKey;
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
+use std::collections::HashSet;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 #[derive(Debug, Clone)]
@@ -40,6 +42,8 @@ pub enum BroadcastMsg {
     MouseClick(CanvasCoordinate),
     RequestMousePosition,
     MousePosition(CanvasCoordinate),
+    RequestPressedKeys,
+    PressedKeys(HashSet<KeyboardKey>),
     RequestSpriteRectangle(SpriteID),
     SpriteRectangle {
         sprite: SpriteID,
