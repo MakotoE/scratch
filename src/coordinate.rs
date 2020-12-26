@@ -110,9 +110,9 @@ impl SpriteRectangle {
     pub fn contains(&self, coordinate: &SpriteCoordinate) -> bool {
         let top_left = self.top_left();
         coordinate.x >= top_left.x
-            && coordinate.y >= top_left.y
+            && coordinate.y <= top_left.y
             && coordinate.x <= top_left.x + self.size.width
-            && coordinate.y <= top_left.y + self.size.height
+            && coordinate.y >= top_left.y - self.size.height
     }
 
     fn top_left(&self) -> SpriteCoordinate {
@@ -358,6 +358,20 @@ mod tests {
                     },
                     coordinate: SpriteCoordinate { x: 1.0, y: 2.0 },
                     expected: false,
+                },
+                Test {
+                    rect: SpriteRectangle {
+                        center: SpriteCoordinate { x: -79.0, y: -41.0 },
+                        size: Size {
+                            width: 127.0,
+                            height: 108.0,
+                        },
+                    },
+                    coordinate: SpriteCoordinate {
+                        x: -123.0,
+                        y: -72.0,
+                    },
+                    expected: true,
                 },
             ];
 

@@ -1,6 +1,8 @@
 use crate::broadcaster::BroadcastMsg;
 
 use super::*;
+use crate::broadcaster::BroadcastMsg::SpriteRectangle;
+use crate::coordinate::SpriteCoordinate;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -307,14 +309,8 @@ impl Block for WhenThisSpriteClicked {
         let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
             if let BroadcastMsg::Click(c) = channel.recv().await? {
-                if self
-                    .runtime
-                    .sprite
-                    .read()
-                    .await
-                    .rectangle()
-                    .contains(&c.into())
-                {
+                let curr_rectangle = self.runtime.sprite.read().await.rectangle();
+                if curr_rectangle.contains(&c.into()) {
                     return Next::continue_(self.next);
                 }
             }
