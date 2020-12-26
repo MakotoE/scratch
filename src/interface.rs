@@ -1,10 +1,12 @@
 use super::*;
 use crate::blocks::BlockInfo;
+use crate::broadcaster::{BroadcastMsg, Broadcaster};
 use crate::coordinate::CanvasCoordinate;
 use crate::file::ScratchFile;
 use crate::fileinput::FileInput;
 use crate::sprite::SpriteID;
 use crate::vm::{DebugInfo, VM};
+use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc;
 use yew::prelude::*;
 
@@ -16,7 +18,7 @@ pub struct ScratchInterface {
     vm: Option<Rc<VM>>,
     debug_info: HashMap<SpriteID, Vec<Option<BlockInfo>>>,
     canvas_top_left: Option<CanvasCoordinate>,
-    mouse_position: Rc<RefCell<CanvasCoordinate>>,
+    event_sender: EventSender,
 }
 
 impl ScratchInterface {
@@ -56,6 +58,7 @@ pub enum Msg {
     SetDebug(DebugInfo),
     OnMouseClick(yew::events::MouseEvent),
     OnMouseMove(yew::events::MouseEvent),
+    OnKeyDown(yew::events::KeyboardEvent),
     Start,
     Stop,
 }
@@ -85,7 +88,7 @@ impl Component for ScratchInterface {
             vm: None,
             debug_info: HashMap::new(),
             canvas_top_left: None,
-            mouse_position: Rc::new(RefCell::new(CanvasCoordinate::default())),
+            event_sender: EventSender::new(Broadcaster::new()),
         }
     }
 
@@ -100,16 +103,17 @@ impl Component for ScratchInterface {
                 let canvas: web_sys::HtmlCanvasElement = self.canvas_ref.cast().unwrap();
                 let ctx = canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
+                let broadcaster = Broadcaster::new();
+                self.event_sender = EventSender::new(broadcaster.clone());
+
                 wasm_bindgen_futures::spawn_local({
                     let scratch_file = self.file.as_ref().unwrap().clone();
                     let set_vm = self.link.callback(Msg::SetVM);
                     let set_debug = self.link.callback(Msg::SetDebug);
-                    let mouse_position = self.mouse_position.clone();
+                    let (debug_sender, mut debug_receiver) = mpsc::channel(1);
 
                     async move {
-                        let (debug_sender, mut debug_receiver) = mpsc::channel(1);
-                        let vm = match VM::start(ctx, scratch_file, debug_sender, mouse_position)
-                            .await
+                        let vm = match VM::start(ctx, scratch_file, debug_sender, broadcaster).await
                         {
                             Ok(v) => v,
                             Err(e) => {
@@ -168,22 +172,18 @@ impl Component for ScratchInterface {
                 true
             }
             Msg::OnMouseClick(e) => {
-                if let Some(vm) = &self.vm {
-                    vm.click(ScratchInterface::event_coordinate(
-                        &self.canvas_top_left.unwrap(),
-                        &e,
-                    ));
-                }
+                let coordinate =
+                    ScratchInterface::event_coordinate(&self.canvas_top_left.unwrap(), &e);
+                self.event_sender.mouse_click(coordinate).unwrap(); // TODO handle errors
                 false
             }
             Msg::OnMouseMove(e) => {
-                self.mouse_position
-                    .replace(ScratchInterface::event_coordinate(
-                        &self.canvas_top_left.unwrap(),
-                        &e,
-                    ));
+                let coordinate =
+                    ScratchInterface::event_coordinate(&self.canvas_top_left.unwrap(), &e);
+                self.event_sender.mouse_move(coordinate).unwrap();
                 false
             }
+            Msg::OnKeyDown(e) => false, // TODO
             Msg::Start => {
                 if let Some(vm) = self.vm.clone() {
                     wasm_bindgen_futures::spawn_local(async move {
@@ -234,6 +234,7 @@ impl Component for ScratchInterface {
                         height="720"
                         style="width: 480px; height: 360px; border: 1px solid black;"
                         onclick={self.link.callback(Msg::OnMouseClick)}
+                        onkeydown={self.link.callback(Msg::OnKeyDown)}
                     /><br />
                     <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                     <br />
@@ -283,5 +284,65 @@ impl Component for ScratchInterface {
                 y: rect.top(),
             });
         }
+    }
+}
+
+#[derive(Debug)]
+struct EventSender {
+    broadcaster: Broadcaster,
+    requests: Rc<RefCell<Requests>>,
+}
+
+#[derive(Debug)]
+struct Requests {
+    requesting_mouse_position: bool,
+}
+
+impl EventSender {
+    fn new(broadcaster: Broadcaster) -> Self {
+        let requests: Rc<RefCell<Requests>> = Rc::new(RefCell::new(Requests {
+            requesting_mouse_position: false,
+        }));
+        wasm_bindgen_futures::spawn_local({
+            let requests = requests.clone();
+            let broadcaster = broadcaster.clone();
+            async move {
+                EventSender::listen_loop(broadcaster.subscribe(), requests)
+                    .await
+                    .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)));
+            }
+        });
+        Self {
+            broadcaster,
+            requests,
+        }
+    }
+
+    async fn listen_loop(
+        mut receiver: Receiver<BroadcastMsg>,
+        requests: Rc<RefCell<Requests>>,
+    ) -> Result<()> {
+        loop {
+            match receiver.recv().await? {
+                BroadcastMsg::RequestMousePosition => {
+                    requests.borrow_mut().requesting_mouse_position = true;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn mouse_click(&self, coordinate: CanvasCoordinate) -> Result<()> {
+        self.broadcaster.send(BroadcastMsg::MouseClick(coordinate))
+    }
+
+    fn mouse_move(&mut self, coordinate: CanvasCoordinate) -> Result<()> {
+        let mut requests = self.requests.borrow_mut();
+        if requests.requesting_mouse_position {
+            self.broadcaster
+                .send(BroadcastMsg::MousePosition(coordinate))?;
+        }
+        requests.requesting_mouse_position = false;
+        Ok(())
     }
 }

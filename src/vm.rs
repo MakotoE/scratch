@@ -1,7 +1,7 @@
 use crate::blocks::BlockInfo;
 use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
 use crate::canvas::CanvasContext;
-use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
+use crate::coordinate::SpriteRectangle;
 use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
@@ -26,18 +26,18 @@ impl VM {
         context: web_sys::CanvasRenderingContext2d,
         scratch_file: ScratchFile,
         debug_sender: mpsc::Sender<DebugInfo>,
-        mouse_position: Rc<RefCell<CanvasCoordinate>>,
+        broadcaster: Broadcaster,
     ) -> Result<Self> {
         let global = Rc::new(Global::new(
             &scratch_file.project.targets[0].variables,
             &scratch_file.project.monitors,
+            broadcaster.clone(),
         ));
 
         let (control_sender, control_receiver) = mpsc::channel(1);
 
         wasm_bindgen_futures::spawn_local({
             let global = global.clone();
-            let broadcaster = global.broadcaster.clone();
 
             let control_receiver = ControlReceiverCell::new(control_receiver);
             let broadcaster = BroadcastCell::new(broadcaster);
@@ -60,7 +60,6 @@ impl VM {
                         &context,
                         &debug_sender,
                         &broadcaster,
-                        mouse_position.clone(),
                     )
                     .await
                     {
@@ -86,6 +85,7 @@ impl VM {
         let global = Rc::new(Global::new(
             &scratch_file.project.targets[0].variables,
             &scratch_file.project.monitors,
+            Broadcaster::new(),
         ));
         Ok(VM::sprites(scratch_file, global)
             .await?
@@ -129,7 +129,6 @@ impl VM {
         ctx: &web_sys::CanvasRenderingContext2d,
         debug_sender: &mpsc::Sender<DebugInfo>,
         broadcaster: &BroadcastCell,
-        mouse_position: Rc<RefCell<CanvasCoordinate>>,
     ) -> Result<Loop> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
@@ -209,6 +208,7 @@ impl VM {
                     ));
                 }
                 Event::BroadcastMsg(msg) => {
+                    debug_log!("broadcast: {:?}", &msg);
                     match msg {
                         BroadcastMsg::Clone(from_sprite) => {
                             let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
@@ -254,10 +254,6 @@ impl VM {
                         BroadcastMsg::ChangeLayer { sprite, action } => {
                             sprites.change_layer(sprite, action)?;
                         }
-                        BroadcastMsg::RequestMousePosition => {
-                            broadcaster
-                                .send(BroadcastMsg::MousePosition(*mouse_position.borrow()))?;
-                        }
                         BroadcastMsg::RequestSpriteRectangle(sprite_id) => {
                             let rectangle = sprites.sprite_rectangle(&sprite_id).await?;
                             broadcaster.send(BroadcastMsg::SpriteRectangle {
@@ -283,12 +279,6 @@ impl VM {
 
     pub async fn step(&self) {
         self.control_sender.send(Control::Step).await.unwrap();
-    }
-
-    pub fn click(&self, coordinate: CanvasCoordinate) {
-        self.broadcaster
-            .send(BroadcastMsg::Click(coordinate))
-            .unwrap_or_else(|e| log::error!("{}", wrap_err!(e)))
     }
 
     pub async fn stop(&self) {

@@ -38,10 +38,11 @@ impl Global {
     pub fn new(
         scratch_file_variables: &HashMap<String, file::Variable>,
         monitors: &[Monitor],
+        broadcaster: Broadcaster,
     ) -> Self {
         Self {
             variables: Variables::new(scratch_file_variables, monitors),
-            broadcaster: Broadcaster::new(),
+            broadcaster,
         }
     }
 

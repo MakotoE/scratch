@@ -17,7 +17,6 @@ impl Broadcaster {
     }
 
     pub fn send(&self, m: BroadcastMsg) -> Result<()> {
-        debug_log!("broadcast: {:?}", &m);
         self.sender.send(m)?;
         Ok(())
     }
@@ -33,12 +32,12 @@ pub enum BroadcastMsg {
     Finished(String),
     Clone(SpriteID),
     DeleteClone(SpriteID),
-    Click(CanvasCoordinate),
     Stop(Stop),
     ChangeLayer {
         sprite: SpriteID,
         action: LayerChange,
     },
+    MouseClick(CanvasCoordinate),
     RequestMousePosition,
     MousePosition(CanvasCoordinate),
     RequestSpriteRectangle(SpriteID),
