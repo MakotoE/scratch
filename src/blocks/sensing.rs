@@ -61,7 +61,7 @@ impl Block for KeyPressed {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let key_option = KeyOption::from_str(&value_to_string(self.key_option.value().await?))?;
         self.runtime
             .global
@@ -121,7 +121,7 @@ impl Block for KeyOptions {
         Ok(())
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let s: &str = self.key.into();
         Ok(s.into())
     }
@@ -193,7 +193,7 @@ impl Block for TouchingColor {
         }
     }
 
-    // async fn value(&self) -> Result<serde_json::Value> {}
+    // async fn value(&self) -> Result<Value> {}
 }
 
 #[derive(Debug)]
@@ -244,7 +244,7 @@ impl Block for TouchingObject {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let option = match self.menu.value().await?.as_str() {
             Some(s) => TouchingObjectOption::from_str(s)?,
             None => return Err(wrap_err!("menu value is not string")),
@@ -331,7 +331,7 @@ impl Block for TouchingObjectMenu {
         Ok(())
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         Ok(self.option.to_string().into())
     }
 }

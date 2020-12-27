@@ -737,7 +737,7 @@ impl Block for Costume {
         Ok(())
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         Ok(self.name.clone().into())
     }
 }
@@ -843,7 +843,7 @@ impl Block for Backdrops {
         Ok(())
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         Ok(self.backdrop.clone().into())
     }
 }

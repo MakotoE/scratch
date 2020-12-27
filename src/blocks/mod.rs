@@ -14,7 +14,7 @@ use crate::blocks::value::value_block_from_input_arr;
 use crate::file::BlockID;
 use crate::runtime::Runtime;
 use async_trait::async_trait;
-use serde_json::Value;
+use palette::Hsv;
 use std::convert::TryInto;
 
 fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dyn Block>> {
@@ -79,8 +79,7 @@ pub trait Block: std::fmt::Debug {
         Ok(())
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
-        // TODO add custom types to reduce strings
+    async fn value(&self) -> Result<Value> {
         Err(wrap_err!("this block does not return a value"))
     }
 
@@ -174,6 +173,13 @@ impl BlockInputsPartial {
                 .collect(),
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Value {
+    Number(f64),
+    String(String),
+    Color(Hsv),
 }
 
 pub fn block_tree(
@@ -280,10 +286,10 @@ fn value_to_float(value: &serde_json::Value) -> Result<f64> {
     })
 }
 
-pub fn value_to_string(value: Value) -> String {
+pub fn value_to_string(value: serde_json::Value) -> String {
     match value {
-        Value::String(s) => s,
-        Value::Number(n) => n.as_f64().unwrap().to_string(),
+        serde_json::Value::String(s) => s,
+        serde_json::Value::Number(n) => n.as_f64().unwrap().to_string(),
         _ => value.to_string(),
     }
 }
@@ -309,7 +315,7 @@ impl Block for EmptyInput {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         Err(wrap_err!("input is unconnected"))
     }
 }
@@ -335,7 +341,7 @@ impl Block for EmptyFalse {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         Ok(true.into())
     }
 }
@@ -357,29 +363,29 @@ mod tests {
     #[test]
     fn test_value_to_string() {
         struct Test {
-            value: Value,
+            value: serde_json::Value,
             expected: &'static str,
         }
 
         let tests = vec![
             Test {
-                value: Value::Null,
+                value: serde_json::Value::Null,
                 expected: "null",
             },
             Test {
-                value: Value::String("a".into()),
+                value: serde_json::Value::String("a".into()),
                 expected: "a",
             },
             Test {
-                value: Value::Number(serde_json::Number::from_f64(1.0).unwrap()),
+                value: serde_json::Value::Number(serde_json::Number::from_f64(1.0).unwrap()),
                 expected: "1",
             },
             Test {
-                value: Value::Number(serde_json::Number::from_f64(1.1).unwrap()),
+                value: serde_json::Value::Number(serde_json::Number::from_f64(1.1).unwrap()),
                 expected: "1.1",
             },
             Test {
-                value: Value::Bool(false),
+                value: serde_json::Value::Bool(false),
                 expected: "false",
             },
         ];

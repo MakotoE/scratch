@@ -72,7 +72,7 @@ impl Block for Equals {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let a = self.operand1.value().await?;
         let b = self.operand2.value().await?;
         Ok(Equals::equal(&a, &b).into())
@@ -122,7 +122,7 @@ impl Block for Add {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let a = value_to_float(&self.num1.value().await?)?;
         let b = value_to_float(&self.num2.value().await?)?;
         Ok((a + b).into())
@@ -172,7 +172,7 @@ impl Block for Subtract {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let a = value_to_float(&self.num1.value().await?)?;
         let b = value_to_float(&self.num2.value().await?)?;
         Ok((a - b).into())
@@ -222,7 +222,7 @@ impl Block for Multiply {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let a = value_to_float(&self.num1.value().await?)?;
         let b = value_to_float(&self.num2.value().await?)?;
         Ok((a * b).into())
@@ -272,7 +272,7 @@ impl Block for Divide {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let a = value_to_float(&self.num1.value().await?)?;
         let b = value_to_float(&self.num2.value().await?)?;
         Ok((a / b).into())
@@ -322,7 +322,7 @@ impl Block for And {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let left = match self.operand1.value().await? {
             serde_json::Value::Bool(b) => b,
             _ => return Err(wrap_err!("operand1 is not a boolean")),
@@ -380,7 +380,7 @@ impl Block for Or {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let left = match self.operand1.value().await? {
             serde_json::Value::Bool(b) => b,
             _ => return Err(wrap_err!("operand1 is not a boolean")),
@@ -434,7 +434,7 @@ impl Block for Not {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let operand = match self.operand.value().await? {
             serde_json::Value::Bool(b) => b,
             _ => return Err(wrap_err!("operand is not a boolean")),
@@ -487,7 +487,7 @@ impl Block for LessThan {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let left = value_to_float(&self.operand1.value().await?)?;
         let right = value_to_float(&self.operand2.value().await?)?;
         Ok((left < right).into())
@@ -537,7 +537,7 @@ impl Block for GreaterThan {
         }
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let left = value_to_float(&self.operand1.value().await?)?;
         let right = value_to_float(&self.operand2.value().await?)?;
         Ok((left > right).into())

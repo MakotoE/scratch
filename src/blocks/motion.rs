@@ -405,7 +405,7 @@ impl Block for XPosition {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let runtime = self.runtime.sprite.read().await;
         Ok(runtime.rectangle().center.x.into())
     }
@@ -438,7 +438,7 @@ impl Block for YPosition {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         let runtime = self.runtime.sprite.read().await;
         Ok(runtime.rectangle().center.y.into())
     }
@@ -471,7 +471,7 @@ impl Block for Direction {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         unimplemented!()
     }
 }
@@ -503,7 +503,7 @@ impl Block for PointingDirection {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         unimplemented!()
     }
 }

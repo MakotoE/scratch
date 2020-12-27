@@ -44,33 +44,35 @@ impl Block for Variable {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<serde_json::Value> {
+    async fn value(&self) -> Result<Value> {
         self.runtime.global.variables.get(&self.id).await
     }
 }
 
 pub fn value_block_from_input_arr(arr: &[serde_json::Value]) -> Result<Box<dyn Block>> {
+    // https://en.scratch-wiki.info/wiki/Scratch_File_Format#Blocks
     let err = || wrap_err!("invalid input");
     let value_type = arr.get(0).ok_or_else(err)?.as_i64().ok_or_else(err)?;
     let value = arr.get(1).ok_or_else(err)?;
     Ok(match value_type {
-        9 => Box::new(ValueColor::new(value)?),
-        _ => Box::new(Value {
-            value: value.clone(),
-        }), // TODO add more values
+        4 => Box::new(ValueNumber {
+            number: value.as_f64().unwrap(),
+        }),
+        9 => Box::new(ValueColor::new(value.as_str().unwrap())?),
+        _ => return Err(wrap_err!(format!("unknown value_type: {}", value_type))),
     })
 }
 
 #[derive(Debug)]
-pub struct Value {
-    value: serde_json::Value,
+pub struct ValueNumber {
+    number: f64,
 }
 
 #[async_trait(?Send)]
-impl Block for Value {
+impl Block for ValueNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
-            name: "Value",
+            name: "Number",
             id: BlockID::default(),
         }
     }
@@ -78,14 +80,42 @@ impl Block for Value {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("value", self.value.to_string())],
+            vec![("number", self.number.to_string())],
             vec![],
             vec![],
         )
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
-        Ok(self.value.clone())
+    async fn value(&self) -> Result<Value> {
+        Ok(Value::Number(self.number))
+    }
+}
+
+#[derive(Debug)]
+pub struct ValueString {
+    string: String,
+}
+
+#[async_trait(?Send)]
+impl Block for ValueString {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "String",
+            id: BlockID::default(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![("string", self.string.clone())],
+            vec![],
+            vec![],
+        )
+    }
+
+    async fn value(&self) -> Result<Value> {
+        Ok(Value::String(self.string.clone()))
     }
 }
 
@@ -95,9 +125,9 @@ pub struct ValueColor {
 }
 
 impl ValueColor {
-    fn new(value: &serde_json::Value) -> Result<Self> {
+    fn new(value: &str) -> Result<Self> {
         Ok(Self {
-            color: hex_to_color(&value_to_string(value.clone()))?,
+            color: hex_to_color(value)?,
         })
     }
 }
@@ -106,7 +136,7 @@ impl ValueColor {
 impl Block for ValueColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
-            name: "ColorValue",
+            name: "Color",
             id: BlockID::default(),
         }
     }
@@ -120,7 +150,7 @@ impl Block for ValueColor {
         )
     }
 
-    async fn value(&self) -> Result<serde_json::Value> {
-        Ok(color_to_hex(&self.color).into())
+    async fn value(&self) -> Result<Value> {
+        Ok(Value::Color(self.color))
     }
 }
