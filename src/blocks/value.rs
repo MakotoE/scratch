@@ -1,6 +1,5 @@
 use super::*;
-use crate::color::{color_to_hex, hex_to_color};
-use palette::Hsv;
+use palette::{Hsv, IntoColor};
 use serde::Serializer;
 use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
@@ -129,7 +128,7 @@ pub struct ValueColor {
 impl ValueColor {
     fn new(value: &str) -> Result<Self> {
         Ok(Self {
-            color: hex_to_color(value)?,
+            color: str_to_color(value)?,
         })
     }
 }
@@ -146,7 +145,7 @@ impl Block for ValueColor {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("color", color_to_hex(&self.color))],
+            vec![("color", format!("{}", HsvDisplay(self.color)))],
             vec![],
             vec![],
         )
@@ -249,12 +248,40 @@ impl TryInto<f64> for &Value {
     }
 }
 
+fn str_to_color(s: &str) -> Result<Hsv> {
+    if s.len() != 7 || s.bytes().next() != Some(b'#') {
+        return Err(wrap_err!(format!("string is invalid: {}", s)));
+    }
+
+    let rgb = palette::Srgb::new(
+        u8::from_str_radix(&s[1..3], 16)? as f32 / 255.0,
+        u8::from_str_radix(&s[3..5], 16)? as f32 / 255.0,
+        u8::from_str_radix(&s[5..7], 16)? as f32 / 255.0,
+    );
+    Ok(Hsv::from(rgb))
+}
+
+pub struct HsvDisplay(pub Hsv);
+
+impl Display for HsvDisplay {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let rgb = palette::Srgb::from_linear(self.0.into_rgb());
+        write!(
+            f,
+            "#{:02x}{:02x}{:02x}",
+            (rgb.red * 255.0).round() as u8,
+            (rgb.green * 255.0).round() as u8,
+            (rgb.blue * 255.0).round() as u8
+        )
+    }
+}
+
 impl TryInto<Hsv> for Value {
     type Error = Error;
 
     fn try_into(self) -> Result<Hsv> {
         Ok(match self {
-            Self::String(s) => hex_to_color(&s)?,
+            Self::String(s) => str_to_color(&s)?,
             Self::Color(c) => c,
             _ => return Err(wrap_err!(format!("cannot convert {} into color", self))),
         })
@@ -267,43 +294,98 @@ impl Display for Value {
             Self::Bool(b) => f.serialize_bool(*b),
             Self::Number(n) => f.serialize_f64(*n),
             Self::String(s) => f.write_str(&s),
-            Self::Color(c) => f.write_str(&color_to_hex(c)),
+            Self::Color(c) => HsvDisplay(*c).fmt(f),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::blocks::*;
+    use super::*;
 
     #[test]
-    fn test_into_string() {
+    fn test_str_to_color() {
         struct Test {
-            value: Value,
-            expected: &'static str,
+            s: &'static str,
+            expected: Hsv,
+            expect_err: bool,
         }
 
         let tests = vec![
             Test {
-                value: Value::String("a".into()),
-                expected: "a",
+                s: "",
+                expected: Hsv::new(0.0, 0.0, 0.0),
+                expect_err: true,
             },
             Test {
-                value: Value::Number(1.0),
-                expected: "1",
+                s: "#",
+                expected: Hsv::new(0.0, 0.0, 0.0),
+                expect_err: true,
             },
             Test {
-                value: Value::Number(1.1),
-                expected: "1.1",
+                s: "#000000",
+                expected: Hsv::new(0.0, 0.0, 0.0),
+                expect_err: false,
             },
             Test {
-                value: Value::Bool(false),
-                expected: "false",
+                s: "#ffffff",
+                expected: Hsv::new(0.0, 0.0, 1.0),
+                expect_err: false,
+            },
+            Test {
+                s: "#ffffffa",
+                expected: Hsv::new(0.0, 0.0, 0.0),
+                expect_err: true,
             },
         ];
 
         for (i, test) in tests.iter().enumerate() {
-            assert_eq!(value_to_string(test.value.clone()), test.expected, "{}", i);
+            let result: Result<Hsv> = str_to_color(test.s);
+            assert_eq!(result.is_err(), test.expect_err, "{}", i);
+            if !test.expect_err {
+                assert_eq!(result.unwrap(), test.expected, "{}", i);
+            }
+        }
+    }
+
+    #[test]
+    fn test_fmt_hsv() {
+        let result = format!("{}", HsvDisplay(Hsv::new(0.0, 1.0, 1.0)));
+        assert_eq!(result, "#ff0000")
+    }
+
+    mod value {
+        use super::*;
+
+        #[test]
+        fn test_to_string() {
+            struct Test {
+                value: Value,
+                expected: &'static str,
+            }
+
+            let tests = vec![
+                Test {
+                    value: Value::String("a".into()),
+                    expected: "a",
+                },
+                Test {
+                    value: Value::Number(1.0),
+                    expected: "1",
+                },
+                Test {
+                    value: Value::Number(1.1),
+                    expected: "1.1",
+                },
+                Test {
+                    value: Value::Bool(false),
+                    expected: "false",
+                },
+            ];
+
+            for (i, test) in tests.iter().enumerate() {
+                assert_eq!(test.value.to_string(), test.expected, "{}", i);
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
+use crate::blocks::value::HsvDisplay;
 use crate::canvas::CanvasContext;
-use crate::color::color_to_hex;
 use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::pen::PenStatus::PenUp;
 
@@ -146,7 +146,7 @@ impl Line {
             context.line_to(&extra_point.into());
         }
 
-        context.set_stroke_style(&color_to_hex(&self.color));
+        context.set_stroke_style(&format!("{}", HsvDisplay(self.color)));
         context.set_line_width(self.size);
         context.stroke();
     }

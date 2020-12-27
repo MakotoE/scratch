@@ -136,8 +136,8 @@ impl SpriteRectangle {
         let other_bottom_right = other.bottom_right();
         !(self_top_left.x > other_bottom_right.x
             || self_bottom_right.x < other_top_left.x
-            || self_top_left.y > other_bottom_right.y
-            || self_bottom_right.y < other_top_left.y)
+            || self_top_left.y < other_bottom_right.y
+            || self_bottom_right.y > other_top_left.y)
     }
 
     #[allow(dead_code)]
@@ -436,6 +436,23 @@ mod tests {
                         size: Size {
                             width: 2.0,
                             height: 2.0,
+                        },
+                    },
+                    expected: true,
+                },
+                Test {
+                    a: SpriteRectangle {
+                        center: SpriteCoordinate { x: 1.0, y: 1.0 },
+                        size: Size {
+                            width: 4.0,
+                            height: 4.0,
+                        },
+                    },
+                    b: SpriteRectangle {
+                        center: SpriteCoordinate { x: 2.0, y: 2.0 },
+                        size: Size {
+                            width: 4.0,
+                            height: 4.0,
                         },
                     },
                     expected: true,
