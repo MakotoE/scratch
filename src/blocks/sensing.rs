@@ -1,6 +1,7 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
 use crate::coordinate::CanvasRectangle;
+use crate::interface::KeyboardKey;
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
 use std::fmt::{Display, Formatter};
@@ -21,11 +22,17 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 #[derive(Debug)]
 pub struct KeyPressed {
     id: BlockID,
+    runtime: Runtime,
+    key_option: Box<dyn Block>,
 }
 
 impl KeyPressed {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id }
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            key_option: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -39,20 +46,47 @@ impl Block for KeyPressed {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("key_option", &self.key_option)],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "KEY_OPTION" {
+            self.key_option = block;
+        }
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        let key = KeyboardKey::from_str(&value_to_string(self.key_option.value().await?))?;
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::RequestPressedKeys)?;
+        let mut receiver = self.runtime.global.broadcaster.subscribe();
+        loop {
+            if let BroadcastMsg::PressedKeys(k) = receiver.recv().await? {
+                return Ok(k.contains(&key).into());
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct KeyOptions {
     id: BlockID,
+    key: KeyboardKey,
 }
 
 impl KeyOptions {
     pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id }
+        Self {
+            id,
+            key: KeyboardKey::Space,
+        }
     }
 }
 
@@ -66,10 +100,26 @@ impl Block for KeyOptions {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        let key: &str = self.key.into();
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![("KEY_OPTION", key.to_string())],
+            vec![],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "KEY_OPTION" {
+            self.key = KeyboardKey::from_scratch_option(get_field_value(field, 0)?)?;
+        }
+        Ok(())
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        let s: &str = self.key.into();
+        Ok(s.into())
+    }
 }
 
 #[derive(Debug)]

@@ -30,6 +30,7 @@ futures = "0.3"
 hex = "0.4"
 rand = "0.7"
 debug-macro = "0.1.0"
+strum = { version = "0.20", features = ["derive"] }
 
 [dependencies.web-sys]
 version = "0.3"
@@ -50,4 +51,5 @@ features = [
     "Performance",
     "DomRect",
     "DomRectReadOnly",
+    "EventTarget",
 ]

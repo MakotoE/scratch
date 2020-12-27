@@ -7,7 +7,10 @@ use crate::fileinput::FileInput;
 use crate::sprite::SpriteID;
 use crate::vm::{DebugInfo, VM};
 use std::collections::HashSet;
+use strum::{EnumString, IntoStaticStr};
 use tokio::sync::mpsc;
+use wasm_bindgen::closure::Closure;
+use yew::events::{KeyboardEvent, MouseEvent};
 use yew::prelude::*;
 
 pub struct ScratchInterface {
@@ -56,10 +59,10 @@ pub enum Msg {
     ContinuePause,
     Step,
     SetDebug(DebugInfo),
-    OnMouseClick(yew::events::MouseEvent),
-    OnMouseMove(yew::events::MouseEvent),
-    OnKeyDown(yew::events::KeyboardEvent),
-    OnKeyUp(yew::events::KeyboardEvent),
+    OnMouseClick(MouseEvent),
+    OnMouseMove(MouseEvent),
+    OnKeyDown(KeyboardEvent),
+    OnKeyUp(KeyboardEvent),
     Start,
     Stop,
 }
@@ -75,11 +78,28 @@ impl Component for ScratchInterface {
     type Properties = ();
 
     fn create(_: (), link: ComponentLink<Self>) -> Self {
-        web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .set_title("Scratch VM");
+        let document = web_sys::window().unwrap().document().unwrap();
+        document.set_title("Scratch VM");
+        let key_down_function = Closure::wrap(Box::new({
+            let link = link.clone();
+            move |e: KeyboardEvent| link.callback(Msg::OnKeyDown).emit(e)
+        }) as Box<dyn Fn(KeyboardEvent)>);
+        document
+            .add_event_listener_with_callback(
+                "keydown",
+                key_down_function.into_js_value().unchecked_ref(),
+            )
+            .unwrap();
+        let key_up_function = Closure::wrap(Box::new({
+            let link = link.clone();
+            move |e: KeyboardEvent| link.callback(Msg::OnKeyUp).emit(e)
+        }) as Box<dyn Fn(KeyboardEvent)>);
+        document
+            .add_event_listener_with_callback(
+                "keyup",
+                key_up_function.into_js_value().unchecked_ref(),
+            )
+            .unwrap();
 
         Self {
             link,
@@ -246,8 +266,6 @@ impl Component for ScratchInterface {
                         height="720"
                         style="width: 480px; height: 360px; border: 1px solid black;"
                         onclick={self.link.callback(Msg::OnMouseClick)}
-                        onkeydown={self.link.callback(Msg::OnKeyDown)}
-                        onkeyup={self.link.callback(Msg::OnKeyUp)}
                     /><br />
                     <FileInput onchange={self.link.callback(Msg::SetFile)} /><br />
                     <br />
@@ -369,7 +387,7 @@ impl Data {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, EnumString, IntoStaticStr)]
 pub enum KeyboardKey {
     Space,
     Up,
@@ -459,6 +477,53 @@ impl KeyboardKey {
             "8" => Self::N8,
             "9" => Self::N9,
             _ => return None,
+        })
+    }
+
+    pub fn from_scratch_option(s: &str) -> Result<Self> {
+        Ok(match s {
+            "space" => Self::Space,
+            "up arrow" => Self::Up,
+            "down arrow" => Self::Down,
+            "right arrow" => Self::Right,
+            "left arrow" => Self::Left,
+            "a" => Self::A,
+            "b" => Self::B,
+            "c" => Self::C,
+            "d" => Self::D,
+            "e" => Self::E,
+            "f" => Self::F,
+            "g" => Self::G,
+            "h" => Self::H,
+            "i" => Self::I,
+            "j" => Self::J,
+            "k" => Self::K,
+            "l" => Self::L,
+            "m" => Self::M,
+            "n" => Self::N,
+            "o" => Self::O,
+            "p" => Self::P,
+            "q" => Self::Q,
+            "r" => Self::R,
+            "s" => Self::S,
+            "t" => Self::T,
+            "u" => Self::U,
+            "v" => Self::V,
+            "w" => Self::W,
+            "x" => Self::X,
+            "y" => Self::Y,
+            "z" => Self::Z,
+            "0" => Self::N0,
+            "1" => Self::N1,
+            "2" => Self::N2,
+            "3" => Self::N3,
+            "4" => Self::N4,
+            "5" => Self::N5,
+            "6" => Self::N6,
+            "7" => Self::N7,
+            "8" => Self::N8,
+            "9" => Self::N9,
+            _ => return Err(wrap_err!(format!("unknown key: {}", s))),
         })
     }
 }

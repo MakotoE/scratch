@@ -17,6 +17,7 @@ error_chain::error_chain! {
         RecvError(tokio::sync::broadcast::error::RecvError);
         DebugSendError(tokio::sync::mpsc::error::SendError<vm::DebugInfo>);
         FromHexError(hex::FromHexError);
+        StrumError(strum::ParseError);
     }
 
     errors {
