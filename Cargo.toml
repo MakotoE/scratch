@@ -24,7 +24,7 @@ async-trait = "0.1"
 gloo-timers = { version = "0.2", features = ["futures"] }
 palette = "0.5"
 lazy_static = "1.4"
-tokio =  { version = "0.3", features = ["sync", "rt-multi-thread", "macros", "time"] }
+tokio =  { version = "1.0", features = ["sync", "rt-multi-thread", "macros"] }
 yew-router = "0.14"
 futures = "0.3"
 hex = "0.4"
