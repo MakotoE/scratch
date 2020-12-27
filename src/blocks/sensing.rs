@@ -1,7 +1,7 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
 use crate::coordinate::CanvasRectangle;
-use crate::event_sender::KeyboardKey;
+use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
 use std::fmt::{Display, Formatter};
@@ -61,15 +61,19 @@ impl Block for KeyPressed {
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
-        let key = KeyboardKey::from_str(&value_to_string(self.key_option.value().await?))?;
+        let key_option = KeyOption::from_str(&value_to_string(self.key_option.value().await?))?;
         self.runtime
             .global
             .broadcaster
             .send(BroadcastMsg::RequestPressedKeys)?;
         let mut receiver = self.runtime.global.broadcaster.subscribe();
         loop {
-            if let BroadcastMsg::PressedKeys(k) = receiver.recv().await? {
-                return Ok(k.contains(&key).into());
+            if let BroadcastMsg::PressedKeys(keys) = receiver.recv().await? {
+                return if let KeyOption::Key(key) = key_option {
+                    Ok(keys.contains(&key).into())
+                } else {
+                    Ok(true.into())
+                };
             }
         }
     }
@@ -78,14 +82,14 @@ impl Block for KeyPressed {
 #[derive(Debug)]
 pub struct KeyOptions {
     id: BlockID,
-    key: KeyboardKey,
+    key: KeyOption,
 }
 
 impl KeyOptions {
     pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self {
             id,
-            key: KeyboardKey::Space,
+            key: KeyOption::Key(KeyboardKey::Space),
         }
     }
 }
@@ -111,7 +115,7 @@ impl Block for KeyOptions {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "KEY_OPTION" {
-            self.key = KeyboardKey::from_scratch_option(get_field_value(field, 0)?)?;
+            self.key = KeyOption::from_scratch_option(get_field_value(field, 0)?)?;
         }
         Ok(())
     }
