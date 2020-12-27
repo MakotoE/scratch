@@ -187,7 +187,7 @@ impl Block for Broadcast {
     }
 
     async fn execute(&mut self) -> Next {
-        let msg = value_to_string(self.message.value().await?);
+        let msg = self.message.value().await?.to_string();
         self.runtime
             .global
             .broadcaster
@@ -246,7 +246,7 @@ impl Block for BroadcastAndWait {
     }
 
     async fn execute(&mut self) -> Next {
-        let msg = value_to_string(self.message.value().await?);
+        let msg = self.message.value().await?.to_string();
         self.runtime
             .global
             .broadcaster

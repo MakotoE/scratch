@@ -7,15 +7,15 @@ mod operator;
 mod pen;
 mod sensing;
 mod sound;
-mod value;
+pub mod value;
 
 use super::*;
 use crate::blocks::value::value_block_from_input_arr;
 use crate::file::BlockID;
 use crate::runtime::Runtime;
 use async_trait::async_trait;
-use palette::Hsv;
 use std::convert::TryInto;
+use value::Value;
 
 fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dyn Block>> {
     let (category, name) = match info.opcode.split_once('_') {
@@ -175,13 +175,6 @@ impl BlockInputsPartial {
     }
 }
 
-#[derive(Debug)]
-pub enum Value {
-    Number(f64),
-    String(String),
-    Color(Hsv),
-}
-
 pub fn block_tree(
     top_block_id: BlockID,
     runtime: Runtime,
@@ -264,36 +257,6 @@ pub fn block_tree(
 
 const MILLIS_PER_SECOND: f64 = 1000.0;
 
-fn value_to_float(value: &serde_json::Value) -> Result<f64> {
-    Ok(match value {
-        serde_json::Value::String(s) => s.parse()?,
-        serde_json::Value::Number(n) => match n.as_f64() {
-            Some(f) => {
-                if f.is_nan() {
-                    0.0
-                } else {
-                    f
-                }
-            }
-            None => unreachable!(),
-        },
-        _ => {
-            return Err(wrap_err!(format!(
-                "expected String or Number but got: {:?}",
-                value
-            )))
-        }
-    })
-}
-
-pub fn value_to_string(value: serde_json::Value) -> String {
-    match value {
-        serde_json::Value::String(s) => s,
-        serde_json::Value::Number(n) => n.as_f64().unwrap().to_string(),
-        _ => value.to_string(),
-    }
-}
-
 #[derive(Debug)]
 pub struct EmptyInput {}
 
@@ -354,44 +317,4 @@ pub fn get_field_value(field: &[Option<String>], index: usize) -> Result<&str> {
     }
 
     Err("invalid field".into())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_value_to_string() {
-        struct Test {
-            value: serde_json::Value,
-            expected: &'static str,
-        }
-
-        let tests = vec![
-            Test {
-                value: serde_json::Value::Null,
-                expected: "null",
-            },
-            Test {
-                value: serde_json::Value::String("a".into()),
-                expected: "a",
-            },
-            Test {
-                value: serde_json::Value::Number(serde_json::Number::from_f64(1.0).unwrap()),
-                expected: "1",
-            },
-            Test {
-                value: serde_json::Value::Number(serde_json::Number::from_f64(1.1).unwrap()),
-                expected: "1.1",
-            },
-            Test {
-                value: serde_json::Value::Bool(false),
-                expected: "false",
-            },
-        ];
-
-        for (i, test) in tests.iter().enumerate() {
-            assert_eq!(value_to_string(test.value.clone()), test.expected, "{}", i);
-        }
-    }
 }

@@ -138,12 +138,12 @@ impl Block for ChangeVariable {
     }
 
     async fn execute(&mut self) -> Next {
-        let value = value_to_float(&self.value.value().await?)?;
+        let value: f64 = self.value.value().await?.try_into()?;
         self.runtime
             .global
             .variables
             .set_with(&self.variable_id, |v| {
-                let previous_float = value_to_float(v).unwrap_or(0.0);
+                let previous_float: f64 = v.try_into().unwrap_or(0.0);
                 (previous_float + value).into()
             })
             .await?;

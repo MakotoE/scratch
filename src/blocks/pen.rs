@@ -1,7 +1,6 @@
 use super::*;
-use crate::color::hex_to_color;
-use palette::IntoColor;
 use palette::Mix;
+use palette::{Hsv, IntoColor};
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -162,16 +161,8 @@ impl Block for SetPenColorToColor {
     }
 
     async fn execute(&mut self) -> Next {
-        let color_value = self.color.value().await?;
-        let color = color_value
-            .as_str()
-            .ok_or_else(|| Error::from("color is not a string"))?;
-        self.runtime
-            .sprite
-            .write()
-            .await
-            .pen()
-            .set_color(&hex_to_color(color)?);
+        let color: Hsv = self.color.value().await?.try_into()?;
+        self.runtime.sprite.write().await.pen().set_color(&color);
         Next::continue_(self.next)
     }
 }
@@ -226,7 +217,7 @@ impl Block for SetPenSizeTo {
     }
 
     async fn execute(&mut self) -> Next {
-        let size = value_to_float(&self.size.value().await?)?;
+        let size: f64 = self.size.value().await?.try_into()?;
         self.runtime.sprite.write().await.pen().set_size(size);
         Next::continue_(self.next)
     }
@@ -351,7 +342,7 @@ impl Block for SetPenShadeToNumber {
     }
 
     async fn execute(&mut self) -> Next {
-        let shade = value_to_float(&self.shade.value().await?)?;
+        let shade: f64 = self.shade.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
@@ -414,7 +405,7 @@ impl Block for SetPenHueToNumber {
     }
 
     async fn execute(&mut self) -> Next {
-        let hue = value_to_float(&self.hue.value().await?)?;
+        let hue: f64 = self.hue.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
         runtime.pen().set_color(&new_color);

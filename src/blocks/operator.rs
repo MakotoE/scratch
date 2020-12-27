@@ -33,17 +33,6 @@ impl Equals {
             operand2: Box::new(EmptyInput {}),
         }
     }
-
-    fn equal(a: &serde_json::Value, b: &serde_json::Value) -> bool {
-        if let Some(a_float) = a.as_f64() {
-            if let Some(b_float) = b.as_f64() {
-                #[allow(clippy::float_cmp)]
-                return a_float == b_float;
-            }
-        }
-
-        a == b
-    }
 }
 
 #[async_trait(?Send)]
@@ -75,7 +64,7 @@ impl Block for Equals {
     async fn value(&self) -> Result<Value> {
         let a = self.operand1.value().await?;
         let b = self.operand2.value().await?;
-        Ok(Equals::equal(&a, &b).into())
+        Ok((a == b).into())
     }
 }
 
@@ -123,8 +112,8 @@ impl Block for Add {
     }
 
     async fn value(&self) -> Result<Value> {
-        let a = value_to_float(&self.num1.value().await?)?;
-        let b = value_to_float(&self.num2.value().await?)?;
+        let a: f64 = self.num1.value().await?.try_into()?;
+        let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a + b).into())
     }
 }
@@ -173,8 +162,8 @@ impl Block for Subtract {
     }
 
     async fn value(&self) -> Result<Value> {
-        let a = value_to_float(&self.num1.value().await?)?;
-        let b = value_to_float(&self.num2.value().await?)?;
+        let a: f64 = self.num1.value().await?.try_into()?;
+        let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a - b).into())
     }
 }
@@ -223,8 +212,8 @@ impl Block for Multiply {
     }
 
     async fn value(&self) -> Result<Value> {
-        let a = value_to_float(&self.num1.value().await?)?;
-        let b = value_to_float(&self.num2.value().await?)?;
+        let a: f64 = self.num1.value().await?.try_into()?;
+        let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a * b).into())
     }
 }
@@ -273,8 +262,8 @@ impl Block for Divide {
     }
 
     async fn value(&self) -> Result<Value> {
-        let a = value_to_float(&self.num1.value().await?)?;
-        let b = value_to_float(&self.num2.value().await?)?;
+        let a: f64 = self.num1.value().await?.try_into()?;
+        let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a / b).into())
     }
 }
@@ -323,16 +312,8 @@ impl Block for And {
     }
 
     async fn value(&self) -> Result<Value> {
-        let left = match self.operand1.value().await? {
-            serde_json::Value::Bool(b) => b,
-            _ => return Err(wrap_err!("operand1 is not a boolean")),
-        };
-
-        let right = match self.operand2.value().await? {
-            serde_json::Value::Bool(b) => b,
-            _ => return Err(wrap_err!("operand2 is not a boolean")),
-        };
-
+        let left: bool = self.operand1.value().await?.try_into()?;
+        let right = self.operand2.value().await?.try_into()?;
         Ok((left && right).into())
     }
 }
@@ -381,16 +362,8 @@ impl Block for Or {
     }
 
     async fn value(&self) -> Result<Value> {
-        let left = match self.operand1.value().await? {
-            serde_json::Value::Bool(b) => b,
-            _ => return Err(wrap_err!("operand1 is not a boolean")),
-        };
-
-        let right = match self.operand2.value().await? {
-            serde_json::Value::Bool(b) => b,
-            _ => return Err(wrap_err!("operand2 is not a boolean")),
-        };
-
+        let left: bool = self.operand1.value().await?.try_into()?;
+        let right: bool = self.operand2.value().await?.try_into()?;
         Ok((left || right).into())
     }
 }
@@ -435,11 +408,7 @@ impl Block for Not {
     }
 
     async fn value(&self) -> Result<Value> {
-        let operand = match self.operand.value().await? {
-            serde_json::Value::Bool(b) => b,
-            _ => return Err(wrap_err!("operand is not a boolean")),
-        };
-
+        let operand: bool = self.operand.value().await?.try_into()?;
         Ok((!operand).into())
     }
 }
@@ -488,8 +457,8 @@ impl Block for LessThan {
     }
 
     async fn value(&self) -> Result<Value> {
-        let left = value_to_float(&self.operand1.value().await?)?;
-        let right = value_to_float(&self.operand2.value().await?)?;
+        let left: f64 = self.operand1.value().await?.try_into()?;
+        let right: f64 = self.operand2.value().await?.try_into()?;
         Ok((left < right).into())
     }
 }
@@ -538,8 +507,8 @@ impl Block for GreaterThan {
     }
 
     async fn value(&self) -> Result<Value> {
-        let left = value_to_float(&self.operand1.value().await?)?;
-        let right = value_to_float(&self.operand2.value().await?)?;
+        let left: f64 = self.operand1.value().await?.try_into()?;
+        let right: f64 = self.operand2.value().await?.try_into()?;
         Ok((left > right).into())
     }
 }
@@ -596,49 +565,4 @@ impl Block for Join {
     }
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    mod equals {
-        use super::*;
-
-        #[test]
-        fn test_equal() {
-            struct Test {
-                a: serde_json::Value,
-                b: serde_json::Value,
-                expected: bool,
-            }
-
-            let tests = vec![
-                Test {
-                    a: serde_json::Value::Null,
-                    b: serde_json::Value::Null,
-                    expected: true,
-                },
-                Test {
-                    a: serde_json::Value::Null,
-                    b: false.into(),
-                    expected: false,
-                },
-                Test {
-                    a: 0i64.into(),
-                    b: 0.0f64.into(),
-                    expected: true,
-                },
-                Test {
-                    a: 1.into(),
-                    b: 0.into(),
-                    expected: false,
-                },
-            ];
-
-            for (i, test) in tests.iter().enumerate() {
-                assert_eq!(Equals::equal(&test.a, &test.b), test.expected, "{}", i);
-            }
-        }
-    }
 }

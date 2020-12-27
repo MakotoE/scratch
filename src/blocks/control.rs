@@ -1,13 +1,10 @@
-use std::str::FromStr;
-
-use futures::StreamExt;
-use gloo_timers::future::{IntervalStream, TimeoutFuture};
-
+use super::*;
 use crate::broadcaster;
 use crate::broadcaster::BroadcastMsg;
 use crate::vm::ThreadID;
-
-use super::*;
+use futures::StreamExt;
+use gloo_timers::future::{IntervalStream, TimeoutFuture};
+use std::str::FromStr;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -86,20 +83,9 @@ impl Block for If {
             return Next::continue_(self.next);
         }
 
-        let value = self.condition.value().await?;
-        let value_bool = match value.as_bool() {
-            Some(b) => b,
-            None => {
-                return Next::Err(wrap_err!(format!(
-                    "expected boolean type but got {}",
-                    value
-                )))
-            }
-        };
-
         self.done = true;
 
-        if value_bool {
+        if self.condition.value().await?.try_into()? {
             return Next::loop_(self.substack);
         }
 
@@ -157,7 +143,7 @@ impl Block for Wait {
     }
 
     async fn execute(&mut self) -> Next {
-        let duration = value_to_float(&self.duration.value().await?)?;
+        let duration: f64 = self.duration.value().await?.try_into()?;
         TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
         Next::continue_(self.next)
     }
@@ -261,7 +247,8 @@ impl Block for Repeat {
     }
 
     async fn execute(&mut self) -> Next {
-        if self.count < value_to_float(&self.times.value().await?)? as usize {
+        let times: f64 = self.times.value().await?.try_into()?;
+        if self.count < times as usize {
             // Loop until count equals times
             self.count += 1;
             return Next::loop_(self.substack);
@@ -324,16 +311,7 @@ impl Block for RepeatUntil {
     }
 
     async fn execute(&mut self) -> Next {
-        let condition_value = self.condition.value().await?;
-        let condition = match condition_value.as_bool() {
-            Some(b) => b,
-            None => {
-                return Next::Err(wrap_err!(format!(
-                    "condition is not boolean: {}",
-                    condition_value
-                )));
-            }
-        };
+        let condition: bool = self.condition.value().await?.try_into()?;
 
         if condition {
             return Next::continue_(self.next);
@@ -409,20 +387,9 @@ impl Block for IfElse {
             return Next::continue_(self.next);
         }
 
-        let condition_value = self.condition.value().await?;
-        let condition = match condition_value.as_bool() {
-            Some(b) => b,
-            None => {
-                return Next::Err(wrap_err!(format!(
-                    "condition is not boolean: {}",
-                    condition_value
-                )))
-            }
-        };
-
         self.done = true;
 
-        if condition {
+        if self.condition.value().await?.try_into()? {
             return Next::loop_(self.substack_true);
         }
 
@@ -480,12 +447,8 @@ impl Block for WaitUntil {
     async fn execute(&mut self) -> Next {
         let mut interval = IntervalStream::new(100);
         while interval.next().await.is_some() {
-            if let Some(condition) = self.condition.value().await?.as_bool() {
-                if condition {
-                    return Next::continue_(self.next);
-                }
-            } else {
-                return Next::Err(wrap_err!("condition is not bool"));
+            if self.condition.value().await?.try_into()? {
+                return Next::continue_(self.next);
             }
         }
         unreachable!()

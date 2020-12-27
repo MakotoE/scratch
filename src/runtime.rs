@@ -1,12 +1,11 @@
 use super::*;
-use crate::blocks::value_to_string;
+use crate::blocks::value::Value;
 use crate::broadcaster::Broadcaster;
 use crate::canvas::{CanvasContext, Corner, Direction};
 use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation};
 use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
 use crate::vm::ThreadID;
-use serde_json::Value;
 
 #[derive(Debug, Clone)]
 pub struct Runtime {
@@ -57,7 +56,7 @@ impl Global {
                     context,
                     &variable.position,
                     &variable.name,
-                    &value_to_string(variable.value.clone()),
+                    &variable.value.clone().to_string(),
                 )?;
             }
         }
@@ -200,7 +199,7 @@ impl Variables {
             let variable = match monitor {
                 Some(monitor) => Variable {
                     name: v.id.clone(),
-                    value: v.value.clone(),
+                    value: v.value.clone().into(),
                     monitored: monitor.visible,
                     position: CanvasCoordinate {
                         x: monitor.x,
@@ -209,7 +208,7 @@ impl Variables {
                 },
                 None => Variable {
                     name: v.id.clone(),
-                    value: v.value.clone(),
+                    value: v.value.clone().into(),
                     monitored: false,
                     position: CanvasCoordinate { x: 0.0, y: 0.0 },
                 },

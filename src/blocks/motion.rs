@@ -69,7 +69,7 @@ impl Block for MoveSteps {
     }
 
     async fn execute(&mut self) -> Next {
-        let steps = value_to_float(&self.steps.value().await?)?;
+        let steps: f64 = self.steps.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
         runtime.set_center(position);
@@ -131,8 +131,8 @@ impl Block for GoToXY {
     }
 
     async fn execute(&mut self) -> Next {
-        let x = value_to_float(&self.x.value().await?)?;
-        let y = value_to_float(&self.y.value().await?)?;
+        let x: f64 = self.x.value().await?.try_into()?;
+        let y: f64 = self.y.value().await?.try_into()?;
 
         self.runtime
             .sprite
@@ -193,7 +193,7 @@ impl Block for ChangeXBy {
     }
 
     async fn execute(&mut self) -> Next {
-        let x = value_to_float(&self.dx.value().await?)?;
+        let x: f64 = self.dx.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x, y: 0.0 });
         runtime.set_center(position);
@@ -251,7 +251,7 @@ impl Block for ChangeYBy {
     }
 
     async fn execute(&mut self) -> Next {
-        let y = value_to_float(&self.dy.value().await?)?;
+        let y: f64 = self.dy.value().await?.try_into()?;
 
         let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: 0.0, y });
@@ -310,7 +310,7 @@ impl Block for SetX {
     }
 
     async fn execute(&mut self) -> Next {
-        let x = value_to_float(&self.x.value().await?)?;
+        let x: f64 = self.x.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         let mut position = runtime.center();
         position.x = x;
@@ -369,7 +369,7 @@ impl Block for SetY {
     }
 
     async fn execute(&mut self) -> Next {
-        let y = value_to_float(&self.y.value().await?)?;
+        let y: f64 = self.y.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         let mut position = runtime.center();
         position.y = y;

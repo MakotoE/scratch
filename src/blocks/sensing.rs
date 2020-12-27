@@ -4,7 +4,6 @@ use crate::coordinate::CanvasRectangle;
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
-use palette::Hsv;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -62,7 +61,7 @@ impl Block for KeyPressed {
     }
 
     async fn value(&self) -> Result<Value> {
-        let key_option = KeyOption::from_str(&value_to_string(self.key_option.value().await?))?;
+        let key_option = KeyOption::from_str(&self.key_option.value().await?.to_string())?;
         self.runtime
             .global
             .broadcaster
@@ -122,6 +121,7 @@ impl Block for KeyOptions {
     }
 
     async fn value(&self) -> Result<Value> {
+        // TODO pass options without turning into string
         let s: &str = self.key.into();
         Ok(s.into())
     }
@@ -245,10 +245,7 @@ impl Block for TouchingObject {
     }
 
     async fn value(&self) -> Result<Value> {
-        let option = match self.menu.value().await?.as_str() {
-            Some(s) => TouchingObjectOption::from_str(s)?,
-            None => return Err(wrap_err!("menu value is not string")),
-        };
+        let option = TouchingObjectOption::from_str(&self.menu.value().await?.to_string())?;
 
         let sprite_rectangle = self.runtime.sprite.read().await.rectangle();
 

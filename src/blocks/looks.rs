@@ -76,7 +76,7 @@ impl Block for Say {
     }
 
     async fn execute(&mut self) -> Next {
-        let message = value_to_string(self.message.value().await?);
+        let message = self.message.value().await?.to_string();
         self.runtime.sprite.write().await.say(Text {
             id: self.id,
             text: Some(message),
@@ -139,8 +139,8 @@ impl Block for SayForSecs {
     }
 
     async fn execute(&mut self) -> Next {
-        let message = value_to_string(self.message.value().await?);
-        let seconds = value_to_float(&self.secs.value().await?)?;
+        let message = self.message.value().await?.to_string();
+        let seconds: f64 = self.secs.value().await?.try_into()?;
 
         self.runtime.sprite.write().await.say(Text {
             id: self.id,
@@ -392,7 +392,7 @@ impl Block for SetEffectTo {
     }
 
     async fn execute(&mut self) -> Next {
-        let value = value_to_float(&self.value.value().await?)?;
+        let value: f64 = self.value.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         match self.effect {
             Effect::Ghost => runtime.set_transparency((100.0 - value) / 100.0),
@@ -552,7 +552,7 @@ impl Block for ChangeEffectBy {
     }
 
     async fn execute(&mut self) -> Next {
-        let value = value_to_float(&self.change.value().await?)?;
+        let value: f64 = self.change.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
         match self.effect {
             Effect::Ghost => {
@@ -616,7 +616,8 @@ impl Block for SetSizeTo {
     }
 
     async fn execute(&mut self) -> Next {
-        let scale = value_to_float(&self.size.value().await?)? / 100.0;
+        let size: f64 = self.size.value().await?.try_into()?;
+        let scale = size / 100.0;
 
         self.runtime
             .sprite
@@ -678,7 +679,7 @@ impl Block for SwitchCostumeTo {
     }
 
     async fn execute(&mut self) -> Next {
-        let costume_name = value_to_string(self.costume.value().await?);
+        let costume_name = self.costume.value().await?.to_string();
         self.runtime
             .sprite
             .write()
@@ -792,7 +793,7 @@ impl Block for SwitchBackdropTo {
     }
 
     async fn execute(&mut self) -> Next {
-        let backdrop = value_to_string(self.backdrop.value().await?);
+        let backdrop = self.backdrop.value().await?.to_string();
         self.runtime
             .sprite
             .write()
