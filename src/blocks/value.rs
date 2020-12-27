@@ -1,4 +1,6 @@
 use super::*;
+use crate::color::{color_to_hex, hex_to_color};
+use palette::Hsv;
 use std::convert::TryFrom;
 use std::iter::repeat;
 
@@ -47,6 +49,18 @@ impl Block for Variable {
     }
 }
 
+pub fn get_value_block(arr: &[serde_json::Value]) -> Result<Box<dyn Block>> {
+    let err = || wrap_err!("invalid input");
+    let value_type = arr.get(0).ok_or_else(err)?.as_i64().ok_or_else(err)?;
+    let value = arr.get(1).ok_or_else(err)?;
+    Ok(match value_type {
+        9 => Box::new(ValueColor::new(value)?),
+        _ => Box::new(Value {
+            value: value.clone(),
+        }), // TODO add more values
+    })
+}
+
 #[derive(Debug)]
 pub struct Value {
     value: serde_json::Value,
@@ -75,8 +89,38 @@ impl Block for Value {
     }
 }
 
-impl std::convert::From<serde_json::Value> for Value {
-    fn from(value: serde_json::Value) -> Self {
-        Self { value }
+#[derive(Debug)]
+pub struct ValueColor {
+    color: Hsv,
+}
+
+impl ValueColor {
+    fn new(value: &serde_json::Value) -> Result<Self> {
+        Ok(Self {
+            color: hex_to_color(&value_to_string(value.clone()))?,
+        })
+    }
+}
+
+#[async_trait(?Send)]
+impl Block for ValueColor {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "ColorValue",
+            id: BlockID::default(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![("color", color_to_hex(&self.color))],
+            vec![],
+            vec![],
+        )
+    }
+
+    async fn value(&self) -> Result<serde_json::Value> {
+        Ok(color_to_hex(&self.color).into())
     }
 }

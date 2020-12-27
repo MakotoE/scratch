@@ -22,6 +22,7 @@ mod app;
 mod blocks;
 mod broadcaster;
 mod canvas;
+mod color;
 mod coordinate;
 mod event_sender;
 mod file;

@@ -1,5 +1,5 @@
 use super::*;
-use crate::sprite_runtime::hex_to_color;
+use crate::color::hex_to_color;
 use palette::IntoColor;
 use palette::Mix;
 

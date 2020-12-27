@@ -4,6 +4,7 @@ use crate::coordinate::CanvasRectangle;
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
+use palette::Hsv;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -69,11 +70,11 @@ impl Block for KeyPressed {
         let mut receiver = self.runtime.global.broadcaster.subscribe();
         loop {
             if let BroadcastMsg::PressedKeys(keys) = receiver.recv().await? {
-                return if let KeyOption::Key(key) = key_option {
-                    Ok(keys.contains(&key).into())
-                } else {
-                    Ok(true.into())
-                };
+                return Ok(match key_option {
+                    KeyOption::Any => true,
+                    KeyOption::Key(key) => keys.contains(&key),
+                }
+                .into());
             }
         }
     }
@@ -156,11 +157,15 @@ impl Block for ColorIsTouchingColor {
 #[derive(Debug)]
 pub struct TouchingColor {
     id: BlockID,
+    color: Box<dyn Block>,
 }
 
 impl TouchingColor {
     pub fn new(id: BlockID) -> Self {
-        Self { id }
+        Self {
+            id,
+            color: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -174,10 +179,21 @@ impl Block for TouchingColor {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("COLOR", &self.color)],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "COLOR" {
+            self.color = block;
+        }
+    }
+
+    // async fn value(&self) -> Result<serde_json::Value> {}
 }
 
 #[derive(Debug)]

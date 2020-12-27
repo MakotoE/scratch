@@ -10,6 +10,7 @@ mod sound;
 mod value;
 
 use super::*;
+use crate::blocks::value::get_value_block;
 use crate::file::BlockID;
 use crate::runtime::Runtime;
 use async_trait::async_trait;
@@ -79,6 +80,7 @@ pub trait Block: std::fmt::Debug {
     }
 
     async fn value(&self) -> Result<serde_json::Value> {
+        // TODO add custom types to reduce strings
         Err(wrap_err!("this block does not return a value"))
     }
 
@@ -230,7 +232,10 @@ pub fn block_tree(
                 let value = match input_type {
                     // Value
                     1 => match arr.get(1) {
-                        Some(v) => Box::new(value::Value::from(v.clone())) as Box<dyn Block>,
+                        Some(v) => match v {
+                            serde_json::Value::Array(v) => get_value_block(v)?,
+                            _ => return Err(wrap_err!("invalid input type")),
+                        },
                         None => return Err(wrap_err!("invalid input type")),
                     },
                     // Variable
