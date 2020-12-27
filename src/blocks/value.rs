@@ -60,6 +60,9 @@ pub fn value_block_from_input_arr(arr: &[serde_json::Value]) -> Result<Box<dyn B
             number: value.as_f64().unwrap(),
         }),
         9 => Box::new(ValueColor::new(value.as_str().unwrap())?),
+        10 => Box::new(ValueString {
+            string: value.to_string(),
+        }),
         _ => return Err(wrap_err!(format!("unknown value_type: {}", value_type))),
     })
 }

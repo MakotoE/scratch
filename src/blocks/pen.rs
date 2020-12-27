@@ -288,7 +288,7 @@ impl SetPenShadeToNumber {
         }
     }
 
-    fn set_shade(color: &palette::Hsv, shade: f32) -> palette::Hsv {
+    fn set_shade(color: &Hsv, shade: f32) -> Hsv {
         // https://github.com/LLK/scratch-vm/blob/c6962cb390ba2835d64eb21c0456707b51642084/src/extensions/scratch3_pen/index.js#L718
         let mut new_shade = shade % 200.0;
         if new_shade < 0.0 {
@@ -302,11 +302,11 @@ impl SetPenShadeToNumber {
             new_shade
         };
 
-        let bright = palette::Hsv::new(color.hue, 1.0, 1.0);
+        let bright = Hsv::new(color.hue, 1.0, 1.0);
         if constrained_shade < 50.0 {
-            palette::Hsv::new(0.0, 0.0, 0.0).mix(&bright, (10.0 + shade) / 60.0)
+            Hsv::new(0.0, 0.0, 0.0).mix(&bright, (10.0 + shade) / 60.0)
         } else {
-            bright.mix(&palette::Hsv::new(0.0, 0.0, 1.0), (shade - 50.0) / 60.0)
+            bright.mix(&Hsv::new(0.0, 0.0, 1.0), (shade - 50.0) / 60.0)
         }
     }
 }
@@ -369,8 +369,12 @@ impl SetPenHueToNumber {
         }
     }
 
-    fn set_hue(color: &palette::Hsv, hue: f32) -> palette::Hsv {
-        palette::Hsv::new(hue / 200.0 * 360.0, color.saturation, color.value)
+    fn set_hue(color: &Hsv, hue: f32) -> Hsv {
+        if hue == 200.0 {
+            Hsv::new(360.0, 0.0, 0.0)
+        } else {
+            Hsv::new(hue / 200.0 * 360.0, color.saturation, color.value)
+        }
     }
 }
 
@@ -423,41 +427,41 @@ mod tests {
         #[test]
         fn test_set_shade() {
             struct Test {
-                color: palette::Hsv,
+                color: Hsv,
                 shade: f32,
-                expected: palette::Hsv,
+                expected: Hsv,
             }
 
             let tests: Vec<Test> = vec![
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    color: Hsv::new(0.0, 0.0, 0.0),
                     shade: 0.0,
-                    expected: palette::Hsv::new(0.0, 0.16666667, 0.16666667),
+                    expected: Hsv::new(0.0, 0.16666667, 0.16666667),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 1.0),
+                    color: Hsv::new(0.0, 0.0, 1.0),
                     shade: 0.0,
-                    expected: palette::Hsv::new(0.0, 0.16666667, 0.16666667),
+                    expected: Hsv::new(0.0, 0.16666667, 0.16666667),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    color: Hsv::new(0.0, 0.0, 0.0),
                     shade: 100.0,
-                    expected: palette::Hsv::new(0.0, 0.16666669, 1.0),
+                    expected: Hsv::new(0.0, 0.16666669, 1.0),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 1.0),
+                    color: Hsv::new(0.0, 0.0, 1.0),
                     shade: 100.0,
-                    expected: palette::Hsv::new(0.0, 0.16666669, 1.0),
+                    expected: Hsv::new(0.0, 0.16666669, 1.0),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    color: Hsv::new(0.0, 0.0, 0.0),
                     shade: 50.0,
-                    expected: palette::Hsv::new(0.0, 1.0, 1.0),
+                    expected: Hsv::new(0.0, 1.0, 1.0),
                 },
                 Test {
-                    color: palette::Hsv::new(240.0, 1.0, 1.0),
+                    color: Hsv::new(240.0, 1.0, 1.0),
                     shade: 50.0,
-                    expected: palette::Hsv::new(240.0, 1.0, 1.0),
+                    expected: Hsv::new(240.0, 1.0, 1.0),
                 },
             ];
 
@@ -474,36 +478,36 @@ mod tests {
         #[test]
         fn test_set_hue() {
             struct Test {
-                color: palette::Hsv,
+                color: Hsv,
                 hue: f32,
-                expected: palette::Hsv,
+                expected: Hsv,
             }
 
             let tests: Vec<Test> = vec![
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    color: Hsv::new(0.0, 0.0, 0.0),
                     hue: 0.0,
-                    expected: palette::Hsv::new(0.0, 0.0, 0.0),
+                    expected: Hsv::new(0.0, 0.0, 0.0),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 1.0, 1.0),
+                    color: Hsv::new(0.0, 1.0, 1.0),
                     hue: 0.0,
-                    expected: palette::Hsv::new(0.0, 1.0, 1.0),
+                    expected: Hsv::new(0.0, 1.0, 1.0),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    color: Hsv::new(0.0, 0.0, 0.0),
                     hue: 50.0,
-                    expected: palette::Hsv::new(90.0, 0.0, 0.0),
+                    expected: Hsv::new(90.0, 0.0, 0.0),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    color: Hsv::new(0.0, 0.0, 0.0),
                     hue: 100.0,
-                    expected: palette::Hsv::new(180.0, 0.0, 0.0),
+                    expected: Hsv::new(180.0, 0.0, 0.0),
                 },
                 Test {
-                    color: palette::Hsv::new(0.0, 0.0, 0.0),
+                    color: Hsv::new(0.0, 0.0, 0.0),
                     hue: 200.0,
-                    expected: palette::Hsv::new(360.0, 0.0, 0.0),
+                    expected: Hsv::new(360.0, 0.0, 0.0),
                 },
             ];
 
