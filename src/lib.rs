@@ -23,6 +23,7 @@ mod blocks;
 mod broadcaster;
 mod canvas;
 mod coordinate;
+mod event_sender;
 mod file;
 mod fileinput;
 mod fileviewer;

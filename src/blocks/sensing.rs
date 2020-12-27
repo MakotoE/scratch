@@ -1,7 +1,7 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
 use crate::coordinate::CanvasRectangle;
-use crate::interface::KeyboardKey;
+use crate::event_sender::KeyboardKey;
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
 use std::fmt::{Display, Formatter};

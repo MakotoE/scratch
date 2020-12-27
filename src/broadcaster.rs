@@ -1,6 +1,6 @@
 use super::*;
 use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
-use crate::interface::KeyboardKey;
+use crate::event_sender::KeyboardKey;
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
 use std::collections::HashSet;
