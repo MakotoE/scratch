@@ -49,7 +49,7 @@ impl Block for Variable {
     }
 }
 
-pub fn get_value_block(arr: &[serde_json::Value]) -> Result<Box<dyn Block>> {
+pub fn value_block_from_input_arr(arr: &[serde_json::Value]) -> Result<Box<dyn Block>> {
     let err = || wrap_err!("invalid input");
     let value_type = arr.get(0).ok_or_else(err)?.as_i64().ok_or_else(err)?;
     let value = arr.get(1).ok_or_else(err)?;

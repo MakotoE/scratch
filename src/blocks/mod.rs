@@ -10,7 +10,7 @@ mod sound;
 mod value;
 
 use super::*;
-use crate::blocks::value::get_value_block;
+use crate::blocks::value::value_block_from_input_arr;
 use crate::file::BlockID;
 use crate::runtime::Runtime;
 use async_trait::async_trait;
@@ -196,21 +196,16 @@ pub fn block_tree(
     }
 
     for (k, input) in &info.inputs {
-        let input_arr = match input.as_array() {
-            Some(a) => a,
-            None => {
-                let e =
-                    ErrorKind::BlockInput(top_block_id, k.clone(), Box::new("invalid type".into()));
-                return Err(e.into());
-            }
+        let input_err = || {
+            Error::from_kind(ErrorKind::BlockInput(
+                top_block_id,
+                k.clone(),
+                Box::new("invalid type".into()),
+            ))
         };
 
-        let input_arr1 = match input_arr.get(1) {
-            Some(v) => v,
-            None => return Err(wrap_err!("invalid type")),
-        };
-
-        match input_arr1 {
+        let input_arr = input.as_array().ok_or_else(input_err)?;
+        match input_arr.get(1).ok_or_else(input_err)? {
             serde_json::Value::String(block_id) => {
                 let (id, mut blocks) =
                     block_tree(block_id.as_str().try_into()?, runtime.clone(), infos)?;
@@ -219,36 +214,36 @@ pub fn block_tree(
                     block.set_substack(k, id);
                     result.extend(blocks);
                 } else {
-                    assert_eq!(blocks.len(), 1);
-                    block.set_input(k, blocks.drain().next().unwrap().1);
+                    if let Some(b) = blocks.drain().next() {
+                        block.set_input(k, b.1);
+                    }
                 }
             }
             serde_json::Value::Array(arr) => {
-                let input_type = match input_arr.get(0).and_then(|v| v.as_i64()) {
-                    Some(n) => n,
-                    None => return Err(wrap_err!("invalid type")),
-                };
+                let input_type = input_arr
+                    .get(0)
+                    .ok_or_else(input_err)?
+                    .as_i64()
+                    .ok_or_else(input_err)?;
 
                 let value = match input_type {
                     // Value
-                    1 => match arr.get(1) {
-                        Some(v) => match v {
-                            serde_json::Value::Array(v) => get_value_block(v)?,
-                            _ => return Err(wrap_err!("invalid input type")),
-                        },
-                        None => return Err(wrap_err!("invalid input type")),
-                    },
+                    1 => value_block_from_input_arr(arr)?,
                     // Variable
-                    2 | 3 => match arr.get(2).and_then(|v| v.as_str()) {
-                        Some(id) => Box::new(value::Variable::new(id.to_string(), runtime.clone()))
-                            as Box<dyn Block>,
-                        None => return Err(wrap_err!("invalid input type")),
-                    },
-                    _ => return Err(wrap_err!("invalid input type id")),
+                    2 | 3 => {
+                        let id = arr
+                            .get(2)
+                            .ok_or_else(input_err)?
+                            .as_str()
+                            .ok_or_else(input_err)?;
+                        Box::new(value::Variable::new(id.to_string(), runtime.clone()))
+                            as Box<dyn Block>
+                    }
+                    _ => return Err(input_err()),
                 };
                 block.set_input(k, value);
             }
-            _ => return Err(wrap_err!("invalid type")),
+            _ => return Err(input_err()),
         };
     }
 
