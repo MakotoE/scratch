@@ -50,7 +50,7 @@ impl Global {
     }
 
     pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-        for variable in self.variables.variables.read().await.values() {
+        for variable in self.variables.variables.borrow().values() {
             if variable.monitored {
                 Global::draw_monitor(
                     context,
@@ -188,7 +188,7 @@ impl Global {
 
 #[derive(Debug)]
 pub struct Variables {
-    variables: RwLock<HashMap<String, Variable>>, // TODO don't need RwLock
+    variables: RefCell<HashMap<String, Variable>>,
 }
 
 impl Variables {
@@ -217,19 +217,19 @@ impl Variables {
         }
 
         Self {
-            variables: RwLock::new(variables),
+            variables: RefCell::new(variables),
         }
     }
 
     pub async fn get(&self, key: &str) -> Result<Value> {
-        match self.variables.read().await.get(key) {
+        match self.variables.borrow().get(key) {
             Some(v) => Ok(v.value.clone()),
             None => Err(wrap_err!(format!("key does not exist: {}", key))),
         }
     }
 
     pub async fn set(&self, key: &str, value: Value) -> Result<()> {
-        let mut variables = self.variables.write().await;
+        let mut variables = self.variables.borrow_mut();
         let variable = match variables.get_mut(key) {
             Some(v) => v,
             None => return Err(wrap_err!(format!("key does not exist: {}", key))),
@@ -243,7 +243,7 @@ impl Variables {
     where
         F: FnOnce(&Value) -> Value,
     {
-        let mut variables = self.variables.write().await;
+        let mut variables = self.variables.borrow_mut();
         let mut variable = match variables.get_mut(key) {
             Some(v) => v,
             None => return Err(wrap_err!(format!("key does not exist: {}", key))),
@@ -254,7 +254,7 @@ impl Variables {
     }
 
     pub async fn set_monitored(&self, key: &str, monitored: bool) -> Result<()> {
-        let mut variables = self.variables.write().await;
+        let mut variables = self.variables.borrow_mut();
         match variables.get_mut(key) {
             Some(v) => {
                 v.monitored = monitored;
