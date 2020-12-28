@@ -56,12 +56,16 @@ pub fn value_block_from_input_arr(arr: &[serde_json::Value]) -> Result<Box<dyn B
     let value_type = arr.get(0).ok_or_else(err)?.as_i64().ok_or_else(err)?;
     let value = arr.get(1).ok_or_else(err)?;
     Ok(match value_type {
-        4 => Box::new(ValueNumber {
+        4 | 5 | 6 | 7 | 8 => Box::new(ValueNumber {
             number: value.as_f64().unwrap(),
         }),
         9 => Box::new(ValueColor::new(value.as_str().unwrap())?),
-        10 => Box::new(ValueString {
-            string: value.to_string(),
+        10 | 11 => Box::new(ValueString {
+            string: if let serde_json::Value::String(s) = value {
+                s.clone()
+            } else {
+                value.to_string()
+            },
         }),
         _ => return Err(wrap_err!(format!("unknown value_type: {}", value_type))),
     })

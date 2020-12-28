@@ -195,19 +195,23 @@ pub fn block_tree(
     }
 
     for (k, input) in &info.inputs {
-        let input_err = || {
+        let wrap_err = |err: Error| {
             Error::from_kind(ErrorKind::BlockInput(
                 top_block_id,
                 k.clone(),
-                Box::new("invalid type".into()),
+                Box::new(err),
             ))
         };
+        let input_err = || wrap_err("invalid type".into());
 
         let input_arr = input.as_array().ok_or_else(input_err)?;
         match input_arr.get(1).ok_or_else(input_err)? {
             serde_json::Value::String(block_id) => {
-                let (id, mut blocks) =
-                    block_tree(block_id.as_str().try_into()?, runtime.clone(), infos)?;
+                let (id, mut blocks) = block_tree(
+                    block_id.as_str().try_into().map_err(wrap_err)?,
+                    runtime.clone(),
+                    infos,
+                )?;
 
                 if k.starts_with("SUBSTACK") {
                     block.set_substack(k, id);
@@ -227,7 +231,7 @@ pub fn block_tree(
 
                 let value = match input_type {
                     // Value
-                    1 => value_block_from_input_arr(arr)?,
+                    1 => value_block_from_input_arr(arr).map_err(wrap_err)?,
                     // Variable
                     2 | 3 => {
                         let id = arr
