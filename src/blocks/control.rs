@@ -4,7 +4,10 @@ use crate::broadcaster::BroadcastMsg;
 use crate::vm::ThreadID;
 use futures::StreamExt;
 use gloo_timers::future::{IntervalStream, TimeoutFuture};
+use std::convert::TryFrom;
+
 use std::str::FromStr;
+use strum::{EnumString};
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -571,7 +574,7 @@ impl Block for Stop {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("stop_option", format!("{:?}", self.stop_option))],
+            vec![("STOP_OPTION", format!("{}", self.stop_option))],
             vec![],
             vec![("next", &self.next)],
         )
@@ -598,10 +601,13 @@ impl Block for Stop {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-enum StopOption {
+#[derive(Debug, Copy, Clone, PartialEq, EnumString, strum::Display)]
+pub enum StopOption {
+    #[strum(serialize = "all")]
     All,
+    #[strum(serialize = "this script")]
     ThisThread,
+    #[strum(serialize = "other scripts in sprite")]
     OtherThreads,
 }
 
@@ -615,18 +621,7 @@ impl StopOption {
     }
 }
 
-impl FromStr for StopOption {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        Ok(match s {
-            "all" => StopOption::All,
-            "this script" => StopOption::ThisThread,
-            "other scripts in sprite" => StopOption::OtherThreads,
-            _ => return Err(wrap_err!(format!("s is invalid: {}", s))),
-        })
-    }
-}
+try_from_value!(StopOption);
 
 #[derive(Debug)]
 pub struct CreateCloneOf {
@@ -660,7 +655,7 @@ impl Block for CreateCloneOf {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("clone_option", &self.clone_option)],
+            vec![("CLONE_OPTION", &self.clone_option)],
             vec![("next", &self.next)],
         )
     }

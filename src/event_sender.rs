@@ -2,8 +2,9 @@ use super::*;
 use crate::broadcaster::{BroadcastMsg, Broadcaster};
 use crate::coordinate::CanvasCoordinate;
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use strum::{EnumString, IntoStaticStr};
+use strum::EnumString;
 
 #[derive(Debug)]
 pub struct EventSender {
@@ -74,12 +75,18 @@ impl Data {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, EnumString, IntoStaticStr)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, EnumString, strum::Display)]
+#[strum(serialize_all = "snake_case")]
 pub enum KeyboardKey {
+    #[strum(serialize = "space")]
     Space,
+    #[strum(serialize = "up arrow")]
     Up,
+    #[strum(serialize = "down arrow")]
     Down,
+    #[strum(serialize = "right arrow")]
     Right,
+    #[strum(serialize = "left arrow")]
     Left,
     A,
     B,
@@ -107,15 +114,25 @@ pub enum KeyboardKey {
     X,
     Y,
     Z,
+    #[strum(serialize = "0")]
     N0,
+    #[strum(serialize = "1")]
     N1,
+    #[strum(serialize = "2")]
     N2,
+    #[strum(serialize = "3")]
     N3,
+    #[strum(serialize = "4")]
     N4,
+    #[strum(serialize = "5")]
     N5,
+    #[strum(serialize = "6")]
     N6,
+    #[strum(serialize = "7")]
     N7,
+    #[strum(serialize = "8")]
     N8,
+    #[strum(serialize = "9")]
     N9,
 }
 
@@ -174,65 +191,6 @@ pub enum KeyOption {
     Key(KeyboardKey),
 }
 
-impl KeyOption {
-    pub fn from_scratch_option(s: &str) -> Result<Self> {
-        Ok(Self::Key(match s {
-            "any" => return Ok(Self::Any),
-            "space" => KeyboardKey::Space,
-            "up arrow" => KeyboardKey::Up,
-            "down arrow" => KeyboardKey::Down,
-            "right arrow" => KeyboardKey::Right,
-            "left arrow" => KeyboardKey::Left,
-            "a" => KeyboardKey::A,
-            "b" => KeyboardKey::B,
-            "c" => KeyboardKey::C,
-            "d" => KeyboardKey::D,
-            "e" => KeyboardKey::E,
-            "f" => KeyboardKey::F,
-            "g" => KeyboardKey::G,
-            "h" => KeyboardKey::H,
-            "i" => KeyboardKey::I,
-            "j" => KeyboardKey::J,
-            "k" => KeyboardKey::K,
-            "l" => KeyboardKey::L,
-            "m" => KeyboardKey::M,
-            "n" => KeyboardKey::N,
-            "o" => KeyboardKey::O,
-            "p" => KeyboardKey::P,
-            "q" => KeyboardKey::Q,
-            "r" => KeyboardKey::R,
-            "s" => KeyboardKey::S,
-            "t" => KeyboardKey::T,
-            "u" => KeyboardKey::U,
-            "v" => KeyboardKey::V,
-            "w" => KeyboardKey::W,
-            "x" => KeyboardKey::X,
-            "y" => KeyboardKey::Y,
-            "z" => KeyboardKey::Z,
-            "0" => KeyboardKey::N0,
-            "1" => KeyboardKey::N1,
-            "2" => KeyboardKey::N2,
-            "3" => KeyboardKey::N3,
-            "4" => KeyboardKey::N4,
-            "5" => KeyboardKey::N5,
-            "6" => KeyboardKey::N6,
-            "7" => KeyboardKey::N7,
-            "8" => KeyboardKey::N8,
-            "9" => KeyboardKey::N9,
-            _ => return Err(wrap_err!(format!("unknown key: {}", s))),
-        }))
-    }
-}
-
-impl From<KeyOption> for &str {
-    fn from(o: KeyOption) -> Self {
-        match o {
-            KeyOption::Any => "Any",
-            KeyOption::Key(k) => k.into(),
-        }
-    }
-}
-
 impl FromStr for KeyOption {
     type Err = Error;
 
@@ -241,5 +199,14 @@ impl FromStr for KeyOption {
             "Any" => KeyOption::Any,
             _ => KeyOption::Key(KeyboardKey::from_str(s)?),
         })
+    }
+}
+
+impl Display for KeyOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KeyOption::Any => f.write_str("Any"),
+            KeyOption::Key(k) => Display::fmt(k, f),
+        }
     }
 }

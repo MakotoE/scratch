@@ -1,7 +1,6 @@
 use super::*;
 use palette::{Hsv, IntoColor};
 use serde::Serializer;
-
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::repeat;
@@ -171,6 +170,8 @@ pub enum Value {
     String(String),
     Color(Hsv),
     TouchingObjectOption(sensing::TouchingObjectOption),
+    KeyOption(event_sender::KeyOption),
+    StopOption(control::StopOption),
 }
 
 impl From<serde_json::Value> for Value {
@@ -299,13 +300,16 @@ impl TryInto<Hsv> for Value {
 
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Bool(b) => f.serialize_bool(*b),
-            Self::Number(n) => f.serialize_f64(*n),
-            Self::String(s) => f.write_str(&s),
-            Self::Color(c) => HsvDisplay(*c).fmt(f),
-            Self::TouchingObjectOption(o) => Display::fmt(o, f),
-        }
+        let o: &dyn Display = match self {
+            Self::Bool(b) => return f.serialize_bool(*b),
+            Self::Number(n) => return f.serialize_f64(*n),
+            Self::String(s) => return f.write_str(&s),
+            Self::Color(c) => return HsvDisplay(*c).fmt(f),
+            Self::TouchingObjectOption(o) => o,
+            Self::KeyOption(o) => o,
+            Self::StopOption(o) => o,
+        };
+        Display::fmt(o, f)
     }
 }
 
@@ -316,11 +320,11 @@ macro_rules! try_from_value {
             type Error = Error;
 
             fn try_from(value: Value) -> Result<Self> {
-                match value {
-                    Value::String(s) => Self::from_str(&s),
-                    Value::$value_name(o) => Ok(o),
-                    _ => Err(wrap_err!(format!("cannot convert value: {}", value))),
-                }
+                Ok(match value {
+                    Value::String(s) => Self::from_str(&s)?,
+                    Value::$value_name(o) => o,
+                    _ => return Err(wrap_err!(format!("cannot convert value: {}", value))),
+                })
             }
         }
     };

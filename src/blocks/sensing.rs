@@ -8,6 +8,7 @@ use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "keypressed" => Box::new(KeyPressed::new(id, runtime)),
@@ -50,7 +51,7 @@ impl Block for KeyPressed {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("key_option", &self.key_option)],
+            vec![("KEY_OPTION", &self.key_option)],
             vec![],
         )
     }
@@ -62,7 +63,7 @@ impl Block for KeyPressed {
     }
 
     async fn value(&self) -> Result<Value> {
-        let key_option = KeyOption::from_str(&self.key_option.value().await?.to_string())?;
+        let key_option: KeyOption = self.key_option.value().await?.try_into()?;
         self.runtime
             .global
             .broadcaster
@@ -105,10 +106,9 @@ impl Block for KeyOptions {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        let key: &str = self.key.into();
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("KEY_OPTION", key.to_string())],
+            vec![("KEY_OPTION", format!("{}", self.key))],
             vec![],
             vec![],
         )
@@ -116,16 +116,17 @@ impl Block for KeyOptions {
 
     fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
         if key == "KEY_OPTION" {
-            self.key = KeyOption::from_scratch_option(get_field_value(field, 0)?)?;
+            self.key = KeyOption::from_str(get_field_value(field, 0)?)?;
         }
         Ok(())
     }
 
     async fn value(&self) -> Result<Value> {
-        let s: &str = self.key.into();
-        Ok(s.into())
+        Ok(Value::KeyOption(self.key))
     }
 }
+
+try_from_value!(KeyOption);
 
 #[derive(Debug)]
 pub struct ColorIsTouchingColor {
@@ -245,7 +246,7 @@ impl Block for TouchingObject {
     }
 
     async fn value(&self) -> Result<Value> {
-        let option = TouchingObjectOption::from_str(&self.menu.value().await?.to_string())?;
+        let option: TouchingObjectOption = self.menu.value().await?.try_into()?;
 
         let sprite_rectangle = self.runtime.sprite.read().await.rectangle();
 
