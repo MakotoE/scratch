@@ -4,7 +4,6 @@ use crate::coordinate::CanvasRectangle;
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
-
 use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -363,14 +362,4 @@ impl Display for TouchingObjectOption {
     }
 }
 
-impl TryFrom<Value> for TouchingObjectOption {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::String(s) => Self::from_str(&s),
-            Value::TouchingObjectOption(o) => Ok(o),
-            _ => Err(wrap_err!(format!("cannot convert value: {}", value))),
-        }
-    }
-}
+try_from_value!(TouchingObjectOption);

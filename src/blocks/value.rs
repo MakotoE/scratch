@@ -6,7 +6,6 @@ use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::repeat;
 
-
 #[derive(Debug)]
 pub struct Variable {
     id: String,
@@ -308,6 +307,23 @@ impl Display for Value {
             Self::TouchingObjectOption(o) => Display::fmt(o, f),
         }
     }
+}
+
+#[macro_export]
+macro_rules! try_from_value {
+    ( $value_name:ident ) => {
+        impl TryFrom<Value> for $value_name {
+            type Error = Error;
+
+            fn try_from(value: Value) -> Result<Self> {
+                match value {
+                    Value::String(s) => Self::from_str(&s),
+                    Value::$value_name(o) => Ok(o),
+                    _ => Err(wrap_err!(format!("cannot convert value: {}", value))),
+                }
+            }
+        }
+    };
 }
 
 #[cfg(test)]
