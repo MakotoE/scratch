@@ -216,10 +216,8 @@ pub fn block_tree(
                 if k.starts_with("SUBSTACK") {
                     block.set_substack(k, id);
                     result.extend(blocks);
-                } else {
-                    if let Some(b) = blocks.drain().next() {
-                        block.set_input(k, b.1);
-                    }
+                } else if let Some(b) = blocks.drain().next() {
+                    block.set_input(k, b.1);
                 }
             }
             serde_json::Value::Array(arr) => {

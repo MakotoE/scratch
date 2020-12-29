@@ -4,6 +4,8 @@ use crate::coordinate::CanvasRectangle;
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
+
+use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -121,7 +123,6 @@ impl Block for KeyOptions {
     }
 
     async fn value(&self) -> Result<Value> {
-        // TODO pass options without turning into string
         let s: &str = self.key.into();
         Ok(s.into())
     }
@@ -329,12 +330,12 @@ impl Block for TouchingObjectMenu {
     }
 
     async fn value(&self) -> Result<Value> {
-        Ok(self.option.to_string().into())
+        Ok(Value::TouchingObjectOption(self.option.clone()))
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-enum TouchingObjectOption {
+pub enum TouchingObjectOption {
     MousePointer,
     Edge,
     Sprite(String),
@@ -359,5 +360,17 @@ impl Display for TouchingObjectOption {
             TouchingObjectOption::Edge => "_edge_",
             TouchingObjectOption::Sprite(s) => &s,
         })
+    }
+}
+
+impl TryFrom<Value> for TouchingObjectOption {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::String(s) => Self::from_str(&s),
+            Value::TouchingObjectOption(o) => Ok(o),
+            _ => Err(wrap_err!(format!("cannot convert value: {}", value))),
+        }
     }
 }

@@ -1,9 +1,11 @@
 use super::*;
 use palette::{Hsv, IntoColor};
 use serde::Serializer;
+
 use std::convert::TryFrom;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::iter::repeat;
+
 
 #[derive(Debug)]
 pub struct Variable {
@@ -169,6 +171,7 @@ pub enum Value {
     Number(f64),
     String(String),
     Color(Hsv),
+    TouchingObjectOption(sensing::TouchingObjectOption),
 }
 
 impl From<serde_json::Value> for Value {
@@ -302,6 +305,7 @@ impl Display for Value {
             Self::Number(n) => f.serialize_f64(*n),
             Self::String(s) => f.write_str(&s),
             Self::Color(c) => HsvDisplay(*c).fmt(f),
+            Self::TouchingObjectOption(o) => Display::fmt(o, f),
         }
     }
 }

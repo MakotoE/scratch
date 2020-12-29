@@ -370,6 +370,7 @@ impl SetPenHueToNumber {
     }
 
     fn set_hue(color: &Hsv, hue: f32) -> Hsv {
+        #[allow(clippy::float_cmp)]
         if hue == 200.0 {
             Hsv::new(360.0, 0.0, 0.0)
         } else {
