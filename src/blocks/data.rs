@@ -44,7 +44,7 @@ impl Block for SetVariable {
         BlockInputsPartial::new(
             self.block_info(),
             vec![("variable_id", self.variable_id.clone())],
-            vec![("value", &self.value)],
+            vec![("value", self.value.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -113,7 +113,7 @@ impl Block for ChangeVariable {
         BlockInputsPartial::new(
             self.block_info(),
             vec![("variable_id", self.variable_id.clone())],
-            vec![("value", &self.value)],
+            vec![("value", self.value.as_ref())],
             vec![("next", &self.next)],
         )
     }

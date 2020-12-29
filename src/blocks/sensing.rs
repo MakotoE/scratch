@@ -49,7 +49,7 @@ impl Block for KeyPressed {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("KEY_OPTION", &self.key_option)],
+            vec![("KEY_OPTION", self.key_option.as_ref())],
             vec![],
         )
     }
@@ -181,7 +181,7 @@ impl Block for TouchingColor {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("COLOR", &self.color)],
+            vec![("COLOR", self.color.as_ref())],
             vec![],
         )
     }
@@ -232,7 +232,7 @@ impl Block for TouchingObject {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("menu", &self.menu)],
+            vec![("menu", self.menu.as_ref())],
             vec![],
         )
     }

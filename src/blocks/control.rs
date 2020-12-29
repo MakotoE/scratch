@@ -60,7 +60,7 @@ impl Block for If {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", &self.condition)],
+            vec![("condition", self.condition.as_ref())],
             vec![("next", &self.next), ("substack", &self.substack)],
         )
     }
@@ -127,7 +127,7 @@ impl Block for Wait {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("duration", &self.duration)],
+            vec![("duration", self.duration.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -229,7 +229,7 @@ impl Block for Repeat {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("times", &self.times)],
+            vec![("times", self.times.as_ref())],
             vec![("next", &self.next), ("substack", &self.substack)],
         )
     }
@@ -293,7 +293,7 @@ impl Block for RepeatUntil {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", &self.condition)],
+            vec![("condition", self.condition.as_ref())],
             vec![("next", &self.next), ("substack", &self.substack)],
         )
     }
@@ -359,7 +359,7 @@ impl Block for IfElse {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", &self.condition)],
+            vec![("condition", self.condition.as_ref())],
             vec![
                 ("next", &self.next),
                 ("substack_true", &self.substack_true),
@@ -429,7 +429,7 @@ impl Block for WaitUntil {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", &self.condition)],
+            vec![("condition", self.condition.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -654,7 +654,7 @@ impl Block for CreateCloneOf {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("CLONE_OPTION", &self.clone_option)],
+            vec![("CLONE_OPTION", self.clone_option.as_ref())],
             vec![("next", &self.next)],
         )
     }

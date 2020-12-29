@@ -55,7 +55,7 @@ impl Block for MoveSteps {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("steps", &self.steps)],
+            vec![("steps", self.steps.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -115,7 +115,7 @@ impl Block for GoToXY {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("x", &self.x), ("y", &self.y)],
+            vec![("x", self.x.as_ref()), ("y", self.y.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -179,7 +179,7 @@ impl Block for ChangeXBy {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("dx", &self.dx)],
+            vec![("dx", self.dx.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -237,7 +237,7 @@ impl Block for ChangeYBy {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("dy", &self.dy)],
+            vec![("dy", self.dy.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -296,7 +296,7 @@ impl Block for SetX {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("x", &self.x)],
+            vec![("x", self.x.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -355,7 +355,7 @@ impl Block for SetY {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("y", &self.y)],
+            vec![("y", self.y.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -542,7 +542,7 @@ impl Block for GoTo {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("TO", &self.option)],
+            vec![("TO", self.option.as_ref())],
             vec![],
         )
     }

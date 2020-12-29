@@ -147,11 +147,10 @@ pub struct BlockInputsPartial {
 }
 
 impl BlockInputsPartial {
-    #[allow(clippy::borrowed_box)]
     fn new<'a>(
         info: BlockInfo,
         mut fields: Vec<(&'static str, String)>,
-        mut inputs: Vec<(&'static str, &'a Box<dyn Block>)>,
+        mut inputs: Vec<(&'static str, &'a dyn Block)>,
         mut stacks: Vec<(&'static str, &'a Option<BlockID>)>,
     ) -> Self {
         Self {
