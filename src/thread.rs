@@ -17,10 +17,7 @@ impl Thread {
         runtime: Runtime,
         file_blocks: &HashMap<BlockID, file::Block>,
     ) -> Result<Self> {
-        let (_, blocks) = match block_tree(hat, runtime, file_blocks) {
-            Ok(b) => b,
-            Err(e) => return Err(ErrorKind::Initialization(Box::new(e)).into()),
-        };
+        let (_, blocks) = block_tree(hat, runtime, file_blocks)?;
         Ok(Thread {
             blocks,
             curr_block: hat,

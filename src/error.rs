@@ -26,11 +26,6 @@ error_chain::error_chain! {
             display("{}\n{}:{}", error, file, line)
         }
 
-        Initialization(error: Box<Error>) {
-            description("initialization error")
-            display("error during initialization: {}", error)
-        }
-
         Block(block_name: &'static str, block_id: BlockID, error: Box<Error>) {
             description("block error")
             display(
@@ -48,12 +43,17 @@ error_chain::error_chain! {
 
         BlockInitialization(block_id: BlockID, category: String, error: Box<Error>) {
             description("block initialization error")
-            display("block id \"{}\", category {}: {}", block_id, category, error)
+            display("initialization error (block id \"{}\", category {}): {}", block_id, category, error)
         }
 
         BlockInput(block_id: BlockID, input_id: String, error: Box<Error>) {
             description("block input error")
-            display(r#"block id "{}", input "{}": {}"#, block_id, input_id, error)
+            display(r#"input error (block id "{}", input "{}"): {}"#, block_id, input_id, error)
+        }
+
+        BlockField(block_id: BlockID, field_id: String, error: Box<Error>) {
+            description("block field error")
+            display(r#"field error (block id "{}", input "{}"): {}"#, block_id, field_id, error)
         }
     }
 }

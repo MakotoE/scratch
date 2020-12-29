@@ -249,7 +249,12 @@ pub fn block_tree(
     }
 
     for (k, field) in &info.fields {
-        block.set_field(k, field)?;
+        match block.set_field(k, field) {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(ErrorKind::BlockField(top_block_id, k.clone(), Box::new(e)).into())
+            }
+        }
     }
 
     let id = block.block_info().id;

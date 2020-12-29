@@ -196,7 +196,7 @@ impl FromStr for KeyOption {
 
     fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
-            "Any" => KeyOption::Any,
+            "any" => KeyOption::Any,
             _ => KeyOption::Key(KeyboardKey::from_str(s)?),
         })
     }
@@ -205,7 +205,7 @@ impl FromStr for KeyOption {
 impl Display for KeyOption {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            KeyOption::Any => f.write_str("Any"),
+            KeyOption::Any => f.write_str("any"),
             KeyOption::Key(k) => Display::fmt(k, f),
         }
     }
