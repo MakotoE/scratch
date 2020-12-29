@@ -4,10 +4,9 @@ use crate::broadcaster::BroadcastMsg;
 use crate::vm::ThreadID;
 use futures::StreamExt;
 use gloo_timers::future::{IntervalStream, TimeoutFuture};
-use std::convert::TryFrom;
 
 use std::str::FromStr;
-use strum::{EnumString};
+use strum::EnumString;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {

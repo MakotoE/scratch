@@ -4,10 +4,8 @@ use crate::coordinate::CanvasRectangle;
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
-use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -269,8 +267,7 @@ impl Block for TouchingObject {
             TouchingObjectOption::Edge => {
                 return Ok(TouchingObject::sprite_on_edge(&sprite_rectangle.into()).into())
             }
-            TouchingObjectOption::Sprite(sprite_name) => {
-                let id = SpriteID::from_sprite_name(&sprite_name);
+            TouchingObjectOption::Sprite(id) => {
                 let msg = BroadcastMsg::RequestSpriteRectangle(id);
                 self.runtime.global.broadcaster.send(msg)?;
 
@@ -330,15 +327,15 @@ impl Block for TouchingObjectMenu {
     }
 
     async fn value(&self) -> Result<Value> {
-        Ok(Value::TouchingObjectOption(self.option.clone()))
+        Ok(Value::TouchingObjectOption(self.option))
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum TouchingObjectOption {
     MousePointer,
     Edge,
-    Sprite(String),
+    Sprite(SpriteID),
 }
 
 impl FromStr for TouchingObjectOption {
@@ -348,7 +345,7 @@ impl FromStr for TouchingObjectOption {
         Ok(match s {
             "_mouse_" => Self::MousePointer,
             "_edge_" => Self::Edge,
-            _ => Self::Sprite(s.to_string()),
+            _ => Self::Sprite(SpriteID::from_sprite_name(s)),
         })
     }
 }
@@ -358,7 +355,7 @@ impl Display for TouchingObjectOption {
         f.write_str(match self {
             TouchingObjectOption::MousePointer => "_mouse_",
             TouchingObjectOption::Edge => "_edge_",
-            TouchingObjectOption::Sprite(s) => &s,
+            TouchingObjectOption::Sprite(s) => return Display::fmt(s, f),
         })
     }
 }

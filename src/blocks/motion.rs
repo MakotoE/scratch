@@ -1,5 +1,9 @@
 use super::*;
 use crate::coordinate::SpriteCoordinate;
+use crate::sprite::SpriteID;
+use std::fmt::Display;
+use std::str::FromStr;
+use wasm_bindgen::__rt::core::fmt::Formatter;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -512,11 +516,16 @@ impl Block for PointingDirection {
 pub struct GoTo {
     id: BlockID,
     runtime: Runtime,
+    option: Box<dyn Block>,
 }
 
 impl GoTo {
     pub fn new(id: BlockID, runtime: Runtime) -> Self {
-        Self { id, runtime }
+        Self {
+            id,
+            runtime,
+            option: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -530,21 +539,39 @@ impl Block for GoTo {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("TO", &self.option)],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "TO" {
+            self.option = block;
+        }
+    }
+
+    async fn execute(&mut self) -> Next {
+        Next::Err(wrap_err!("this block cannot be executed"))
+    }
 }
 
 #[derive(Debug)]
 pub struct GoToMenu {
     id: BlockID,
     runtime: Runtime,
+    option: GoToOption,
 }
 
 impl GoToMenu {
     pub fn new(id: BlockID, runtime: Runtime) -> Self {
-        Self { id, runtime }
+        Self {
+            id,
+            runtime,
+            option: GoToOption::RandomPosition,
+        }
     }
 }
 
@@ -558,8 +585,53 @@ impl Block for GoToMenu {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![("TO", format!("{}", self.option))],
+            vec![],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        if key == "TO" {
+            self.option = GoToOption::from_str(get_field_value(field, 0)?)?;
+        }
+        Ok(())
+    }
+
+    async fn value(&self) -> Result<Value> {
+        Ok(Value::GoToOption(self.option))
+    }
 }
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum GoToOption {
+    RandomPosition,
+    MousePointer,
+    Sprite(SpriteID),
+}
+
+impl FromStr for GoToOption {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
+            "_random_" => Self::RandomPosition,
+            "_mouse_pointer_" => Self::MousePointer,
+            _ => Self::Sprite(SpriteID::from_sprite_name(s)),
+        })
+    }
+}
+
+impl Display for GoToOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::RandomPosition => "_random_",
+            Self::MousePointer => "_mouse_pointer_",
+            Self::Sprite(id) => return Display::fmt(id, f),
+        })
+    }
+}
+
+try_from_value!(GoToOption);

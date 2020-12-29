@@ -172,6 +172,7 @@ pub enum Value {
     TouchingObjectOption(sensing::TouchingObjectOption),
     KeyOption(event_sender::KeyOption),
     StopOption(control::StopOption),
+    GoToOption(motion::GoToOption),
 }
 
 impl From<serde_json::Value> for Value {
@@ -308,6 +309,7 @@ impl Display for Value {
             Self::TouchingObjectOption(o) => o,
             Self::KeyOption(o) => o,
             Self::StopOption(o) => o,
+            Self::GoToOption(o) => o,
         };
         Display::fmt(o, f)
     }
@@ -316,7 +318,7 @@ impl Display for Value {
 #[macro_export]
 macro_rules! try_from_value {
     ( $value_name:ident ) => {
-        impl TryFrom<Value> for $value_name {
+        impl std::convert::TryFrom<Value> for $value_name {
             type Error = Error;
 
             fn try_from(value: Value) -> Result<Self> {
