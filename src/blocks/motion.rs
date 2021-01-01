@@ -581,7 +581,23 @@ impl Block for GoTo {
                     }
                 }
             }
-            GoToOption::Sprite(_) => todo!(),
+            GoToOption::Sprite(id) => {
+                self.runtime
+                    .global
+                    .broadcaster
+                    .send(BroadcastMsg::RequestSpriteRectangle(id))?;
+
+                let mut channel = self.runtime.global.broadcaster.subscribe();
+                loop {
+                    if let BroadcastMsg::SpriteRectangle { sprite, rectangle } =
+                        channel.recv().await?
+                    {
+                        if sprite == id {
+                            break rectangle.center;
+                        }
+                    }
+                }
+            }
         };
         self.runtime.sprite.write().await.set_center(new_coordinate);
 

@@ -268,8 +268,10 @@ impl Block for TouchingObject {
                 return Ok(TouchingObject::sprite_on_edge(&sprite_rectangle.into()).into())
             }
             TouchingObjectOption::Sprite(id) => {
-                let msg = BroadcastMsg::RequestSpriteRectangle(id);
-                self.runtime.global.broadcaster.send(msg)?;
+                self.runtime
+                    .global
+                    .broadcaster
+                    .send(BroadcastMsg::RequestSpriteRectangle(id))?;
 
                 let mut channel = self.runtime.global.broadcaster.subscribe();
                 loop {
