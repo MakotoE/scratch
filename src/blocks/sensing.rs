@@ -248,7 +248,7 @@ impl Block for TouchingObject {
 
         let sprite_rectangle = self.runtime.sprite.read().await.rectangle();
 
-        match option {
+        let result = match option {
             TouchingObjectOption::MousePointer => {
                 TimeoutFuture::new(0).await; // Prevents unresponsiveness
                 self.runtime
@@ -260,13 +260,11 @@ impl Block for TouchingObject {
                 let mut channel = self.runtime.global.broadcaster.subscribe();
                 loop {
                     if let BroadcastMsg::MousePosition(position) = channel.recv().await? {
-                        return Ok(canvas_rectangle.contains(&position).into());
+                        break canvas_rectangle.contains(&position);
                     }
                 }
             }
-            TouchingObjectOption::Edge => {
-                return Ok(TouchingObject::sprite_on_edge(&sprite_rectangle.into()).into())
-            }
+            TouchingObjectOption::Edge => TouchingObject::sprite_on_edge(&sprite_rectangle.into()),
             TouchingObjectOption::Sprite(id) => {
                 self.runtime
                     .global
@@ -279,12 +277,13 @@ impl Block for TouchingObject {
                         channel.recv().await?
                     {
                         if sprite == id {
-                            return Ok(sprite_rectangle.intersects(&rectangle).into());
+                            break sprite_rectangle.intersects(&rectangle);
                         }
                     }
                 }
             }
-        }
+        };
+        return Ok(result.into());
     }
 }
 
