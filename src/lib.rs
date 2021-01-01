@@ -1,4 +1,3 @@
-#![feature(async_closure)]
 #![feature(try_trait)]
 #![feature(str_split_once)]
 #![recursion_limit = "512"]

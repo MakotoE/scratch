@@ -1,9 +1,10 @@
 use super::*;
-use crate::coordinate::SpriteCoordinate;
+use crate::coordinate::{canvas_const, SpriteCoordinate};
 use crate::sprite::SpriteID;
-use std::fmt::Display;
+use rand::distributions::{DistIter, Uniform};
+use rand::prelude::*;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use wasm_bindgen::__rt::core::fmt::Formatter;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -516,7 +517,9 @@ impl Block for PointingDirection {
 pub struct GoTo {
     id: BlockID,
     runtime: Runtime,
+    next: Option<BlockID>,
     option: Box<dyn Block>,
+    rng: RandomCoordinateGenerator,
 }
 
 impl GoTo {
@@ -524,7 +527,9 @@ impl GoTo {
         Self {
             id,
             runtime,
+            next: None,
             option: Box::new(EmptyInput {}),
+            rng: RandomCoordinateGenerator::new(),
         }
     }
 }
@@ -543,7 +548,7 @@ impl Block for GoTo {
             self.block_info(),
             vec![],
             vec![("TO", self.option.as_ref())],
-            vec![],
+            vec![("next", &self.next)],
         )
     }
 
@@ -553,8 +558,51 @@ impl Block for GoTo {
         }
     }
 
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
+        }
+    }
+
     async fn execute(&mut self) -> Next {
-        Next::Err(wrap_err!("this block cannot be executed"))
+        let option: GoToOption = self.option.value().await?.try_into()?;
+        let new_coordinate = match option {
+            GoToOption::RandomPosition => self.rng.next().unwrap(),
+            GoToOption::MousePointer => todo!(),
+            GoToOption::Sprite(_) => todo!(),
+        };
+        self.runtime.sprite.write().await.set_center(new_coordinate);
+
+        Next::continue_(self.next)
+    }
+}
+
+#[derive(Debug)]
+struct RandomCoordinateGenerator {
+    x_iter: DistIter<Uniform<f64>, SmallRng, f64>,
+    y_iter: DistIter<Uniform<f64>, SmallRng, f64>,
+}
+
+impl RandomCoordinateGenerator {
+    fn new() -> Self {
+        let mut seeder = thread_rng();
+        Self {
+            x_iter: Uniform::new_inclusive(-canvas_const::X_MAX / 2.0, canvas_const::X_MAX / 2.0)
+                .sample_iter(SmallRng::seed_from_u64(seeder.next_u64())),
+            y_iter: Uniform::new_inclusive(-canvas_const::Y_MAX / 2.0, canvas_const::Y_MAX / 2.0)
+                .sample_iter(SmallRng::seed_from_u64(seeder.next_u64())),
+        }
+    }
+}
+
+impl Iterator for RandomCoordinateGenerator {
+    type Item = SpriteCoordinate;
+
+    fn next(&mut self) -> Option<SpriteCoordinate> {
+        Some(SpriteCoordinate {
+            x: self.x_iter.next().unwrap(),
+            y: self.y_iter.next().unwrap(),
+        })
     }
 }
 

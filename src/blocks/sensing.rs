@@ -1,6 +1,6 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
-use crate::coordinate::CanvasRectangle;
+use crate::coordinate::{canvas_const, CanvasRectangle};
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
@@ -214,8 +214,8 @@ impl TouchingObject {
     fn sprite_on_edge(rectangle: &CanvasRectangle) -> bool {
         rectangle.top_left.x < 0.0
             || rectangle.top_left.y < 0.0
-            || rectangle.top_left.x + rectangle.size.width > 460.0
-            || rectangle.top_left.y + rectangle.size.height > 180.0
+            || rectangle.top_left.x + rectangle.size.width > canvas_const::X_MAX
+            || rectangle.top_left.y + rectangle.size.height > canvas_const::Y_MAX
     }
 }
 

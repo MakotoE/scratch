@@ -19,8 +19,8 @@ impl SpriteCoordinate {
 impl From<CanvasCoordinate> for SpriteCoordinate {
     fn from(c: CanvasCoordinate) -> Self {
         Self {
-            x: c.x - 240.0,
-            y: -c.y + 180.0,
+            x: c.x - canvas_const::X_MAX / 2.0,
+            y: -c.y + canvas_const::Y_MAX / 2.0,
         }
     }
 }
@@ -58,10 +58,17 @@ impl Default for CanvasCoordinate {
 impl From<SpriteCoordinate> for CanvasCoordinate {
     fn from(sprite_coordinate: SpriteCoordinate) -> Self {
         Self {
-            x: 240.0 + sprite_coordinate.x,
-            y: 180.0 - sprite_coordinate.y,
+            x: canvas_const::X_MAX / 2.0 + sprite_coordinate.x,
+            y: canvas_const::Y_MAX / 2.0 - sprite_coordinate.y,
         }
     }
+}
+
+pub mod canvas_const {
+    /// Right edge
+    pub const X_MAX: f64 = 480.0;
+    /// Bottom edge
+    pub const Y_MAX: f64 = 360.0;
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
