@@ -1,5 +1,6 @@
 use super::*;
-use crate::coordinate::{canvas_const, SpriteCoordinate};
+use crate::broadcaster::BroadcastMsg;
+use crate::coordinate::{canvas_const, CanvasRectangle, SpriteCoordinate};
 use crate::sprite::SpriteID;
 use rand::distributions::{DistIter, Uniform};
 use rand::prelude::*;
@@ -568,7 +569,18 @@ impl Block for GoTo {
         let option: GoToOption = self.option.value().await?.try_into()?;
         let new_coordinate = match option {
             GoToOption::RandomPosition => self.rng.next().unwrap(),
-            GoToOption::MousePointer => todo!(),
+            GoToOption::MousePointer => {
+                self.runtime
+                    .global
+                    .broadcaster
+                    .send(BroadcastMsg::RequestMousePosition)?;
+                let mut channel = self.runtime.global.broadcaster.subscribe();
+                loop {
+                    if let BroadcastMsg::MousePosition(position) = channel.recv().await? {
+                        break position.into();
+                    }
+                }
+            }
             GoToOption::Sprite(_) => todo!(),
         };
         self.runtime.sprite.write().await.set_center(new_coordinate);
@@ -666,7 +678,7 @@ impl FromStr for GoToOption {
     fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
             "_random_" => Self::RandomPosition,
-            "_mouse_pointer_" => Self::MousePointer,
+            "_mouse_" => Self::MousePointer,
             _ => Self::Sprite(SpriteID::from_sprite_name(s)),
         })
     }
@@ -676,7 +688,7 @@ impl Display for GoToOption {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::RandomPosition => "_random_",
-            Self::MousePointer => "_mouse_pointer_",
+            Self::MousePointer => "_mouse_",
             Self::Sprite(id) => return Display::fmt(id, f),
         })
     }
