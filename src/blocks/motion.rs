@@ -1,6 +1,6 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
-use crate::coordinate::{canvas_const, CanvasRectangle, SpriteCoordinate};
+use crate::coordinate::{canvas_const, SpriteCoordinate};
 use crate::sprite::SpriteID;
 use rand::distributions::{DistIter, Uniform};
 use rand::prelude::*;

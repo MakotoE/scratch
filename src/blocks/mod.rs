@@ -316,10 +316,8 @@ impl Block for EmptyFalse {
 }
 
 pub fn get_field_value(field: &[Option<String>], index: usize) -> Result<&str> {
-    if let Some(o) = field.get(index) {
-        if let Some(s) = o {
-            return Ok(s);
-        }
+    if let Some(Some(s)) = field.get(index) {
+        return Ok(s);
     }
 
     Err("invalid field".into())
