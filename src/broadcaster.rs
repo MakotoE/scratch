@@ -3,6 +3,8 @@ use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
 use crate::event_sender::KeyboardKey;
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
+use ndarray::Array2;
+use palette::Hsv;
 use std::collections::HashSet;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
@@ -49,6 +51,8 @@ pub enum BroadcastMsg {
         sprite: SpriteID,
         rectangle: SpriteRectangle,
     },
+    RequestCanvasImage,
+    CanvasImage(Array2<Hsv>),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

@@ -1,6 +1,10 @@
 use super::*;
-use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Transformation};
+use crate::coordinate::{canvas_const, CanvasCoordinate, CanvasRectangle, Transformation};
+use ndarray::{Array1, Array2};
+use palette::{Hsv, Srgba};
 use std::f64::consts::TAU;
+use std::fmt::{Debug, Formatter};
+use std::iter::FromIterator;
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
 #[derive(Debug, Clone)]
@@ -149,6 +153,24 @@ impl<'a> CanvasContext<'a> {
     pub fn set_global_alpha(&self, value: f64) {
         self.context.set_global_alpha(value)
     }
+
+    pub fn get_image_data(&self) -> Result<Array2<Hsv>> {
+        let image =
+            self.context
+                .get_image_data(0.0, 0.0, canvas_const::X_MAX, canvas_const::Y_MAX)?;
+        let data = image.data().0;
+
+        let iter = data.chunks(4).map(|c: &[u8]| {
+            Hsv::from(Srgba::new(
+                c[0] as f32,
+                c[1] as f32,
+                c[2] as f32,
+                c[3] as f32,
+            ))
+        });
+        let flat = Array1::from_iter(iter);
+        Ok(flat.into_shape([canvas_const::X_MAX as usize, canvas_const::Y_MAX as usize])?)
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -182,4 +204,15 @@ struct Angles(f64, f64);
 pub enum Direction {
     Clockwise,
     CounterClockwise,
+}
+
+#[derive(Clone)]
+pub struct CanvasImage {
+    image: Array2<Hsv>,
+}
+
+impl Debug for CanvasImage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[...]")
+    }
 }

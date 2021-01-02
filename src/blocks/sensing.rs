@@ -4,6 +4,7 @@ use crate::coordinate::{canvas_const, CanvasRectangle};
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use gloo_timers::future::TimeoutFuture;
+use palette::Hsv;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -12,7 +13,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "keypressed" => Box::new(KeyPressed::new(id, runtime)),
         "keyoptions" => Box::new(KeyOptions::new(id, runtime)),
         "coloristouchingcolor" => Box::new(ColorIsTouchingColor::new(id, runtime)),
-        "touchingcolor" => Box::new(TouchingColor::new(id)),
+        "touchingcolor" => Box::new(TouchingColor::new(id, runtime)),
         "touchingobject" => Box::new(TouchingObject::new(id, runtime)),
         "touchingobjectmenu" => Box::new(TouchingObjectMenu::new(id)),
         _ => return Err(wrap_err!(format!("{} does not exist", name))),
@@ -156,13 +157,15 @@ impl Block for ColorIsTouchingColor {
 #[derive(Debug)]
 pub struct TouchingColor {
     id: BlockID,
+    runtime: Runtime,
     color: Box<dyn Block>,
 }
 
 impl TouchingColor {
-    pub fn new(id: BlockID) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self {
             id,
+            runtime,
             color: Box::new(EmptyInput {}),
         }
     }
@@ -192,7 +195,19 @@ impl Block for TouchingColor {
         }
     }
 
-    // async fn value(&self) -> Result<Value> {}
+    async fn value(&self) -> Result<Value> {
+        let _color: Hsv = self.color.value().await?.try_into()?;
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::RequestCanvasImage)?;
+        let mut channel = self.runtime.global.broadcaster.subscribe();
+        loop {
+            if let BroadcastMsg::CanvasImage(image) = channel.recv().await? {
+                todo!()
+            }
+        }
+    }
 }
 
 #[derive(Debug)]

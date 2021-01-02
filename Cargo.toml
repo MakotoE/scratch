@@ -32,6 +32,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 getrandom = { version = "0.2", features = ["js"] }
 debug-macro = "0.1.0"
 strum = { version = "0.20", features = ["derive"] }
+ndarray = "0.14"
 
 [dependencies.web-sys]
 version = "0.3"
@@ -53,4 +54,5 @@ features = [
     "DomRect",
     "DomRectReadOnly",
     "EventTarget",
+    "ImageData",
 ]

@@ -132,7 +132,7 @@ impl VM {
     ) -> Result<Loop> {
         const REDRAW_INTERVAL_MILLIS: f64 = 33.0;
 
-        let context = &CanvasContext::new(ctx);
+        let canvas_context = &CanvasContext::new(ctx);
 
         let performance = web_sys::window().unwrap().performance().unwrap();
         let mut last_redraw = performance.now();
@@ -160,7 +160,7 @@ impl VM {
         loop {
             // Not having this causes unresponsive UI
             if performance.now() - last_redraw > REDRAW_INTERVAL_MILLIS {
-                sprites.redraw(context).await?;
+                sprites.redraw(canvas_context).await?;
                 TimeoutFuture::new(0).await; // Yield to render
                 last_redraw = performance.now();
             }
@@ -200,7 +200,7 @@ impl VM {
                     futures.push(Box::pin(control_chan.recv()));
                 }
                 Event::Redraw => {
-                    sprites.redraw(context).await?;
+                    sprites.redraw(canvas_context).await?;
                     TimeoutFuture::new(0).await; // Yield to render
                     last_redraw = performance.now();
                     futures.push(Box::pin(
@@ -228,7 +228,7 @@ impl VM {
                         }
                         BroadcastMsg::DeleteClone(sprite_id) => {
                             sprites.remove(sprite_id);
-                            sprites.force_redraw(context).await?;
+                            sprites.force_redraw(canvas_context).await?;
                             TimeoutFuture::new(0).await;
                             last_redraw = performance.now();
                         }
@@ -260,6 +260,11 @@ impl VM {
                                 sprite: sprite_id,
                                 rectangle,
                             })?;
+                        }
+                        BroadcastMsg::RequestCanvasImage => {
+                            broadcaster.send(BroadcastMsg::CanvasImage(
+                                canvas_context.get_image_data()?,
+                            ))?;
                         }
                         _ => {}
                     }

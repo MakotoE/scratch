@@ -18,6 +18,7 @@ error_chain::error_chain! {
         DebugSendError(tokio::sync::mpsc::error::SendError<vm::DebugInfo>);
         FromHexError(hex::FromHexError);
         StrumError(strum::ParseError);
+        ShapeError(ndarray::ShapeError);
     }
 
     errors {
