@@ -133,11 +133,19 @@ impl_try_from_value!(KeyOption);
 #[derive(Debug)]
 pub struct ColorIsTouchingColor {
     id: BlockID,
+    runtime: Runtime,
+    sprite_color: Box<dyn Block>,
+    other_color: Box<dyn Block>,
 }
 
 impl ColorIsTouchingColor {
-    pub fn new(id: BlockID, _runtime: Runtime) -> Self {
-        Self { id }
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            sprite_color: Box::new(EmptyInput {}),
+            other_color: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -151,10 +159,28 @@ impl Block for ColorIsTouchingColor {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![
+                ("COLOR", self.sprite_color.as_ref()),
+                ("COLOR2", self.other_color.as_ref()),
+            ],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "COLOR" => self.sprite_color = block,
+            "COLOR2" => self.other_color = block,
+            _ => {}
+        }
+    }
+
+    async fn value(&self) -> Result<Value> {
+        Err(wrap_err!("this block does not return a value"))
+    }
 }
 
 #[derive(Debug)]
