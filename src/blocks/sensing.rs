@@ -8,7 +8,7 @@ use crate::vm::new_hidden_canvas;
 use gloo_timers::future::TimeoutFuture;
 use ndarray::{Array2, Zip};
 
-use palette::{Alpha, Hsv, Srgb, Srgba};
+use palette::{Alpha, Blend, Hsv, LinSrgb, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -155,7 +155,7 @@ impl ColorIsTouchingColor {
         sprite_image: &Array2<Srgba<u8>>,
         sprite_color: &Srgba<u8>,
         canvas_image: &Array2<Srgba<u8>>,
-        canvas_color: &Srgba<u8>,
+        canvas_color: &LinSrgba,
     ) -> bool {
         !Zip::from(canvas_image)
             .and(sprite_image)
@@ -197,7 +197,7 @@ impl Block for ColorIsTouchingColor {
 
     async fn value(&self) -> Result<Value> {
         let sprite_color = hsv_to_srgb(self.sprite_color.value().await?.try_into()?);
-        let canvas_color = hsv_to_srgb(self.canvas_color.value().await?.try_into()?);
+        let canvas_color = hsv_to_linsrgba(self.canvas_color.value().await?.try_into()?);
 
         let sprite_image = {
             let canvas_context = CanvasContext::new(&self.buffer_canvas);
@@ -246,7 +246,7 @@ impl TouchingColor {
     fn touching_color(
         canvas_image: &Array2<Srgba<u8>>,
         sprite_image: &Array2<Srgba<u8>>,
-        color: &Srgba<u8>,
+        color: &LinSrgba,
     ) -> bool {
         !Zip::from(canvas_image)
             .and(sprite_image)
@@ -288,7 +288,7 @@ impl Block for TouchingColor {
             canvas_context.get_image_data()?
         };
 
-        let match_color = hsv_to_srgb(self.color.value().await?.try_into()?);
+        let match_color = hsv_to_linsrgba(self.color.value().await?.try_into()?);
 
         let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
@@ -309,7 +309,7 @@ impl Block for TouchingColor {
 fn hsv_to_srgb(hsv: Hsv) -> Srgba<u8> {
     let rgb: Srgb = hsv.into();
     Alpha {
-        color: Srgb::<u8>::new(
+        color: Srgb::new(
             (rgb.red * 255.0).round() as u8,
             (rgb.green * 255.0).round() as u8,
             (rgb.blue * 255.0).round() as u8,
@@ -318,13 +318,24 @@ fn hsv_to_srgb(hsv: Hsv) -> Srgba<u8> {
     }
 }
 
-fn blend_with_white(color: &Srgba<u8>) -> Srgba<u8> {
-    Srgba::new(
-        color.red * color.alpha + (1 - color.alpha) * 255,
-        color.green * color.alpha + (1 - color.alpha) * 255,
-        color.blue * color.alpha + (1 - color.alpha) * 255,
-        255,
-    )
+fn hsv_to_linsrgba(hsv: Hsv) -> LinSrgba {
+    let rgb: Srgb = hsv.into();
+    Alpha {
+        color: rgb.into_linear(),
+        alpha: 1.0,
+    }
+}
+
+fn blend_with_white(color: &Srgba<u8>) -> LinSrgba {
+    let color_f = Srgba::new(
+        color.red as f32,
+        color.green as f32,
+        color.blue as f32,
+        color.alpha as f32,
+    );
+    color_f
+        .into_linear()
+        .over(LinSrgba::<f32>::new(1.0, 1.0, 1.0, 1.0))
 }
 
 #[derive(Debug)]

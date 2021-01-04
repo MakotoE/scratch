@@ -15,7 +15,7 @@ pub struct Broadcaster {
 impl Broadcaster {
     pub fn new() -> Self {
         Self {
-            sender: channel(8).0,
+            sender: channel(16).0,
         }
     }
 
