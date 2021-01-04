@@ -7,6 +7,7 @@ use crate::sprite::SpriteID;
 use crate::vm::new_hidden_canvas;
 use gloo_timers::future::TimeoutFuture;
 use ndarray::{Array2, Zip};
+
 use palette::{Alpha, Hsv, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -135,7 +136,8 @@ pub struct ColorIsTouchingColor {
     id: BlockID,
     runtime: Runtime,
     sprite_color: Box<dyn Block>,
-    other_color: Box<dyn Block>,
+    canvas_color: Box<dyn Block>,
+    buffer_canvas: web_sys::CanvasRenderingContext2d,
 }
 
 impl ColorIsTouchingColor {
@@ -144,8 +146,23 @@ impl ColorIsTouchingColor {
             id,
             runtime,
             sprite_color: Box::new(EmptyInput {}),
-            other_color: Box::new(EmptyInput {}),
+            canvas_color: Box::new(EmptyInput {}),
+            buffer_canvas: new_hidden_canvas(),
         }
+    }
+
+    fn sprite_color_touching_canvas_color(
+        sprite_image: &Array2<Srgba<u8>>,
+        sprite_color: &Srgba<u8>,
+        canvas_image: &Array2<Srgba<u8>>,
+        canvas_color: &Srgba<u8>,
+    ) -> bool {
+        !Zip::from(canvas_image)
+            .and(sprite_image)
+            .all(|canvas_pixel, sprite_pixel| {
+                let apparent_color = blend_with_white(canvas_pixel);
+                !(sprite_pixel == sprite_color && &apparent_color == canvas_color)
+            })
     }
 }
 
@@ -164,7 +181,7 @@ impl Block for ColorIsTouchingColor {
             vec![],
             vec![
                 ("COLOR", self.sprite_color.as_ref()),
-                ("COLOR2", self.other_color.as_ref()),
+                ("COLOR2", self.canvas_color.as_ref()),
             ],
             vec![],
         )
@@ -173,13 +190,38 @@ impl Block for ColorIsTouchingColor {
     fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "COLOR" => self.sprite_color = block,
-            "COLOR2" => self.other_color = block,
+            "COLOR2" => self.canvas_color = block,
             _ => {}
         }
     }
 
     async fn value(&self) -> Result<Value> {
-        Err(wrap_err!("this block does not return a value"))
+        let sprite_color = hsv_to_srgb(self.sprite_color.value().await?.try_into()?);
+        let canvas_color = hsv_to_srgb(self.canvas_color.value().await?.try_into()?);
+
+        let sprite_image = {
+            let canvas_context = CanvasContext::new(&self.buffer_canvas);
+            self.runtime.sprite.write().await.redraw(&canvas_context)?;
+            canvas_context.get_image_data()?
+        };
+
+        let sprite_id = self.runtime.thread_id().sprite_id;
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
+        let mut channel = self.runtime.global.broadcaster.subscribe();
+        loop {
+            if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
+                let result = ColorIsTouchingColor::sprite_color_touching_canvas_color(
+                    &sprite_image,
+                    &sprite_color,
+                    &canvas_image.image,
+                    &canvas_color,
+                );
+                return Ok(result.into());
+            }
+        }
     }
 }
 
@@ -201,24 +243,16 @@ impl TouchingColor {
         }
     }
 
-    fn hsv_to_srgb(hsv: Hsv) -> Srgba<u8> {
-        let rgb: Srgb = hsv.into();
-        Alpha {
-            color: Srgb::<u8>::new(rgb.red as u8, rgb.green as u8, rgb.blue as u8),
-            alpha: 255,
-        }
-    }
-
     fn touching_color(
         canvas_image: &Array2<Srgba<u8>>,
         sprite_image: &Array2<Srgba<u8>>,
-        color: &Hsv,
+        color: &Srgba<u8>,
     ) -> bool {
-        let match_color = TouchingColor::hsv_to_srgb(*color);
         !Zip::from(canvas_image)
             .and(sprite_image)
             .all(|canvas_pixel, sprite_pixel| {
-                !(sprite_pixel.alpha > 0 && canvas_pixel == &match_color)
+                let apparent_color = blend_with_white(canvas_pixel);
+                !(sprite_pixel.alpha > 0 && &apparent_color == color)
             })
     }
 }
@@ -248,10 +282,14 @@ impl Block for TouchingColor {
     }
 
     async fn value(&self) -> Result<Value> {
-        let canvas_context = CanvasContext::new(&self.buffer_canvas);
-        self.runtime.sprite.write().await.redraw(&canvas_context)?;
+        let sprite_image = {
+            let canvas_context = CanvasContext::new(&self.buffer_canvas);
+            self.runtime.sprite.write().await.redraw(&canvas_context)?; // TODO this sets need_redraw to false
+            canvas_context.get_image_data()?
+        };
 
-        let color: Hsv = self.color.value().await?.try_into()?;
+        let match_color = hsv_to_srgb(self.color.value().await?.try_into()?);
+
         let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
             .global
@@ -260,13 +298,33 @@ impl Block for TouchingColor {
         let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
             if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
-                let sprite_image = canvas_context.get_image_data()?;
                 let result =
-                    TouchingColor::touching_color(&canvas_image.image, &sprite_image, &color);
+                    TouchingColor::touching_color(&canvas_image.image, &sprite_image, &match_color);
                 return Ok(result.into());
             }
         }
     }
+}
+
+fn hsv_to_srgb(hsv: Hsv) -> Srgba<u8> {
+    let rgb: Srgb = hsv.into();
+    Alpha {
+        color: Srgb::<u8>::new(
+            (rgb.red * 255.0).round() as u8,
+            (rgb.green * 255.0).round() as u8,
+            (rgb.blue * 255.0).round() as u8,
+        ),
+        alpha: 255,
+    }
+}
+
+fn blend_with_white(color: &Srgba<u8>) -> Srgba<u8> {
+    Srgba::new(
+        color.red * color.alpha + (1 - color.alpha) * 255,
+        color.green * color.alpha + (1 - color.alpha) * 255,
+        color.blue * color.alpha + (1 - color.alpha) * 255,
+        255,
+    )
 }
 
 #[derive(Debug)]
