@@ -620,7 +620,7 @@ impl StopOption {
     }
 }
 
-try_from_value!(StopOption);
+impl_try_from_value!(StopOption);
 
 #[derive(Debug)]
 pub struct CreateCloneOf {

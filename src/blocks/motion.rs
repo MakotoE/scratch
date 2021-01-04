@@ -710,4 +710,4 @@ impl Display for GoToOption {
     }
 }
 
-try_from_value!(GoToOption);
+impl_try_from_value!(GoToOption);

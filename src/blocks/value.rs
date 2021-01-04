@@ -316,7 +316,7 @@ impl Display for Value {
 }
 
 #[macro_export]
-macro_rules! try_from_value {
+macro_rules! impl_try_from_value {
     ( $value_name:ident ) => {
         impl std::convert::TryFrom<Value> for $value_name {
             type Error = Error;

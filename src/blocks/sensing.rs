@@ -128,7 +128,7 @@ impl Block for KeyOptions {
     }
 }
 
-try_from_value!(KeyOption);
+impl_try_from_value!(KeyOption);
 
 #[derive(Debug)]
 pub struct ColorIsTouchingColor {
@@ -192,7 +192,6 @@ impl TouchingColor {
         !Zip::from(canvas_image)
             .and(sprite_image)
             .all(|canvas_pixel, sprite_pixel| {
-                // TODO there is a leeway for matching color
                 !(sprite_pixel.alpha > 0 && canvas_pixel == &match_color)
             })
     }
@@ -410,4 +409,4 @@ impl Display for TouchingObjectOption {
     }
 }
 
-try_from_value!(TouchingObjectOption);
+impl_try_from_value!(TouchingObjectOption);
