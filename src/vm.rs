@@ -369,7 +369,7 @@ impl BroadcastCell {
     async fn recv(&self) -> Event {
         match self.receiver.borrow_mut().recv().await {
             Ok(msg) => Event::BroadcastMsg(msg),
-            Err(e) => Event::Err(e.into()),
+            Err(e) => Event::Err(wrap_err!(e)),
         }
     }
 

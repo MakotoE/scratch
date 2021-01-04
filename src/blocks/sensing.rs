@@ -7,8 +7,7 @@ use crate::sprite::SpriteID;
 use crate::vm::new_hidden_canvas;
 use gloo_timers::future::TimeoutFuture;
 use ndarray::{Array2, Zip};
-
-use palette::{Alpha, Blend, Hsv, LinSrgb, LinSrgba, Srgb, Srgba};
+use palette::{Alpha, Blend, Hsv, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
