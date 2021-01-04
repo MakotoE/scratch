@@ -1,6 +1,6 @@
 use crate::blocks::BlockInfo;
 use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
-use crate::canvas::CanvasContext;
+use crate::canvas::{CanvasContext, CanvasImage};
 use crate::coordinate::SpriteRectangle;
 use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
@@ -135,7 +135,10 @@ impl VM {
         let canvas_context = &CanvasContext::new(ctx);
 
         let performance = web_sys::window().unwrap().performance().unwrap();
-        let mut last_redraw = performance.now();
+        let mut last_redraw = 0.0;
+
+        let hidden_canvas = new_hidden_canvas();
+        let hidden_context = CanvasContext::new(&hidden_canvas);
 
         let mut futures: FuturesUnordered<LocalBoxFuture<Event>> = FuturesUnordered::new();
         futures.push(Box::pin(control_chan.recv()));
@@ -261,10 +264,13 @@ impl VM {
                                 rectangle,
                             })?;
                         }
-                        BroadcastMsg::RequestCanvasImage => {
-                            broadcaster.send(BroadcastMsg::CanvasImage(
-                                canvas_context.get_image_data()?,
-                            ))?;
+                        BroadcastMsg::RequestCanvasImage(sprite_id) => {
+                            sprites
+                                .draw_without_sprite(&hidden_context, &sprite_id)
+                                .await?;
+                            broadcaster.send(BroadcastMsg::CanvasImage(CanvasImage {
+                                image: hidden_context.get_image_data()?,
+                            }))?;
                         }
                         _ => {}
                     }
@@ -450,6 +456,26 @@ impl SpritesCell {
         Ok(())
     }
 
+    async fn draw_without_sprite(
+        &self,
+        context: &CanvasContext<'_>,
+        removed_sprite: &SpriteID,
+    ) -> Result<()> {
+        context.clear();
+
+        let sprites = self.sprites.borrow();
+        let removed_sprites = self.removed_sprites.borrow();
+        for id in self.draw_order.borrow().iter() {
+            if !removed_sprites.contains(id) && id != removed_sprite {
+                match sprites.get(id) {
+                    Some(s) => s.redraw(context).await?,
+                    None => return Err(wrap_err!(format!("id not found: {}", id))),
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn all_thread_ids(&self) -> Vec<ThreadID> {
         let mut result: Vec<ThreadID> = Vec::new();
         for (sprite_id, sprite) in self.sprites.borrow().iter() {
@@ -557,4 +583,17 @@ impl DrawOrder {
 enum Loop {
     Restart,
     Break,
+}
+
+pub fn new_hidden_canvas() -> web_sys::CanvasRenderingContext2d {
+    let canvas: web_sys::HtmlCanvasElement = web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .create_element("canvas")
+        .unwrap()
+        .unchecked_into();
+    canvas.set_attribute("width", "960").unwrap();
+    canvas.set_attribute("height", "720").unwrap();
+    canvas.get_context("2d").unwrap().unwrap().unchecked_into()
 }

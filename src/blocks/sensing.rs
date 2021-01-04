@@ -1,10 +1,13 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
+use crate::canvas::CanvasContext;
 use crate::coordinate::{canvas_const, CanvasRectangle};
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
+use crate::vm::new_hidden_canvas;
 use gloo_timers::future::TimeoutFuture;
-use palette::Hsv;
+use ndarray::{Array2, Zip};
+use palette::{Alpha, Hsv, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -159,6 +162,7 @@ pub struct TouchingColor {
     id: BlockID,
     runtime: Runtime,
     color: Box<dyn Block>,
+    buffer_canvas: web_sys::CanvasRenderingContext2d,
 }
 
 impl TouchingColor {
@@ -167,7 +171,30 @@ impl TouchingColor {
             id,
             runtime,
             color: Box::new(EmptyInput {}),
+            buffer_canvas: new_hidden_canvas(),
         }
+    }
+
+    fn hsv_to_srgb(hsv: Hsv) -> Srgba<u8> {
+        let rgb: Srgb = hsv.into();
+        Alpha {
+            color: Srgb::<u8>::new(rgb.red as u8, rgb.green as u8, rgb.blue as u8),
+            alpha: 255,
+        }
+    }
+
+    fn touching_color(
+        canvas_image: &Array2<Srgba<u8>>,
+        sprite_image: &Array2<Srgba<u8>>,
+        color: &Hsv,
+    ) -> bool {
+        let match_color = TouchingColor::hsv_to_srgb(*color);
+        !Zip::from(canvas_image)
+            .and(sprite_image)
+            .all(|canvas_pixel, sprite_pixel| {
+                // TODO there is a leeway for matching color
+                !(sprite_pixel.alpha > 0 && canvas_pixel == &match_color)
+            })
     }
 }
 
@@ -196,15 +223,22 @@ impl Block for TouchingColor {
     }
 
     async fn value(&self) -> Result<Value> {
-        let _color: Hsv = self.color.value().await?.try_into()?;
+        let canvas_context = CanvasContext::new(&self.buffer_canvas);
+        self.runtime.sprite.write().await.redraw(&canvas_context)?;
+
+        let color: Hsv = self.color.value().await?.try_into()?;
+        let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
             .global
             .broadcaster
-            .send(BroadcastMsg::RequestCanvasImage)?;
+            .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
         let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
-            if let BroadcastMsg::CanvasImage(image) = channel.recv().await? {
-                todo!()
+            if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
+                let sprite_image = canvas_context.get_image_data()?;
+                let result =
+                    TouchingColor::touching_color(&canvas_image.image, &sprite_image, &color);
+                return Ok(result.into());
             }
         }
     }

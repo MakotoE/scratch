@@ -1,10 +1,9 @@
 use super::*;
 use crate::coordinate::{canvas_const, CanvasCoordinate, CanvasRectangle, Transformation};
-use ndarray::{Array1, Array2};
-use palette::{Hsv, Srgba};
+use ndarray::{Array1, Array2, Axis};
+use palette::Srgba;
 use std::f64::consts::TAU;
 use std::fmt::{Debug, Formatter};
-use std::iter::FromIterator;
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
 #[derive(Debug, Clone)]
@@ -154,22 +153,34 @@ impl<'a> CanvasContext<'a> {
         self.context.set_global_alpha(value)
     }
 
-    pub fn get_image_data(&self) -> Result<Array2<Hsv>> {
-        let image =
-            self.context
-                .get_image_data(0.0, 0.0, canvas_const::X_MAX, canvas_const::Y_MAX)?;
-        let data = image.data().0;
+    pub fn get_image_data(&self) -> Result<Array2<Srgba<u8>>> {
+        let image_data = self
+            .context
+            .get_image_data(
+                0.0,
+                0.0,
+                canvas_const::X_MAX * 2.0,
+                canvas_const::Y_MAX * 2.0,
+            )?
+            .data()
+            .0;
+        let flat: Array1<Srgba<u8>> = image_data
+            .chunks(4)
+            .map(|c: &[u8]| Srgba::new(c[0], c[1], c[2], c[3]))
+            .collect();
+        let two_dimension = flat.into_shape([
+            canvas_const::X_MAX as usize * 2,
+            canvas_const::Y_MAX as usize * 2,
+        ])?;
 
-        let iter = data.chunks(4).map(|c: &[u8]| {
-            Hsv::from(Srgba::new(
-                c[0] as f32,
-                c[1] as f32,
-                c[2] as f32,
-                c[3] as f32,
-            ))
-        });
-        let flat = Array1::from_iter(iter);
-        Ok(flat.into_shape([canvas_const::X_MAX as usize, canvas_const::Y_MAX as usize])?)
+        let mut scaled: Array2<Srgba<u8>> =
+            Array2::default([canvas_const::X_MAX as usize, canvas_const::Y_MAX as usize]);
+        for (x, col) in two_dimension.axis_iter(Axis(0)).step_by(2).enumerate() {
+            for (y, p) in col.iter().step_by(2).enumerate() {
+                scaled[[x, y]] = *p;
+            }
+        }
+        Ok(scaled)
     }
 }
 
@@ -206,9 +217,9 @@ pub enum Direction {
     CounterClockwise,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct CanvasImage {
-    image: Array2<Hsv>,
+    pub image: Array2<Srgba<u8>>,
 }
 
 impl Debug for CanvasImage {
