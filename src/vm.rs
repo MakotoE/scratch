@@ -448,6 +448,7 @@ impl SpritesCell {
         context.clear();
 
         self.global.redraw(context).await?;
+        log::debug!("{}", self.sprites.trace());
         let sprites = self.sprites.read(file!(), line!()).await;
         let removed_sprites = self.removed_sprites.borrow();
         for id in self.draw_order.borrow().iter() {

@@ -17,25 +17,41 @@ impl<T> TracedRwLock<T> {
     }
 
     pub async fn read(&self, file: &'static str, line: u32) -> RwLockReadGuard<'_, T> {
+        let mut trace = Trace {
+            read_or_write: ReadOrWrite::Read,
+            action: Action::Waiting,
+            file,
+            line,
+        };
         if cfg!(debug_assertions) {
-            self.recent_calls.borrow_mut().add(Trace {
-                read_or_write: ReadOrWrite::Read,
-                file,
-                line,
-            });
+            self.recent_calls.borrow_mut().add(trace);
         }
-        self.inner.read().await
+
+        let result = self.inner.read().await;
+        if cfg!(debug_assertions) {
+            trace.action = Action::Acquired;
+            self.recent_calls.borrow_mut().add(trace);
+        }
+        result
     }
 
     pub async fn write(&self, file: &'static str, line: u32) -> RwLockWriteGuard<'_, T> {
+        let mut trace = Trace {
+            read_or_write: ReadOrWrite::Write,
+            action: Action::Waiting,
+            file,
+            line,
+        };
         if cfg!(debug_assertions) {
-            self.recent_calls.borrow_mut().add(Trace {
-                read_or_write: ReadOrWrite::Write,
-                file,
-                line,
-            });
+            self.recent_calls.borrow_mut().add(trace);
         }
-        self.inner.write().await
+
+        let result = self.inner.write().await;
+        if cfg!(debug_assertions) {
+            trace.action = Action::Acquired;
+            self.recent_calls.borrow_mut().add(trace);
+        }
+        result
     }
 
     #[allow(dead_code)]
@@ -44,9 +60,10 @@ impl<T> TracedRwLock<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 struct Trace {
     read_or_write: ReadOrWrite,
+    action: Action,
     file: &'static str,
     line: u32,
 }
@@ -55,6 +72,7 @@ impl Default for Trace {
     fn default() -> Self {
         Self {
             read_or_write: ReadOrWrite::Read,
+            action: Action::Waiting,
             file: "",
             line: 0,
         }
@@ -63,28 +81,31 @@ impl Default for Trace {
 
 impl Display for Trace {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} at {}:{}", self.read_or_write, self.file, self.line)
+        write!(
+            f,
+            "{} {} at {}:{}",
+            self.action, self.read_or_write, self.file, self.line
+        )
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, strum::Display)]
+#[strum(serialize_all = "snake_case")]
 enum ReadOrWrite {
     Read,
     Write,
 }
 
-impl Display for ReadOrWrite {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            ReadOrWrite::Read => "read",
-            ReadOrWrite::Write => "write",
-        })
-    }
+#[derive(Debug, Copy, Clone, PartialEq, strum::Display)]
+enum Action {
+    #[strum(serialize = "waiting for")]
+    Waiting,
+    Acquired,
 }
 
-const BUFFER_SIZE: usize = 8;
+const BUFFER_SIZE: usize = 64;
 
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone)]
 struct FixedSizeBuffer {
     buffer: [Trace; BUFFER_SIZE],
     index: usize,
@@ -96,6 +117,16 @@ impl FixedSizeBuffer {
         self.buffer[self.index] = trace;
         self.index = (self.index + 1) % BUFFER_SIZE;
         self.size += 1;
+    }
+}
+
+impl Default for FixedSizeBuffer {
+    fn default() -> Self {
+        Self {
+            buffer: [Trace::default(); BUFFER_SIZE],
+            index: 0,
+            size: 0,
+        }
     }
 }
 
@@ -118,15 +149,11 @@ impl Index<usize> for FixedSizeBuffer {
 
 impl Display for FixedSizeBuffer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("[ ")?;
+        f.write_str("[\n")?;
         for i in 0..usize::min(self.size, BUFFER_SIZE) {
-            Display::fmt(&self[i], f)?;
-
-            if i < usize::min(self.size, BUFFER_SIZE) - 1 {
-                f.write_str(", ")?;
-            }
+            write!(f, "\t{},\n", &self[i]);
         }
-        f.write_str(" ]")
+        f.write_str("]")
     }
 }
 
@@ -145,16 +172,18 @@ mod test {
             let mut buffer = FixedSizeBuffer::default();
             buffer.add(Trace {
                 read_or_write: ReadOrWrite::Read,
+                action: Action::Waiting,
                 file: "file.rs",
                 line: 1,
             });
-            assert_eq!(format!("{}", buffer), "[ read at file.rs:1 ]");
+            assert_eq!(format!("{}", buffer), "[ waiting for read at file.rs:1 ]");
         }
         {
             let mut buffer = FixedSizeBuffer::default();
             for i in 0..BUFFER_SIZE + 1 {
                 buffer.add(Trace {
                     read_or_write: ReadOrWrite::Read,
+                    action: Action::Waiting,
                     file: "file.rs",
                     line: i as u32,
                 });
@@ -166,6 +195,15 @@ mod test {
             panic::set_hook(Box::new(|_| {}));
             assert!(panic::catch_unwind(|| buffer[BUFFER_SIZE]).is_err());
             panic::set_hook(Box::new(prev_hook));
+
+            let trace = Trace {
+                read_or_write: ReadOrWrite::Write,
+                action: Action::Waiting,
+                file: "file.rs",
+                line: 9,
+            };
+            buffer.add(trace);
+            assert_eq!(buffer[BUFFER_SIZE - 1], trace);
         }
     }
 }
