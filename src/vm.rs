@@ -14,6 +14,7 @@ use std::collections::HashSet;
 use tokio::sync::{broadcast, mpsc};
 
 use super::*;
+use crate::traced_rwlock::TracedRwLock;
 
 #[derive(Debug)]
 pub struct VM {
@@ -380,7 +381,7 @@ impl BroadcastCell {
 
 #[derive(Debug)]
 struct SpritesCell {
-    sprites: RwLock<HashMap<SpriteID, Sprite>>,
+    sprites: TracedRwLock<HashMap<SpriteID, Sprite>>,
     draw_order: RefCell<DrawOrder>,
     removed_sprites: RefCell<HashSet<SpriteID>>,
     stopped_threads: RefCell<HashSet<ThreadID>>,
@@ -390,7 +391,7 @@ struct SpritesCell {
 impl SpritesCell {
     fn new(sprites: HashMap<SpriteID, Sprite>, targets: &[Target], global: Rc<Global>) -> Self {
         Self {
-            sprites: RwLock::new(sprites),
+            sprites: TracedRwLock::new(sprites),
             draw_order: RefCell::new(DrawOrder::new(targets)),
             removed_sprites: RefCell::default(),
             stopped_threads: RefCell::default(),
@@ -405,7 +406,12 @@ impl SpritesCell {
             return Event::None;
         }
 
-        match self.sprites.read().await.get(&thread_id.sprite_id) {
+        match self
+            .sprites
+            .read(file!(), line!())
+            .await
+            .get(&thread_id.sprite_id)
+        {
             Some(sprite) => match sprite.step(thread_id.thread_id).await {
                 Ok(_) => Event::Thread(thread_id),
                 Err(e) => Event::Err(e),
@@ -423,7 +429,7 @@ impl SpritesCell {
         if self.global.need_redraw() {
             need_redraw = true;
         } else {
-            for sprite in self.sprites.read().await.values() {
+            for sprite in self.sprites.read(file!(), line!()).await.values() {
                 if sprite.need_redraw().await {
                     need_redraw = true;
                     break;
@@ -442,7 +448,7 @@ impl SpritesCell {
         context.clear();
 
         self.global.redraw(context).await?;
-        let sprites = self.sprites.read().await;
+        let sprites = self.sprites.read(file!(), line!()).await;
         let removed_sprites = self.removed_sprites.borrow();
         for id in self.draw_order.borrow().iter() {
             if !removed_sprites.contains(id) {
@@ -461,7 +467,7 @@ impl SpritesCell {
         removed_sprite: &SpriteID,
     ) -> Result<()> {
         context.clear();
-        let sprites = self.sprites.read().await;
+        let sprites = self.sprites.read(file!(), line!()).await;
         let removed_sprites = self.removed_sprites.borrow();
         for id in self.draw_order.borrow().iter() {
             if !removed_sprites.contains(id) && id != removed_sprite {
@@ -476,7 +482,7 @@ impl SpritesCell {
 
     async fn all_thread_ids(&self) -> Vec<ThreadID> {
         let mut result: Vec<ThreadID> = Vec::new();
-        for (sprite_id, sprite) in self.sprites.read().await.iter() {
+        for (sprite_id, sprite) in self.sprites.read(file!(), line!()).await.iter() {
             for thread_id in 0..sprite.number_of_threads() {
                 result.push(ThreadID {
                     sprite_id: *sprite_id,
@@ -489,7 +495,7 @@ impl SpritesCell {
 
     async fn block_info(&self, thread_id: ThreadID) -> BlockInfo {
         self.sprites
-            .read()
+            .read(file!(), line!())
             .await
             .get(&thread_id.sprite_id)
             .unwrap()
@@ -498,7 +504,7 @@ impl SpritesCell {
 
     async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
         let new_sprite_id = {
-            let mut sprites = self.sprites.write().await;
+            let mut sprites = self.sprites.write(file!(), line!()).await;
             let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
                 Some(sprite) => sprite.clone_sprite().await?,
                 None => return Err(wrap_err!("sprite_id is invalid")),
@@ -516,7 +522,7 @@ impl SpritesCell {
 
     async fn number_of_threads(&self, sprite_id: SpriteID) -> usize {
         self.sprites
-            .read()
+            .read(file!(), line!())
             .await
             .get(&sprite_id)
             .unwrap()
@@ -532,7 +538,7 @@ impl SpritesCell {
     }
 
     async fn sprite_rectangle(&self, id: &SpriteID) -> Result<SpriteRectangle> {
-        match self.sprites.read().await.get(id) {
+        match self.sprites.read(file!(), line!()).await.get(id) {
             Some(sprite) => Ok(sprite.rectangle().await),
             None => Err(wrap_err!(format!("id not found: {}", id))),
         }

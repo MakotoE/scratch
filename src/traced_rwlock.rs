@@ -38,6 +38,7 @@ impl<T> TracedRwLock<T> {
         self.inner.write().await
     }
 
+    #[allow(dead_code)]
     pub fn trace(&self) -> String {
         format!("{}", self.recent_calls.borrow())
     }
