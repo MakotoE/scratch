@@ -148,12 +148,12 @@ impl VM {
         futures.push(Box::pin(broadcaster.recv()));
 
         let mut paused_threads: Vec<ThreadID> = Vec::new();
-        for thread_id in sprites.all_thread_ids() {
+        for thread_id in sprites.all_thread_ids().await {
             paused_threads.push(thread_id);
             debug_sender
                 .send(DebugInfo {
                     thread_id,
-                    block_info: sprites.block_info(thread_id),
+                    block_info: sprites.block_info(thread_id).await,
                 })
                 .await?;
         }
@@ -177,7 +177,7 @@ impl VM {
                         debug_sender
                             .send(DebugInfo {
                                 thread_id,
-                                block_info: sprites.block_info(thread_id),
+                                block_info: sprites.block_info(thread_id).await,
                             })
                             .await?;
                         current_state = Control::Pause;
@@ -215,7 +215,7 @@ impl VM {
                     match msg {
                         BroadcastMsg::Clone(from_sprite) => {
                             let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
-                            for thread_id in 0..sprites.number_of_threads(new_sprite_id) {
+                            for thread_id in 0..sprites.number_of_threads(new_sprite_id).await {
                                 let id = ThreadID {
                                     sprite_id: new_sprite_id,
                                     thread_id,
@@ -237,7 +237,7 @@ impl VM {
                         }
                         BroadcastMsg::Stop(s) => match s {
                             Stop::All => {
-                                for thread_id in sprites.all_thread_ids() {
+                                for thread_id in sprites.all_thread_ids().await {
                                     sprites.stop(thread_id);
                                 }
                             }
@@ -245,7 +245,7 @@ impl VM {
                                 sprites.stop(thread_id);
                             }
                             Stop::OtherThreads(thread_id) => {
-                                for id in sprites.all_thread_ids() {
+                                for id in sprites.all_thread_ids().await {
                                     if id.sprite_id == thread_id.sprite_id
                                         && id.thread_id != thread_id.thread_id
                                     {
@@ -380,7 +380,7 @@ impl BroadcastCell {
 
 #[derive(Debug)]
 struct SpritesCell {
-    sprites: RefCell<HashMap<SpriteID, Sprite>>,
+    sprites: RwLock<HashMap<SpriteID, Sprite>>,
     draw_order: RefCell<DrawOrder>,
     removed_sprites: RefCell<HashSet<SpriteID>>,
     stopped_threads: RefCell<HashSet<ThreadID>>,
@@ -390,7 +390,7 @@ struct SpritesCell {
 impl SpritesCell {
     fn new(sprites: HashMap<SpriteID, Sprite>, targets: &[Target], global: Rc<Global>) -> Self {
         Self {
-            sprites: RefCell::new(sprites),
+            sprites: RwLock::new(sprites),
             draw_order: RefCell::new(DrawOrder::new(targets)),
             removed_sprites: RefCell::default(),
             stopped_threads: RefCell::default(),
@@ -405,7 +405,7 @@ impl SpritesCell {
             return Event::None;
         }
 
-        match self.sprites.borrow().get(&thread_id.sprite_id) {
+        match self.sprites.read().await.get(&thread_id.sprite_id) {
             Some(sprite) => match sprite.step(thread_id.thread_id).await {
                 Ok(_) => Event::Thread(thread_id),
                 Err(e) => Event::Err(e),
@@ -423,7 +423,7 @@ impl SpritesCell {
         if self.global.need_redraw() {
             need_redraw = true;
         } else {
-            for sprite in self.sprites.borrow().values() {
+            for sprite in self.sprites.read().await.values() {
                 if sprite.need_redraw().await {
                     need_redraw = true;
                     break;
@@ -442,8 +442,7 @@ impl SpritesCell {
         context.clear();
 
         self.global.redraw(context).await?;
-
-        let sprites = self.sprites.borrow();
+        let sprites = self.sprites.read().await;
         let removed_sprites = self.removed_sprites.borrow();
         for id in self.draw_order.borrow().iter() {
             if !removed_sprites.contains(id) {
@@ -462,8 +461,7 @@ impl SpritesCell {
         removed_sprite: &SpriteID,
     ) -> Result<()> {
         context.clear();
-
-        let sprites = self.sprites.borrow();
+        let sprites = self.sprites.read().await;
         let removed_sprites = self.removed_sprites.borrow();
         for id in self.draw_order.borrow().iter() {
             if !removed_sprites.contains(id) && id != removed_sprite {
@@ -476,9 +474,9 @@ impl SpritesCell {
         Ok(())
     }
 
-    fn all_thread_ids(&self) -> Vec<ThreadID> {
+    async fn all_thread_ids(&self) -> Vec<ThreadID> {
         let mut result: Vec<ThreadID> = Vec::new();
-        for (sprite_id, sprite) in self.sprites.borrow().iter() {
+        for (sprite_id, sprite) in self.sprites.read().await.iter() {
             for thread_id in 0..sprite.number_of_threads() {
                 result.push(ThreadID {
                     sprite_id: *sprite_id,
@@ -489,21 +487,25 @@ impl SpritesCell {
         result
     }
 
-    fn block_info(&self, thread_id: ThreadID) -> BlockInfo {
+    async fn block_info(&self, thread_id: ThreadID) -> BlockInfo {
         self.sprites
-            .borrow()
+            .read()
+            .await
             .get(&thread_id.sprite_id)
             .unwrap()
             .block_info(thread_id.thread_id)
     }
 
     async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
-        let mut sprites = self.sprites.borrow_mut();
-        let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
-            Some(sprite) => sprite.clone_sprite().await?,
-            None => return Err(wrap_err!("sprite_id is invalid")),
+        let new_sprite_id = {
+            let mut sprites = self.sprites.write().await;
+            let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
+                Some(sprite) => sprite.clone_sprite().await?,
+                None => return Err(wrap_err!("sprite_id is invalid")),
+            };
+            sprites.insert(new_sprite_id, new_sprite);
+            new_sprite_id
         };
-        sprites.insert(new_sprite_id, new_sprite);
 
         let mut draw_order = self.draw_order.borrow_mut();
         let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
@@ -512,9 +514,10 @@ impl SpritesCell {
         Ok(new_sprite_id)
     }
 
-    fn number_of_threads(&self, sprite_id: SpriteID) -> usize {
+    async fn number_of_threads(&self, sprite_id: SpriteID) -> usize {
         self.sprites
-            .borrow()
+            .read()
+            .await
             .get(&sprite_id)
             .unwrap()
             .number_of_threads()
@@ -529,7 +532,7 @@ impl SpritesCell {
     }
 
     async fn sprite_rectangle(&self, id: &SpriteID) -> Result<SpriteRectangle> {
-        match self.sprites.borrow().get(id) {
+        match self.sprites.read().await.get(id) {
             Some(sprite) => Ok(sprite.rectangle().await),
             None => Err(wrap_err!(format!("id not found: {}", id))),
         }
