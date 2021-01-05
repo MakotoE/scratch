@@ -200,7 +200,11 @@ impl Block for ColorIsTouchingColor {
 
         let sprite_image = {
             let canvas_context = CanvasContext::new(&self.buffer_canvas);
-            self.runtime.sprite.write().await.redraw(&canvas_context)?;
+            self.runtime
+                .sprite
+                .write(file!(), line!())
+                .await
+                .redraw(&canvas_context)?;
             canvas_context.get_image_data()?
         };
 
@@ -283,7 +287,11 @@ impl Block for TouchingColor {
     async fn value(&self) -> Result<Value> {
         let sprite_image = {
             let canvas_context = CanvasContext::new(&self.buffer_canvas);
-            self.runtime.sprite.write().await.redraw(&canvas_context)?; // TODO this sets need_redraw to false
+            self.runtime
+                .sprite
+                .write(file!(), line!())
+                .await
+                .redraw(&canvas_context)?; // TODO this sets need_redraw to false
             canvas_context.get_image_data()?
         };
 
@@ -388,7 +396,7 @@ impl Block for TouchingObject {
     async fn value(&self) -> Result<Value> {
         let option: TouchingObjectOption = self.menu.value().await?.try_into()?;
 
-        let sprite_rectangle = self.runtime.sprite.read().await.rectangle();
+        let sprite_rectangle = self.runtime.sprite.read(file!(), line!()).await.rectangle();
 
         let result = match option {
             TouchingObjectOption::MousePointer => {

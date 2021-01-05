@@ -57,7 +57,7 @@ impl Block for PenDown {
     }
 
     async fn execute(&mut self) -> Next {
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let center = runtime.rectangle().center;
         runtime.pen().pen_down(&center);
         Next::continue_(self.next)
@@ -106,7 +106,12 @@ impl Block for PenUp {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.sprite.write().await.pen().pen_up();
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .pen()
+            .pen_up();
         Next::continue_(self.next)
     }
 }
@@ -162,7 +167,12 @@ impl Block for SetPenColorToColor {
 
     async fn execute(&mut self) -> Next {
         let color: Hsv = self.color.value().await?.try_into()?;
-        self.runtime.sprite.write().await.pen().set_color(&color);
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .pen()
+            .set_color(&color);
         Next::continue_(self.next)
     }
 }
@@ -218,7 +228,12 @@ impl Block for SetPenSizeTo {
 
     async fn execute(&mut self) -> Next {
         let size: f64 = self.size.value().await?.try_into()?;
-        self.runtime.sprite.write().await.pen().set_size(size);
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .pen()
+            .set_size(size);
         Next::continue_(self.next)
     }
 }
@@ -265,7 +280,12 @@ impl Block for Clear {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.sprite.write().await.pen().clear();
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .pen()
+            .clear();
         Next::continue_(self.next)
     }
 }
@@ -343,7 +363,7 @@ impl Block for SetPenShadeToNumber {
 
     async fn execute(&mut self) -> Next {
         let shade: f64 = self.shade.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
         runtime.pen().set_color(&new_color);
@@ -411,7 +431,7 @@ impl Block for SetPenHueToNumber {
 
     async fn execute(&mut self) -> Next {
         let hue: f64 = self.hue.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
         runtime.pen().set_color(&new_color);
         Next::continue_(self.next)

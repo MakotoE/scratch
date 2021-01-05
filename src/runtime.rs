@@ -5,17 +5,22 @@ use crate::canvas::{CanvasContext, Corner, Direction};
 use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation};
 use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
+use crate::traced_rwlock::TracedRwLock;
 use crate::vm::ThreadID;
 
 #[derive(Debug, Clone)]
 pub struct Runtime {
-    pub sprite: Rc<RwLock<SpriteRuntime>>,
+    pub sprite: Rc<TracedRwLock<SpriteRuntime>>,
     pub global: Rc<Global>,
     thread_id: ThreadID,
 }
 
 impl Runtime {
-    pub fn new(sprite: Rc<RwLock<SpriteRuntime>>, global: Rc<Global>, thread_id: ThreadID) -> Self {
+    pub fn new(
+        sprite: Rc<TracedRwLock<SpriteRuntime>>,
+        global: Rc<Global>,
+        thread_id: ThreadID,
+    ) -> Self {
         Self {
             sprite,
             global,

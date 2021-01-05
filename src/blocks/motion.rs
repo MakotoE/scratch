@@ -76,7 +76,7 @@ impl Block for MoveSteps {
 
     async fn execute(&mut self) -> Next {
         let steps: f64 = self.steps.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
         runtime.set_center(position);
         Next::continue_(self.next)
@@ -142,7 +142,7 @@ impl Block for GoToXY {
 
         self.runtime
             .sprite
-            .write()
+            .write(file!(), line!())
             .await
             .set_center(SpriteCoordinate { x, y });
         Next::continue_(self.next)
@@ -200,7 +200,7 @@ impl Block for ChangeXBy {
 
     async fn execute(&mut self) -> Next {
         let x: f64 = self.dx.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let position = runtime.center().add(&SpriteCoordinate { x, y: 0.0 });
         runtime.set_center(position);
         Next::continue_(self.next)
@@ -259,7 +259,7 @@ impl Block for ChangeYBy {
     async fn execute(&mut self) -> Next {
         let y: f64 = self.dy.value().await?.try_into()?;
 
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let position = runtime.center().add(&SpriteCoordinate { x: 0.0, y });
         runtime.set_center(position);
         Next::continue_(self.next)
@@ -317,7 +317,7 @@ impl Block for SetX {
 
     async fn execute(&mut self) -> Next {
         let x: f64 = self.x.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let mut position = runtime.center();
         position.x = x;
         runtime.set_center(position);
@@ -376,7 +376,7 @@ impl Block for SetY {
 
     async fn execute(&mut self) -> Next {
         let y: f64 = self.y.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let mut position = runtime.center();
         position.y = y;
         runtime.set_center(position);
@@ -412,7 +412,7 @@ impl Block for XPosition {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<Value> {
-        let runtime = self.runtime.sprite.read().await;
+        let runtime = self.runtime.sprite.read(file!(), line!()).await;
         Ok(runtime.rectangle().center.x.into())
     }
 }
@@ -445,7 +445,7 @@ impl Block for YPosition {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<Value> {
-        let runtime = self.runtime.sprite.read().await;
+        let runtime = self.runtime.sprite.read(file!(), line!()).await;
         Ok(runtime.rectangle().center.y.into())
     }
 }
@@ -599,7 +599,11 @@ impl Block for GoTo {
                 }
             }
         };
-        self.runtime.sprite.write().await.set_center(new_coordinate);
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .set_center(new_coordinate);
 
         Next::continue_(self.next)
     }

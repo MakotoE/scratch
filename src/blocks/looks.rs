@@ -77,7 +77,7 @@ impl Block for Say {
 
     async fn execute(&mut self) -> Next {
         let message = self.message.value().await?.to_string();
-        self.runtime.sprite.write().await.say(Text {
+        self.runtime.sprite.write(file!(), line!()).await.say(Text {
             id: self.id,
             text: Some(message),
         });
@@ -145,12 +145,12 @@ impl Block for SayForSecs {
         let message = self.message.value().await?.to_string();
         let seconds: f64 = self.secs.value().await?.try_into()?;
 
-        self.runtime.sprite.write().await.say(Text {
+        self.runtime.sprite.write(file!(), line!()).await.say(Text {
             id: self.id,
             text: Some(message),
         });
         TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
-        self.runtime.sprite.write().await.say(Text {
+        self.runtime.sprite.write(file!(), line!()).await.say(Text {
             id: self.id,
             text: None,
         });
@@ -284,7 +284,11 @@ impl Block for Hide {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.sprite.write().await.set_hide(HideStatus::Hide);
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .set_hide(HideStatus::Hide);
         Next::continue_(self.next)
     }
 }
@@ -331,7 +335,11 @@ impl Block for Show {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.sprite.write().await.set_hide(HideStatus::Show);
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .set_hide(HideStatus::Show);
         Next::continue_(self.next)
     }
 }
@@ -396,7 +404,7 @@ impl Block for SetEffectTo {
 
     async fn execute(&mut self) -> Next {
         let value: f64 = self.value.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         match self.effect {
             Effect::Ghost => runtime.set_transparency((100.0 - value) / 100.0),
             _ => unimplemented!(),
@@ -491,7 +499,12 @@ impl Block for NextCostume {
     }
 
     async fn execute(&mut self) -> Next {
-        self.runtime.sprite.write().await.costumes().next_costume();
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .costumes()
+            .next_costume();
         Next::continue_(self.next)
     }
 }
@@ -556,7 +569,7 @@ impl Block for ChangeEffectBy {
 
     async fn execute(&mut self) -> Next {
         let value: f64 = self.change.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write().await;
+        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         match self.effect {
             Effect::Ghost => {
                 let current_transparency = runtime.transparency();
@@ -624,7 +637,7 @@ impl Block for SetSizeTo {
 
         self.runtime
             .sprite
-            .write()
+            .write(file!(), line!())
             .await
             .set_scale(Scale { x: scale, y: scale });
 
@@ -685,7 +698,7 @@ impl Block for SwitchCostumeTo {
         let costume_name = self.costume.value().await?.to_string();
         self.runtime
             .sprite
-            .write()
+            .write(file!(), line!())
             .await
             .costumes()
             .set_current_costume(costume_name)?;
@@ -799,7 +812,7 @@ impl Block for SwitchBackdropTo {
         let backdrop = self.backdrop.value().await?.to_string();
         self.runtime
             .sprite
-            .write()
+            .write(file!(), line!())
             .await
             .costumes()
             .set_current_costume(backdrop)?;

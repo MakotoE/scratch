@@ -499,7 +499,13 @@ impl Block for StartAsClone {
     }
 
     async fn execute(&mut self) -> Next {
-        if self.runtime.sprite.read().await.is_a_clone() {
+        if self
+            .runtime
+            .sprite
+            .read(file!(), line!())
+            .await
+            .is_a_clone()
+        {
             Next::continue_(self.next)
         } else {
             Next::None

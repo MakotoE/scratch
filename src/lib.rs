@@ -8,6 +8,8 @@ use debug_macro::debug;
 use error::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::rc::Rc;
 use tokio::sync::RwLock;
 use wasm_bindgen::prelude::*;
@@ -32,6 +34,7 @@ mod runtime;
 mod sprite;
 mod sprite_runtime;
 mod thread;
+mod traced_rwlock;
 mod vm;
 
 #[wasm_bindgen(start)]

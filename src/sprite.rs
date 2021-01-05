@@ -6,6 +6,7 @@ use crate::file::{BlockID, Image, Target};
 use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::{BlockInputs, Thread};
+use crate::traced_rwlock::TracedRwLock;
 use crate::vm::ThreadID;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
@@ -34,7 +35,7 @@ impl Sprite {
 
         let mut threads: Vec<RefCell<Thread>> = Vec::new();
 
-        let sprite_runtime = Rc::new(RwLock::new(
+        let sprite_runtime = Rc::new(TracedRwLock::new(
             SpriteRuntime::new(&target, &images, is_a_clone, sprite_name).await?,
         ));
 
@@ -83,11 +84,19 @@ impl Sprite {
     }
 
     pub async fn need_redraw(&self) -> bool {
-        self.runtime.sprite.read().await.need_redraw()
+        self.runtime
+            .sprite
+            .read(file!(), line!())
+            .await
+            .need_redraw()
     }
 
     pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-        self.runtime.sprite.write().await.redraw(context)
+        self.runtime
+            .sprite
+            .write(file!(), line!())
+            .await
+            .redraw(context)
     }
 
     pub fn block_inputs(&self) -> Vec<BlockInputs> {
@@ -108,7 +117,7 @@ impl Sprite {
     }
 
     pub async fn rectangle(&self) -> SpriteRectangle {
-        self.runtime.sprite.read().await.rectangle()
+        self.runtime.sprite.read(file!(), line!()).await.rectangle()
     }
 }
 

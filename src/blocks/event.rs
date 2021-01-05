@@ -55,7 +55,13 @@ impl Block for WhenFlagClicked {
     }
 
     async fn execute(&mut self) -> Next {
-        if self.runtime.sprite.read().await.is_a_clone() {
+        if self
+            .runtime
+            .sprite
+            .read(file!(), line!())
+            .await
+            .is_a_clone()
+        {
             Next::None
         } else {
             Next::continue_(self.next)
@@ -307,7 +313,7 @@ impl Block for WhenThisSpriteClicked {
         let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
             if let BroadcastMsg::MouseClick(c) = channel.recv().await? {
-                let curr_rectangle = self.runtime.sprite.read().await.rectangle();
+                let curr_rectangle = self.runtime.sprite.read(file!(), line!()).await.rectangle();
                 if curr_rectangle.contains(&c.into()) {
                     return Next::continue_(self.next);
                 }
