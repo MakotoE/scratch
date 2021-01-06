@@ -1,11 +1,13 @@
 use super::*;
 use std::collections::VecDeque;
+use std::ops;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
 #[derive(Debug)]
 pub struct TracedRwLock<T> {
     inner: RwLock<T>,
     recent_access: RefCell<RecentAccess>,
+    lock_owner: Rc<RefCell<Option<RecentAccess>>>,
 }
 
 impl<T> TracedRwLock<T> {
@@ -13,32 +15,83 @@ impl<T> TracedRwLock<T> {
         Self {
             inner: RwLock::new(inner),
             recent_access: RefCell::new(RecentAccess::Read(VecDeque::new())),
+            lock_owner: Rc::new(RefCell::new(None)),
         }
     }
 
-    pub async fn read(&self, file: &'static str, line: u32) -> RwLockReadGuard<'_, T> {
+    pub async fn read(&self, file: &'static str, line: u32) -> TracedRwLockReadGuard<'_, T> {
         let result = self.inner.read().await;
-        if cfg!(debug_assertions) {
-            self.recent_access
-                .borrow_mut()
-                .add_read(Trace { file, line });
+        self.lock_owner
+            .borrow_mut()
+            .get_or_insert(RecentAccess::Read(VecDeque::new()))
+            .add_read(Trace { file, line });
+        TracedRwLockReadGuard {
+            inner: result,
+            lock_owner: self.lock_owner.clone(),
         }
-        result
     }
 
-    pub async fn write(&self, file: &'static str, line: u32) -> RwLockWriteGuard<'_, T> {
+    pub async fn write(&self, file: &'static str, line: u32) -> TracedRwLockWriteGuard<'_, T> {
+        debug!(self.lock_owner.borrow());
         let result = self.inner.write().await;
-        if cfg!(debug_assertions) {
-            self.recent_access
-                .borrow_mut()
-                .add_write(Trace { file, line });
+        self.lock_owner
+            .borrow_mut()
+            .get_or_insert(RecentAccess::Write(Trace { file, line }));
+        TracedRwLockWriteGuard {
+            inner: result,
+            lock_owner: self.lock_owner.clone(),
         }
-        result
     }
 
     #[allow(dead_code)]
     pub fn trace(&self) -> String {
         format!("{}", self.recent_access.borrow())
+    }
+}
+
+#[derive(Debug)]
+pub struct TracedRwLockReadGuard<'a, T: ?Sized> {
+    inner: RwLockReadGuard<'a, T>,
+    lock_owner: Rc<RefCell<Option<RecentAccess>>>,
+}
+
+impl<T: ?Sized> Drop for TracedRwLockReadGuard<'_, T> {
+    fn drop(&mut self) {
+        *self.lock_owner.borrow_mut() = None;
+    }
+}
+
+impl<T: ?Sized> ops::Deref for TracedRwLockReadGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.inner
+    }
+}
+
+#[derive(Debug)]
+pub struct TracedRwLockWriteGuard<'a, T: ?Sized> {
+    inner: RwLockWriteGuard<'a, T>,
+    lock_owner: Rc<RefCell<Option<RecentAccess>>>,
+}
+
+impl<T: ?Sized> Drop for TracedRwLockWriteGuard<'_, T> {
+    fn drop(&mut self) {
+        *self.lock_owner.borrow_mut() = None;
+    }
+}
+
+impl<T: ?Sized> ops::Deref for TracedRwLockWriteGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.inner
+    }
+}
+
+impl<T: ?Sized> ops::DerefMut for TracedRwLockWriteGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.inner
     }
 }
 
@@ -58,13 +111,6 @@ impl RecentAccess {
                 }
             }
             RecentAccess::Write(_) => *self = RecentAccess::Read(vec![trace].into()),
-        }
-    }
-
-    fn add_write(&mut self, trace: Trace) {
-        match self {
-            RecentAccess::Read(_) => *self = RecentAccess::Write(trace),
-            RecentAccess::Write(w) => *w = trace,
         }
     }
 }
