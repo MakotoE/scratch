@@ -2,8 +2,8 @@
 extern crate conrod_core;
 
 use conrod_core::text::GlyphCache;
-use conrod_core::widget::Canvas;
-use conrod_core::{Borderable, Theme, Widget};
+use conrod_core::widget::{Canvas, FileNavigator};
+use conrod_core::{Borderable, Positionable, Theme, Widget};
 use graphics::math::Matrix2d;
 use graphics::rectangle::Shape;
 use graphics::{DrawState, Rectangle};
@@ -12,9 +12,11 @@ use piston_window::{
     G2d, G2dTexture, OpenGL, PistonWindow, Size, TextureSettings, UpdateEvent, Window,
     WindowSettings,
 };
+use std::path::{Path, PathBuf};
 
 widget_ids! {
     pub struct Ids {
+        navigator,
     }
 }
 
@@ -58,9 +60,13 @@ fn main() {
 
     let image_map = conrod_core::image::Map::new();
 
+    let mut character_cache = window.load_font("assets/Roboto-Regular.ttf").unwrap();
+
     let mut text_vertex_data: Vec<u8> = Vec::new();
 
     let ids = Ids::new(ui.widget_id_generator());
+
+    let mut selected_path: Option<PathBuf> = None;
 
     while let Some(event) = window.next() {
         let size = window.size();
@@ -70,28 +76,49 @@ fn main() {
 
         event.update(|_| {
             let mut ui_cell = ui.set_widgets();
+
+            if let Some(path) = &selected_path {
+            } else {
+                let navigator = FileNavigator::all(&Path::new("."))
+                    .x(0.0)
+                    .y(0.0)
+                    .set(ids.navigator, &mut ui_cell);
+                for event in navigator {
+                    if let conrod_core::widget::file_navigator::Event::ChangeSelection(
+                        mut path_vec,
+                    ) = event
+                    {
+                        for path in path_vec.drain(..) {
+                            if !path.is_dir() {
+                                selected_path = Some(path);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         });
 
-        let cache_queued_glyphs = |_: &mut G2d,
-                                   cache: &mut G2dTexture,
-                                   rect: conrod_core::text::rt::Rect<u32>,
-                                   data: &[u8]| {
-            text_vertex_data.clear();
-            text_vertex_data.extend(data.iter().flat_map(|&b| vec![255, 255, 255, b]));
-            UpdateTexture::update(
-                cache,
-                &mut texture_context,
-                piston_window::texture::Format::Rgba8,
-                &text_vertex_data[..],
-                [rect.min.x, rect.min.y],
-                [rect.width(), rect.height()],
-            )
-            .unwrap()
-        };
-
-        window.draw_2d(&event, |context, graphics, _device| {
+        window.draw_2d(&event, |context, graphics, device| {
             if let Some(primitives) = ui.draw_if_changed() {
                 draw_border(&context.draw_state, context.transform, graphics);
+
+                let cache_queued_glyphs = |_: &mut G2d,
+                                           cache: &mut G2dTexture,
+                                           rect: conrod_core::text::rt::Rect<u32>,
+                                           data: &[u8]| {
+                    text_vertex_data.clear();
+                    text_vertex_data.extend(data.iter().flat_map(|&b| vec![255, 255, 255, b]));
+                    UpdateTexture::update(
+                        cache,
+                        &mut texture_context,
+                        piston_window::texture::Format::Rgba8,
+                        &text_vertex_data[..],
+                        [rect.min.x, rect.min.y],
+                        [rect.width(), rect.height()],
+                    )
+                    .unwrap()
+                };
 
                 conrod_piston::draw::primitives(
                     primitives,
@@ -103,6 +130,9 @@ fn main() {
                     cache_queued_glyphs,
                     |img| img,
                 );
+
+                texture_context.encoder.flush(device);
+                character_cache.factory.encoder.flush(device);
             }
         });
     }
