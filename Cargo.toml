@@ -30,6 +30,10 @@ usvg = "0.13"
 tiny-skia = "0.3"
 resvg = "0.13"
 image = "0.23"
+gfx_device_gl = "0.16.2"
+piston-gfx_texture = "0.41.0"
+anyhow = "1.0"
+thiserror = "1.0"
 
 [dependencies.web-sys]
 version = "0.3"

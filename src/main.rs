@@ -1,26 +1,36 @@
 #[macro_use]
 extern crate conrod_core;
 
+use anyhow::Result;
 use conrod_core::text::GlyphCache;
-use conrod_core::widget::{Canvas, FileNavigator};
-use conrod_core::{Borderable, Positionable, Theme, Widget};
+use conrod_core::widget::{Button, Canvas, FileNavigator};
+use conrod_core::{Borderable, Color, Colorable, Positionable, Sizeable, Theme, Widget};
 use graphics::math::Matrix2d;
 use graphics::rectangle::Shape;
 use graphics::{DrawState, Rectangle};
 use piston_window::texture::UpdateTexture;
 use piston_window::{
-    G2d, G2dTexture, OpenGL, PistonWindow, Size, TextureSettings, UpdateEvent, Window,
-    WindowSettings,
+    G2d, G2dTexture, G2dTextureContext, OpenGL, PistonWindow, Size, Texture, TextureSettings,
+    UpdateEvent, Window, WindowSettings,
 };
 use std::path::{Path, PathBuf};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum OptionError {
+    #[error("option is None")]
+    Option,
+}
 
 widget_ids! {
     pub struct Ids {
         navigator,
+        green_flag_button,
+        stop_button,
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
     const PAGE_SIZE: Size = Size {
         width: 520.0,
         height: 520.0,
@@ -58,7 +68,15 @@ fn main() {
         .position_tolerance(0.1)
         .build();
 
-    let image_map = conrod_core::image::Map::new();
+    let mut image_map = conrod_core::image::Map::new();
+    let green_flag_id = image_map.insert(image_texture(
+        &mut texture_context,
+        Path::new("assets/green_flag.svg"),
+    )?);
+    let stop_id = image_map.insert(image_texture(
+        &mut texture_context,
+        Path::new("assets/stop.svg"),
+    )?);
 
     let mut character_cache = window.load_font("assets/Roboto-Regular.ttf").unwrap();
 
@@ -77,25 +95,35 @@ fn main() {
         event.update(|_| {
             let mut ui_cell = ui.set_widgets();
 
+            Button::image(green_flag_id)
+                .top_left_with_margins(10.0, 25.0)
+                .w_h(30.0, 30.0)
+                .set(ids.green_flag_button, &mut ui_cell);
+
+            Button::image(stop_id)
+                .top_left_with_margins(10.0, 70.0)
+                .w_h(30.0, 30.0)
+                .set(ids.stop_button, &mut ui_cell);
+
             if let Some(path) = &selected_path {
             } else {
-                let navigator = FileNavigator::all(&Path::new("."))
-                    .x(0.0)
-                    .y(0.0)
-                    .set(ids.navigator, &mut ui_cell);
-                for event in navigator {
-                    if let conrod_core::widget::file_navigator::Event::ChangeSelection(
-                        mut path_vec,
-                    ) = event
-                    {
-                        for path in path_vec.drain(..) {
-                            if !path.is_dir() {
-                                selected_path = Some(path);
-                                break;
-                            }
-                        }
-                    }
-                }
+                // let navigator = FileNavigator::all(&Path::new("."))
+                //     .x(0.0)
+                //     .y(0.0)
+                //     .set(ids.navigator, &mut ui_cell);
+                // for event in navigator {
+                //     if let conrod_core::widget::file_navigator::Event::ChangeSelection(
+                //         mut path_vec,
+                //     ) = event
+                //     {
+                //         for path in path_vec.drain(..) {
+                //             if !path.is_dir() {
+                //                 selected_path = Some(path);
+                //                 break;
+                //             }
+                //         }
+                //     }
+                // }
             }
         });
 
@@ -136,6 +164,8 @@ fn main() {
             }
         });
     }
+
+    Ok(())
 }
 
 fn draw_border(draw_state: &DrawState, transform: Matrix2d, graphics: &mut G2d) {
@@ -152,4 +182,27 @@ fn draw_border(draw_state: &DrawState, transform: Matrix2d, graphics: &mut G2d) 
     rectangle.draw([0.0, 50.0, 20.0, 410.0], draw_state, transform, graphics);
     // Right
     rectangle.draw([500.0, 50.0, 520.0, 410.0], draw_state, transform, graphics);
+}
+
+fn image_texture(
+    texture_context: &mut G2dTextureContext,
+    path: &Path,
+) -> Result<Texture<gfx_device_gl::Resources>> {
+    let mut options = usvg::Options::default();
+    options.fontdb.load_system_fonts();
+    let tree = usvg::Tree::from_file(path, &options)?;
+    let size = tree.svg_node().size.to_screen_size();
+    let mut pixmap =
+        tiny_skia::Pixmap::new(size.width() * 2, size.height() * 2).ok_or(OptionError::Option)?;
+    let width = pixmap.width();
+    let height = pixmap.height();
+
+    resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut()).ok_or(OptionError::Option)?;
+    let image =
+        image::ImageBuffer::from_raw(width, height, pixmap.take()).ok_or(OptionError::Option)?;
+    Ok(Texture::from_image(
+        texture_context,
+        &image,
+        &TextureSettings::new(),
+    )?)
 }
