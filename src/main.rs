@@ -3,17 +3,17 @@ extern crate conrod_core;
 
 use crate::interface::Interface;
 use anyhow::Result;
-use conrod_core::text::{GlyphCache, Justify};
-use conrod_core::widget::{button, Button, Canvas, FileNavigator};
-use conrod_core::{Borderable, Color, Colorable, Labelable, Positionable, Sizeable, Theme, Widget};
+use conrod_core::text::GlyphCache;
+use conrod_core::widget::{Canvas, FileNavigator};
+use conrod_core::{Borderable, Colorable, Positionable, Sizeable, Theme, Widget};
 use error::*;
 use graphics::math::Matrix2d;
 use graphics::rectangle::Shape;
 use graphics::{DrawState, Rectangle};
 use piston_window::texture::UpdateTexture;
 use piston_window::{
-    AdvancedWindow, G2d, G2dTexture, G2dTextureContext, OpenGL, PistonWindow, Size, Texture,
-    TextureSettings, UpdateEvent, Window, WindowSettings,
+    G2d, G2dTexture, G2dTextureContext, OpenGL, PistonWindow, Size, Texture, TextureSettings,
+    UpdateEvent, Window, WindowSettings,
 };
 use std::path::{Path, PathBuf};
 

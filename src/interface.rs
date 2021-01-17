@@ -1,7 +1,7 @@
 use conrod_core::image::Id;
 use conrod_core::widget::{id, Button};
 use conrod_core::UiCell;
-use conrod_core::{Borderable, Color, Colorable, Labelable, Positionable, Sizeable, Theme, Widget};
+use conrod_core::{Positionable, Sizeable, Widget};
 
 pub struct Interface {
     ids: Ids,
