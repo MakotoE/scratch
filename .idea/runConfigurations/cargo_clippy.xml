@@ -1,12 +1,14 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="cargo clippy" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+    <option name="command" value="clippy --all-targets --all-features --fix" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <option name="channel" value="DEFAULT" />
-    <option name="command" value="clippy --all-targets --all-features --fix -Z unstable-options --allow-dirty --allow-staged" />
     <option name="allFeatures" value="false" />
     <option name="emulateTerminal" value="false" />
     <option name="backtrace" value="SHORT" />
-    <option name="workingDirectory" value="file://$PROJECT_DIR$" />
     <envs />
+    <option name="isRedirectInput" value="false" />
+    <option name="redirectInputPath" value="" />
     <method v="2">
       <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
     </method>

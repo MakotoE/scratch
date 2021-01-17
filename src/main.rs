@@ -1,45 +1,44 @@
 #[macro_use]
 extern crate conrod_core;
 
+use crate::interface::Interface;
 use anyhow::Result;
-use conrod_core::text::GlyphCache;
-use conrod_core::widget::{Button, Canvas, FileNavigator};
-use conrod_core::{Borderable, Color, Colorable, Positionable, Sizeable, Theme, Widget};
+use conrod_core::text::{GlyphCache, Justify};
+use conrod_core::widget::{button, Button, Canvas, FileNavigator};
+use conrod_core::{Borderable, Color, Colorable, Labelable, Positionable, Sizeable, Theme, Widget};
+use error::*;
 use graphics::math::Matrix2d;
 use graphics::rectangle::Shape;
 use graphics::{DrawState, Rectangle};
 use piston_window::texture::UpdateTexture;
 use piston_window::{
-    G2d, G2dTexture, G2dTextureContext, OpenGL, PistonWindow, Size, Texture, TextureSettings,
-    UpdateEvent, Window, WindowSettings,
+    AdvancedWindow, G2d, G2dTexture, G2dTextureContext, OpenGL, PistonWindow, Size, Texture,
+    TextureSettings, UpdateEvent, Window, WindowSettings,
 };
 use std::path::{Path, PathBuf};
-use thiserror::Error;
 
-#[derive(Debug, Error)]
-pub enum OptionError {
-    #[error("option is None")]
-    Option,
-}
+mod error;
+mod interface;
 
 widget_ids! {
-    pub struct Ids {
+    struct Ids {
+        navigator_background,
         navigator,
-        green_flag_button,
-        stop_button,
+        open_button,
     }
 }
 
 fn main() -> Result<()> {
     const PAGE_SIZE: Size = Size {
         width: 520.0,
-        height: 520.0,
+        height: 480.0,
     };
 
     let mut window: PistonWindow = WindowSettings::new("Scratch", PAGE_SIZE)
         .graphics_api(OpenGL::V3_2)
         .samples(8)
         .vsync(true)
+        .resizable(false)
         .build()
         .unwrap();
 
@@ -69,14 +68,18 @@ fn main() -> Result<()> {
         .build();
 
     let mut image_map = conrod_core::image::Map::new();
-    let green_flag_id = image_map.insert(image_texture(
-        &mut texture_context,
-        Path::new("assets/green_flag.svg"),
-    )?);
-    let stop_id = image_map.insert(image_texture(
-        &mut texture_context,
-        Path::new("assets/stop.svg"),
-    )?);
+
+    let interface = Interface::new(
+        ui.widget_id_generator(),
+        image_map.insert(image_texture(
+            &mut texture_context,
+            Path::new("assets/green_flag.svg"),
+        )?),
+        image_map.insert(image_texture(
+            &mut texture_context,
+            Path::new("assets/stop.svg"),
+        )?),
+    );
 
     let mut character_cache = window.load_font("assets/Roboto-Regular.ttf").unwrap();
 
@@ -95,35 +98,37 @@ fn main() -> Result<()> {
         event.update(|_| {
             let mut ui_cell = ui.set_widgets();
 
-            Button::image(green_flag_id)
-                .top_left_with_margins(10.0, 25.0)
-                .w_h(30.0, 30.0)
-                .set(ids.green_flag_button, &mut ui_cell);
-
-            Button::image(stop_id)
-                .top_left_with_margins(10.0, 70.0)
-                .w_h(30.0, 30.0)
-                .set(ids.stop_button, &mut ui_cell);
+            interface.widgets(&mut ui_cell);
 
             if let Some(path) = &selected_path {
             } else {
-                // let navigator = FileNavigator::all(&Path::new("."))
-                //     .x(0.0)
-                //     .y(0.0)
-                //     .set(ids.navigator, &mut ui_cell);
-                // for event in navigator {
-                //     if let conrod_core::widget::file_navigator::Event::ChangeSelection(
-                //         mut path_vec,
-                //     ) = event
-                //     {
-                //         for path in path_vec.drain(..) {
-                //             if !path.is_dir() {
-                //                 selected_path = Some(path);
-                //                 break;
-                //             }
-                //         }
-                //     }
-                // }
+                Canvas::new()
+                    .hsla(0.0, 0.0, 1.0, 1.0)
+                    .border(0.0)
+                    .w_h(PAGE_SIZE.width, PAGE_SIZE.height)
+                    .set(ids.navigator_background, &mut ui_cell);
+
+                let starting_dir = dirs::home_dir().unwrap();
+                let mut navigator = FileNavigator::with_extension(&starting_dir, &[".sb3"])
+                    .font_size(13)
+                    .x(0.0)
+                    .y(0.0)
+                    .wh_of(ids.navigator_background);
+                navigator.style.column_width = Some(200.0);
+
+                for event in navigator.set(ids.navigator, &mut ui_cell) {
+                    if let conrod_core::widget::file_navigator::Event::ChangeSelection(
+                        mut path_vec,
+                    ) = event
+                    {
+                        for path in path_vec.drain(..) {
+                            if !path.is_dir() {
+                                selected_path = Some(path);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         });
 
@@ -177,11 +182,11 @@ fn draw_border(draw_state: &DrawState, transform: Matrix2d, graphics: &mut G2d) 
     // Top
     rectangle.draw([0.0, 0.0, 520.0, 50.0], draw_state, transform, graphics);
     // Bottom
-    rectangle.draw([0.0, 410.0, 520.0, 520.0], draw_state, transform, graphics);
+    rectangle.draw([0.0, 410.0, 520.0, 480.0], draw_state, transform, graphics);
     // Left
     rectangle.draw([0.0, 50.0, 20.0, 410.0], draw_state, transform, graphics);
     // Right
-    rectangle.draw([500.0, 50.0, 520.0, 410.0], draw_state, transform, graphics);
+    rectangle.draw([500.0, 50.0, 480.0, 410.0], draw_state, transform, graphics);
 }
 
 fn image_texture(
@@ -193,13 +198,13 @@ fn image_texture(
     let tree = usvg::Tree::from_file(path, &options)?;
     let size = tree.svg_node().size.to_screen_size();
     let mut pixmap =
-        tiny_skia::Pixmap::new(size.width() * 2, size.height() * 2).ok_or(OptionError::Option)?;
+        tiny_skia::Pixmap::new(size.width() * 2, size.height() * 2).ok_or(ScratchError::Option)?;
     let width = pixmap.width();
     let height = pixmap.height();
 
-    resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut()).ok_or(OptionError::Option)?;
+    resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut()).ok_or(ScratchError::Option)?;
     let image =
-        image::ImageBuffer::from_raw(width, height, pixmap.take()).ok_or(OptionError::Option)?;
+        image::ImageBuffer::from_raw(width, height, pixmap.take()).ok_or(ScratchError::Option)?;
     Ok(Texture::from_image(
         texture_context,
         &image,
