@@ -3,10 +3,10 @@ use crate::broadcaster;
 use crate::broadcaster::BroadcastMsg;
 use crate::vm::ThreadID;
 use futures::StreamExt;
-use gloo_timers::future::{IntervalStream, TimeoutFuture};
 
 use std::str::FromStr;
 use strum::EnumString;
+use tokio::time::interval;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -22,7 +22,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "stop" => Box::new(Stop::new(id, runtime)),
         "create_clone_of" => Box::new(CreateCloneOf::new(id, runtime)),
         "create_clone_of_menu" => Box::new(CreateCloneOfMenu::new(id)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 
@@ -79,7 +79,7 @@ impl Block for If {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         if self.done {
             self.done = false;
             return Next::continue_(self.next);
@@ -144,9 +144,9 @@ impl Block for Wait {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let duration: f64 = self.duration.value().await?.try_into()?;
-        TimeoutFuture::new((MILLIS_PER_SECOND * duration).round() as u32).await;
+        sleep(Duration::from_secs_f64(duration)).await;
         Next::continue_(self.next)
     }
 }
@@ -187,11 +187,11 @@ impl Block for Forever {
         }
     }
 
-    async fn execute(&mut self) -> Next {
-        match &self.substack {
+    async fn execute(&mut self) -> Result<Next> {
+        Ok(match &self.substack {
             Some(b) => Next::Loop(*b),
             None => Next::None,
-        }
+        })
     }
 }
 
@@ -248,7 +248,7 @@ impl Block for Repeat {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let times: f64 = self.times.value().await?.try_into()?;
         if self.count < times as usize {
             // Loop until count equals times
@@ -312,7 +312,7 @@ impl Block for RepeatUntil {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let condition: bool = self.condition.value().await?.try_into()?;
 
         if condition {
@@ -383,7 +383,7 @@ impl Block for IfElse {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         if self.done {
             self.done = false;
             return Next::continue_(self.next);
@@ -446,9 +446,10 @@ impl Block for WaitUntil {
         }
     }
 
-    async fn execute(&mut self) -> Next {
-        let mut interval = IntervalStream::new(100);
-        while interval.next().await.is_some() {
+    async fn execute(&mut self) -> Result<Next> {
+        let mut interval = interval(Duration::from_millis(100));
+        loop {
+            interval.tick().await;
             if self.condition.value().await?.try_into()? {
                 return Next::continue_(self.next);
             }
@@ -498,7 +499,7 @@ impl Block for StartAsClone {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         if self
             .runtime
             .sprite
@@ -508,7 +509,7 @@ impl Block for StartAsClone {
         {
             Next::continue_(self.next)
         } else {
-            Next::None
+            Ok(Next::None)
         }
     }
 }
@@ -538,13 +539,13 @@ impl Block for DeleteThisClone {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
             .global
             .broadcaster
             .send(BroadcastMsg::DeleteClone(sprite_id))?;
-        Next::None
+        Ok(Next::None)
     }
 }
 
@@ -598,7 +599,7 @@ impl Block for Stop {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         self.runtime.global.broadcaster.send(BroadcastMsg::Stop(
             self.stop_option.into_stop(self.runtime.thread_id()),
         ))?;
@@ -676,7 +677,7 @@ impl Block for CreateCloneOf {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
             .global

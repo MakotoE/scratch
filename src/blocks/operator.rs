@@ -14,7 +14,7 @@ pub fn get_block(name: &str, id: BlockID, _runtime: Runtime) -> Result<Box<dyn B
         "gt" => Box::new(GreaterThan::new(id)),
         "random" => Box::new(Random::new(id)),
         "join" => Box::new(Join::new(id)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 

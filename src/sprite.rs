@@ -1,6 +1,5 @@
 use super::*;
 use crate::blocks::*;
-use crate::canvas::CanvasContext;
 use crate::coordinate::SpriteRectangle;
 use crate::file::{BlockID, Image, Target};
 use crate::runtime::{Global, Runtime};
@@ -91,13 +90,13 @@ impl Sprite {
             .need_redraw()
     }
 
-    pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .redraw(context)
-    }
+    // pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
+    //     self.runtime
+    //         .sprite
+    //         .write(file!(), line!())
+    //         .await
+    //         .redraw(context)
+    // }
 
     pub fn block_inputs(&self) -> Vec<BlockInputs> {
         self.threads

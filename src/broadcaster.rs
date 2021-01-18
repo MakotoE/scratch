@@ -1,5 +1,4 @@
 use super::*;
-use crate::canvas::CanvasImage;
 use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
 use crate::event_sender::KeyboardKey;
 use crate::sprite::SpriteID;
@@ -28,6 +27,9 @@ impl Broadcaster {
         self.sender.subscribe()
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CanvasImage;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BroadcastMsg {

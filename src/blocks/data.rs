@@ -6,7 +6,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
         "hidevariable" => Box::new(HideVariable::new(id, runtime)),
         "showvariable" => Box::new(ShowVariable::new(id, runtime)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 
@@ -68,7 +68,7 @@ impl Block for SetVariable {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let value = self.value.value().await?;
         self.runtime
             .global
@@ -137,7 +137,7 @@ impl Block for ChangeVariable {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let value: f64 = self.value.value().await?.try_into()?;
         self.runtime
             .global
@@ -201,7 +201,7 @@ impl Block for HideVariable {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         self.runtime
             .global
             .variables
@@ -261,7 +261,7 @@ impl Block for ShowVariable {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         self.runtime
             .global
             .variables

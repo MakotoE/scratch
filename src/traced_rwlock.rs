@@ -32,7 +32,6 @@ impl<T> TracedRwLock<T> {
     }
 
     pub async fn write(&self, file: &'static str, line: u32) -> TracedRwLockWriteGuard<'_, T> {
-        debug!(self.lock_owner.borrow());
         let result = self.inner.write().await;
         self.lock_owner
             .borrow_mut()
@@ -167,15 +166,6 @@ mod test {
         assert_eq!(
             format!("{}", recent_access),
             "RwLock was last read: [\n\tfile.rs:1,\n]"
-        );
-
-        recent_access.add_write(Trace {
-            file: "file.rs",
-            line: 1,
-        });
-        assert_eq!(
-            format!("{}", recent_access),
-            "RwLock was last written: file.rs:1"
         );
     }
 }

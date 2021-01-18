@@ -1,5 +1,4 @@
 use crate::blocks::value::HsvDisplay;
-use crate::canvas::CanvasContext;
 use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::pen::PenStatus::PenUp;
 
@@ -67,12 +66,12 @@ impl Pen {
             .push(Line::new(&palette::Hsv::new(0.0, 1.0, 1.0), 1.0));
     }
 
-    pub fn draw(&self, context: &CanvasContext) {
-        context.set_line_cap("round");
-        for line in &self.lines {
-            line.draw(context, None);
-        }
-    }
+    // pub fn draw(&self, context: &CanvasContext) {
+    //     context.set_line_cap("round");
+    //     for line in &self.lines {
+    //         line.draw(context, None);
+    //     }
+    // }
 
     fn new_line(&mut self) {
         let last_point = self.lines.last().unwrap().last_point();
@@ -127,27 +126,27 @@ impl Line {
         self.points.push(*position);
     }
 
-    fn draw(&self, context: &CanvasContext, extra_point: Option<SpriteCoordinate>) {
-        context.begin_path();
-        for (i, point) in self.points.iter().enumerate() {
-            let position: CanvasCoordinate = (*point).into();
-            if i == 0 {
-                context.move_to(&position);
-
-                if self.points.len() == 1 {
-                    context.line_to(&position);
-                }
-            } else {
-                context.line_to(&position);
-            }
-        }
-
-        if let Some(extra_point) = extra_point {
-            context.line_to(&extra_point.into());
-        }
-
-        context.set_stroke_style(&format!("{}", HsvDisplay(self.color)));
-        context.set_line_width(self.size);
-        context.stroke();
-    }
+    // fn draw(&self, context: &CanvasContext, extra_point: Option<SpriteCoordinate>) {
+    //     context.begin_path();
+    //     for (i, point) in self.points.iter().enumerate() {
+    //         let position: CanvasCoordinate = (*point).into();
+    //         if i == 0 {
+    //             context.move_to(&position);
+    //
+    //             if self.points.len() == 1 {
+    //                 context.line_to(&position);
+    //             }
+    //         } else {
+    //             context.line_to(&position);
+    //         }
+    //     }
+    //
+    //     if let Some(extra_point) = extra_point {
+    //         context.line_to(&extra_point.into());
+    //     }
+    //
+    //     context.set_stroke_style(&format!("{}", HsvDisplay(self.color)));
+    //     context.set_line_width(self.size);
+    //     context.stroke();
+    // }
 }

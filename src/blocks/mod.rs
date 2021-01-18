@@ -15,18 +15,21 @@ use crate::file::BlockID;
 use crate::runtime::Runtime;
 use async_trait::async_trait;
 use std::convert::TryInto;
+use std::time::Duration;
+use tokio::time::sleep;
 use value::Value;
 
 fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dyn Block>> {
-    let (category, name) = match info.opcode.split_once('_') {
-        Some(s) => s,
-        None => {
-            return Err(wrap_err!(format!(
-                "block \"{}\": opcode {} does not exist",
-                id, info.opcode
-            )));
-        }
-    };
+    let mut split = info.opcode.split('_');
+    let category = split.next().ok_or(Error::msg(format!(
+        "block \"{}\": opcode {} does not exist",
+        id, info.opcode
+    )))?;
+
+    let name = split.next().ok_or(Error::msg(format!(
+        "block \"{}\": opcode {} does not exist",
+        id, info.opcode
+    )))?;
 
     let id_clone = id;
     match category {
@@ -51,15 +54,20 @@ fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dy
         "sound" => {
             sound::get_block(name, id_clone, runtime).map_err(|e| add_error_context(id, "sound", e))
         }
-        _ => Err(wrap_err!(format!(
+        _ => Err(Error::msg(format!(
             "block id \"{}\": opcode {} does not exist",
             id, info.opcode
         ))),
     }
 }
 
-fn add_error_context(id: BlockID, category: &str, e: Error) -> Error {
-    ErrorKind::BlockInitialization(id, category.to_string(), Box::new(e)).into()
+fn add_error_context(id: BlockID, category: &str, error: Error) -> Error {
+    ScratchError::BlockInitialization {
+        id,
+        category: category.to_string(),
+        error,
+    }
+    .into()
 }
 
 #[async_trait(?Send)]
@@ -80,54 +88,33 @@ pub trait Block: std::fmt::Debug {
     }
 
     async fn value(&self) -> Result<Value> {
-        Err(wrap_err!("this block does not return a value"))
+        Err(Error::msg("this block does not return a value"))
     }
 
-    async fn execute(&mut self) -> Next {
-        Next::Err(wrap_err!("this block cannot be executed"))
+    async fn execute(&mut self) -> Result<Next> {
+        Err(Error::msg("this block cannot be executed"))
     }
 }
 
 #[derive(Debug)]
 pub enum Next {
     None,
-    Err(Error),
     Continue(BlockID),
     Loop(BlockID),
 }
 
-impl std::ops::Try for Next {
-    type Ok = Next;
-    type Error = Error;
-
-    fn into_result(self) -> Result<Next> {
-        match self {
-            Self::Err(e) => Err(e),
-            _ => Ok(self),
-        }
-    }
-
-    fn from_error(v: Error) -> Self {
-        Self::Err(v)
-    }
-
-    fn from_ok(v: Next) -> Self {
-        v
-    }
-}
-
 impl Next {
-    pub fn continue_(block: Option<BlockID>) -> Next {
+    pub fn continue_(block: Option<BlockID>) -> Result<Next> {
         match block {
-            Some(b) => Next::Continue(b),
-            None => Next::None,
+            Some(b) => Ok(Next::Continue(b)),
+            None => Ok(Next::None),
         }
     }
 
-    pub fn loop_(block: Option<BlockID>) -> Next {
+    pub fn loop_(block: Option<BlockID>) -> Result<Next> {
         match block {
-            Some(b) => Next::Loop(b),
-            None => Next::None,
+            Some(b) => Ok(Next::Loop(b)),
+            None => Ok(Next::None),
         }
     }
 }
@@ -181,7 +168,12 @@ pub fn block_tree(
 ) -> Result<(BlockID, HashMap<BlockID, Box<dyn Block>>)> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,
-        None => return Err(wrap_err!(format!("could not find block: {}", top_block_id))),
+        None => {
+            return Err(Error::msg(format!(
+                "could not find block: {}",
+                top_block_id
+            )))
+        }
     };
 
     let mut result: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
@@ -194,14 +186,15 @@ pub fn block_tree(
     }
 
     for (k, input) in &info.inputs {
-        let wrap_err = |err: Error| {
-            Error::from_kind(ErrorKind::BlockInput(
-                top_block_id,
-                k.clone(),
-                Box::new(err),
-            ))
+        let wrap_err = |error: Error| -> Error {
+            ScratchError::BlockInput {
+                block_id: top_block_id,
+                input_id: k.clone(),
+                error,
+            }
+            .into()
         };
-        let input_err = || wrap_err("invalid type".into());
+        let input_err = || wrap_err(Error::msg("invalid type"));
 
         let input_arr = input.as_array().ok_or_else(input_err)?;
         match input_arr.get(1).ok_or_else(input_err)? {
@@ -250,8 +243,13 @@ pub fn block_tree(
     for (k, field) in &info.fields {
         match block.set_field(k, field) {
             Ok(_) => {}
-            Err(e) => {
-                return Err(ErrorKind::BlockField(top_block_id, k.clone(), Box::new(e)).into())
+            Err(error) => {
+                return Err(ScratchError::BlockField {
+                    block_id: top_block_id,
+                    field_id: k.clone(),
+                    error,
+                }
+                .into());
             }
         }
     }
@@ -285,7 +283,7 @@ impl Block for EmptyInput {
     }
 
     async fn value(&self) -> Result<Value> {
-        Err(wrap_err!("input is unconnected"))
+        Err(Error::msg("input is unconnected"))
     }
 }
 
@@ -317,8 +315,8 @@ impl Block for EmptyFalse {
 
 pub fn get_field_value(field: &[Option<String>], index: usize) -> Result<&str> {
     if let Some(Some(s)) = field.get(index) {
-        return Ok(s);
+        Ok(s)
+    } else {
+        Err(Error::msg("invalid field"))
     }
-
-    Err("invalid field".into())
 }

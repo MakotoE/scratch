@@ -1,11 +1,8 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
-use crate::canvas::CanvasContext;
 use crate::coordinate::{canvas_const, CanvasRectangle};
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
-use crate::vm::new_hidden_canvas;
-use gloo_timers::future::TimeoutFuture;
 use ndarray::{Array2, Zip};
 use palette::{Alpha, Blend, Hsv, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
@@ -19,7 +16,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "touchingcolor" => Box::new(TouchingColor::new(id, runtime)),
         "touchingobject" => Box::new(TouchingObject::new(id, runtime)),
         "touchingobjectmenu" => Box::new(TouchingObjectMenu::new(id)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 
@@ -136,7 +133,6 @@ pub struct ColorIsTouchingColor {
     runtime: Runtime,
     sprite_color: Box<dyn Block>,
     canvas_color: Box<dyn Block>,
-    buffer_canvas: web_sys::CanvasRenderingContext2d,
 }
 
 impl ColorIsTouchingColor {
@@ -146,7 +142,6 @@ impl ColorIsTouchingColor {
             runtime,
             sprite_color: Box::new(EmptyInput {}),
             canvas_color: Box::new(EmptyInput {}),
-            buffer_canvas: new_hidden_canvas(),
         }
     }
 
@@ -195,36 +190,37 @@ impl Block for ColorIsTouchingColor {
     }
 
     async fn value(&self) -> Result<Value> {
-        let sprite_color = hsv_to_srgb(self.sprite_color.value().await?.try_into()?);
-        let canvas_color = hsv_to_linsrgba(self.canvas_color.value().await?.try_into()?);
-
-        let sprite_image = {
-            let canvas_context = CanvasContext::new(&self.buffer_canvas);
-            self.runtime
-                .sprite
-                .write(file!(), line!())
-                .await
-                .redraw(&canvas_context)?;
-            canvas_context.get_image_data()?
-        };
-
-        let sprite_id = self.runtime.thread_id().sprite_id;
-        self.runtime
-            .global
-            .broadcaster
-            .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
-        let mut channel = self.runtime.global.broadcaster.subscribe();
-        loop {
-            if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
-                let result = ColorIsTouchingColor::sprite_color_touching_canvas_color(
-                    &sprite_image,
-                    &sprite_color,
-                    &canvas_image.image,
-                    &canvas_color,
-                );
-                return Ok(result.into());
-            }
-        }
+        todo!()
+        // let sprite_color = hsv_to_srgb(self.sprite_color.value().await?.try_into()?);
+        // let canvas_color = hsv_to_linsrgba(self.canvas_color.value().await?.try_into()?);
+        //
+        // let sprite_image = {
+        //     let canvas_context = CanvasContext::new(&self.buffer_canvas);
+        //     self.runtime
+        //         .sprite
+        //         .write(file!(), line!())
+        //         .await
+        //         .redraw(&canvas_context)?;
+        //     canvas_context.get_image_data()?
+        // };
+        //
+        // let sprite_id = self.runtime.thread_id().sprite_id;
+        // self.runtime
+        //     .global
+        //     .broadcaster
+        //     .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
+        // let mut channel = self.runtime.global.broadcaster.subscribe();
+        // loop {
+        //     if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
+        //         let result = ColorIsTouchingColor::sprite_color_touching_canvas_color(
+        //             &sprite_image,
+        //             &sprite_color,
+        //             &canvas_image.image,
+        //             &canvas_color,
+        //         );
+        //         return Ok(result.into());
+        //     }
+        // }
     }
 }
 
@@ -233,7 +229,6 @@ pub struct TouchingColor {
     id: BlockID,
     runtime: Runtime,
     color: Box<dyn Block>,
-    buffer_canvas: web_sys::CanvasRenderingContext2d,
 }
 
 impl TouchingColor {
@@ -242,7 +237,6 @@ impl TouchingColor {
             id,
             runtime,
             color: Box::new(EmptyInput {}),
-            buffer_canvas: new_hidden_canvas(),
         }
     }
 
@@ -285,31 +279,32 @@ impl Block for TouchingColor {
     }
 
     async fn value(&self) -> Result<Value> {
-        let sprite_image = {
-            let canvas_context = CanvasContext::new(&self.buffer_canvas);
-            self.runtime
-                .sprite
-                .write(file!(), line!())
-                .await
-                .redraw(&canvas_context)?; // TODO this sets need_redraw to false
-            canvas_context.get_image_data()?
-        };
-
-        let match_color = hsv_to_linsrgba(self.color.value().await?.try_into()?);
-
-        let sprite_id = self.runtime.thread_id().sprite_id;
-        self.runtime
-            .global
-            .broadcaster
-            .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
-        let mut channel = self.runtime.global.broadcaster.subscribe();
-        loop {
-            if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
-                let result =
-                    TouchingColor::touching_color(&canvas_image.image, &sprite_image, &match_color);
-                return Ok(result.into());
-            }
-        }
+        todo!()
+        // let sprite_image = {
+        //     let canvas_context = CanvasContext::new(&self.buffer_canvas);
+        //     self.runtime
+        //         .sprite
+        //         .write(file!(), line!())
+        //         .await
+        //         .redraw(&canvas_context)?; // TODO this sets need_redraw to false
+        //     canvas_context.get_image_data()?
+        // };
+        //
+        // let match_color = hsv_to_linsrgba(self.color.value().await?.try_into()?);
+        //
+        // let sprite_id = self.runtime.thread_id().sprite_id;
+        // self.runtime
+        //     .global
+        //     .broadcaster
+        //     .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
+        // let mut channel = self.runtime.global.broadcaster.subscribe();
+        // loop {
+        //     if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
+        //         let result =
+        //             TouchingColor::touching_color(&canvas_image.image, &sprite_image, &match_color);
+        //         return Ok(result.into());
+        //     }
+        // }
     }
 }
 
@@ -400,7 +395,7 @@ impl Block for TouchingObject {
 
         let result = match option {
             TouchingObjectOption::MousePointer => {
-                TimeoutFuture::new(0).await; // Prevents unresponsiveness
+                sleep(Duration::from_secs(0)).await; // Prevents unresponsiveness
                 self.runtime
                     .global
                     .broadcaster

@@ -52,7 +52,7 @@ impl Block for Variable {
 
 pub fn value_block_from_input_arr(arr: &[serde_json::Value]) -> Result<Box<dyn Block>> {
     // https://en.scratch-wiki.info/wiki/Scratch_File_Format#Blocks
-    let err = || wrap_err!("invalid input");
+    let err = || Error::msg("invalid input");
     let value_type = arr.get(0).ok_or_else(err)?.as_i64().ok_or_else(err)?;
     let value = arr.get(1).ok_or_else(err)?;
     Ok(match value_type {
@@ -67,7 +67,7 @@ pub fn value_block_from_input_arr(arr: &[serde_json::Value]) -> Result<Box<dyn B
                 value.to_string()
             },
         }),
-        _ => return Err(wrap_err!(format!("unknown value_type: {}", value_type))),
+        _ => return Err(Error::msg(format!("unknown value_type: {}", value_type))),
     })
 }
 
@@ -223,7 +223,7 @@ impl TryInto<bool> for Value {
         if let Self::Bool(b) = self {
             Ok(b)
         } else {
-            Err(wrap_err!(format!("value is not bool: {}", self)))
+            Err(Error::msg(format!("value is not bool: {}", self)))
         }
     }
 }
@@ -250,7 +250,7 @@ impl TryInto<f64> for &Value {
             }
             Value::String(s) => s.parse()?,
             _ => {
-                return Err(wrap_err!(format!(
+                return Err(Error::msg(format!(
                     "expected String or Number but got: {:?}",
                     self
                 )))
@@ -261,7 +261,7 @@ impl TryInto<f64> for &Value {
 
 fn str_to_color(s: &str) -> Result<Hsv> {
     if s.len() != 7 || s.bytes().next() != Some(b'#') {
-        return Err(wrap_err!(format!("string is invalid: {}", s)));
+        return Err(Error::msg(format!("string is invalid: {}", s)));
     }
 
     let rgb = palette::Srgb::new(
@@ -294,7 +294,7 @@ impl TryInto<Hsv> for Value {
         Ok(match self {
             Self::String(s) => str_to_color(&s)?,
             Self::Color(c) => c,
-            _ => return Err(wrap_err!(format!("cannot convert {} into color", self))),
+            _ => return Err(Error::msg(format!("cannot convert {} into color", self))),
         })
     }
 }
@@ -325,7 +325,7 @@ macro_rules! impl_try_from_value {
                 Ok(match value {
                     Value::String(s) => Self::from_str(&s)?,
                     Value::$value_name(o) => o,
-                    _ => return Err(wrap_err!(format!("cannot convert value: {}", value))),
+                    _ => return Err(Error::msg(format!("cannot convert value: {}", value))),
                 })
             }
         }

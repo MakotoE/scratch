@@ -9,7 +9,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "broadcast" => Box::new(Broadcast::new(id, runtime)),
         "broadcastandwait" => Box::new(BroadcastAndWait::new(id, runtime)),
         "whenthisspriteclicked" => Box::new(WhenThisSpriteClicked::new(id, runtime)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 
@@ -54,7 +54,7 @@ impl Block for WhenFlagClicked {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         if self
             .runtime
             .sprite
@@ -62,7 +62,7 @@ impl Block for WhenFlagClicked {
             .await
             .is_a_clone()
         {
-            Next::None
+            Ok(Next::None)
         } else {
             Next::continue_(self.next)
         }
@@ -121,14 +121,14 @@ impl Block for WhenBroadcastReceived {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         if self.started {
             self.runtime
                 .global
                 .broadcaster
                 .send(BroadcastMsg::Finished(self.broadcast_id.clone()))?;
             self.started = false;
-            return Next::None;
+            return Ok(Next::None);
         }
 
         let mut recv = self.runtime.global.broadcaster.subscribe();
@@ -192,7 +192,7 @@ impl Block for Broadcast {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let msg = self.message.value().await?.to_string();
         self.runtime
             .global
@@ -251,7 +251,7 @@ impl Block for BroadcastAndWait {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let msg = self.message.value().await?.to_string();
         self.runtime
             .global
@@ -309,7 +309,7 @@ impl Block for WhenThisSpriteClicked {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
             if let BroadcastMsg::MouseClick(c) = channel.recv().await? {

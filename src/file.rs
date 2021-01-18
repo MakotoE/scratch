@@ -271,7 +271,7 @@ impl TryFrom<&str> for BlockID {
             id.copy_from_slice(s_bytes);
             Ok(Self { id })
         } else {
-            Err("invalid string".into())
+            Err(Error::msg("invalid string"))
         }
     }
 }
@@ -322,12 +322,7 @@ impl ScratchFile {
         use std::io::Read;
 
         let mut archive = zip::ZipArchive::new(file)?;
-        let project: Project = match serde_json::from_reader(archive.by_name("project.json")?) {
-            Ok(p) => p,
-            Err(e) => {
-                return Err(ErrorKind::File(Box::new(e.into()), "project.json".to_string()).into());
-            }
-        };
+        let project: Project = serde_json::from_reader(archive.by_name("project.json")?)?;
 
         let mut image_names: Vec<String> = Vec::new();
         for name in archive.file_names() {
@@ -339,18 +334,13 @@ impl ScratchFile {
         let mut images: HashMap<String, Image> = HashMap::new();
         for name in &image_names {
             let mut b: Vec<u8> = Vec::new();
-            match archive.by_name(name).unwrap().read_to_end(&mut b) {
-                Ok(_) => {}
-                Err(e) => return Err(ErrorKind::File(Box::new(e.into()), name.clone()).into()),
-            };
+            archive.by_name(name).unwrap().read_to_end(&mut b)?;
             let image = if name.ends_with(".svg") {
                 Image::SVG(b)
             } else if name.ends_with(".png") {
                 Image::PNG(b)
             } else {
-                let e =
-                    ErrorKind::File(Box::new("unrecognized file extension".into()), name.clone());
-                return Err(e.into());
+                return Err(Error::msg("unrecognized file extension"));
             };
             images.insert(name.clone(), image);
         }

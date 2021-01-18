@@ -21,7 +21,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "pointindirection" => Box::new(PointingDirection::new(id, runtime)),
         "goto" => Box::new(GoTo::new(id, runtime)),
         "goto_menu" => Box::new(GoToMenu::new(id, runtime)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 
@@ -74,7 +74,7 @@ impl Block for MoveSteps {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let steps: f64 = self.steps.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
@@ -136,7 +136,7 @@ impl Block for GoToXY {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let x: f64 = self.x.value().await?.try_into()?;
         let y: f64 = self.y.value().await?.try_into()?;
 
@@ -198,7 +198,7 @@ impl Block for ChangeXBy {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let x: f64 = self.dx.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let position = runtime.center().add(&SpriteCoordinate { x, y: 0.0 });
@@ -256,7 +256,7 @@ impl Block for ChangeYBy {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let y: f64 = self.dy.value().await?.try_into()?;
 
         let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
@@ -315,7 +315,7 @@ impl Block for SetX {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let x: f64 = self.x.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let mut position = runtime.center();
@@ -374,7 +374,7 @@ impl Block for SetY {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let y: f64 = self.y.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         let mut position = runtime.center();
@@ -565,7 +565,7 @@ impl Block for GoTo {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let option: GoToOption = self.option.value().await?.try_into()?;
         let new_coordinate = match option {
             GoToOption::RandomPosition => self.rng.next().unwrap(),

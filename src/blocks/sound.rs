@@ -6,7 +6,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "sounds_menu" => Box::new(SoundsMenu::new(id, runtime)),
         "playuntildone" => Box::new(PlayUntilDone::new(id, runtime)),
         "stopallsounds" => Box::new(StopAllSounds::new(id, runtime)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 
@@ -46,7 +46,7 @@ impl Block for Play {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         Next::continue_(self.next)
     }
 }
@@ -109,7 +109,7 @@ impl Block for PlayUntilDone {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         Next::continue_(self.next)
     }
 }
@@ -145,7 +145,7 @@ impl Block for StopAllSounds {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         Next::continue_(self.next)
     }
 }

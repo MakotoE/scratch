@@ -2,10 +2,8 @@ use super::*;
 use crate::broadcaster::{BroadcastMsg, LayerChange};
 use crate::coordinate::Scale;
 use crate::sprite_runtime::{HideStatus, Text};
-use gloo_timers::future::TimeoutFuture;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use wasm_bindgen::__rt::core::fmt::Formatter;
 
 pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -22,7 +20,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "costume" => Box::new(Costume::new(id, runtime)),
         "switchbackdropto" => Box::new(SwitchBackdropTo::new(id, runtime)),
         "backdrops" => Box::new(Backdrops::new(id, runtime)),
-        _ => return Err(wrap_err!(format!("{} does not exist", name))),
+        _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
 }
 
@@ -75,7 +73,7 @@ impl Block for Say {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let message = self.message.value().await?.to_string();
         self.runtime.sprite.write(file!(), line!()).await.say(Text {
             id: self.id,
@@ -141,7 +139,7 @@ impl Block for SayForSecs {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let message = self.message.value().await?.to_string();
         let seconds: f64 = self.secs.value().await?.try_into()?;
 
@@ -149,7 +147,7 @@ impl Block for SayForSecs {
             id: self.id,
             text: Some(message),
         });
-        TimeoutFuture::new((MILLIS_PER_SECOND * seconds).round() as u32).await;
+        sleep(Duration::from_secs_f64(seconds)).await;
         self.runtime.sprite.write(file!(), line!()).await.say(Text {
             id: self.id,
             text: None,
@@ -208,7 +206,7 @@ impl Block for GoToFrontBack {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let layer_change = match self.front_or_back {
             FrontBack::Front => LayerChange::Front,
             FrontBack::Back => LayerChange::Back,
@@ -237,7 +235,7 @@ impl FromStr for FrontBack {
         Ok(match s {
             "front" => Self::Front,
             "back" => Self::Back,
-            _ => return Err(wrap_err!(format!("s is invalid: {}", s))),
+            _ => return Err(Error::msg(format!("s is invalid: {}", s))),
         })
     }
 }
@@ -283,7 +281,7 @@ impl Block for Hide {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         self.runtime
             .sprite
             .write(file!(), line!())
@@ -334,7 +332,7 @@ impl Block for Show {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         self.runtime
             .sprite
             .write(file!(), line!())
@@ -402,7 +400,7 @@ impl Block for SetEffectTo {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let value: f64 = self.value.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         match self.effect {
@@ -437,7 +435,7 @@ impl FromStr for Effect {
             "mosaic" => Self::Mosaic,
             "brightness" => Self::Brightness,
             "ghost" => Self::Ghost,
-            _ => return Err(wrap_err!(format!("s is invalid: {}", s))),
+            _ => return Err(Error::msg(format!("s is invalid: {}", s))),
         })
     }
 }
@@ -498,7 +496,7 @@ impl Block for NextCostume {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         self.runtime
             .sprite
             .write(file!(), line!())
@@ -567,7 +565,7 @@ impl Block for ChangeEffectBy {
         Ok(())
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let value: f64 = self.change.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
         match self.effect {
@@ -631,7 +629,7 @@ impl Block for SetSizeTo {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let size: f64 = self.size.value().await?.try_into()?;
         let scale = size / 100.0;
 
@@ -694,7 +692,7 @@ impl Block for SwitchCostumeTo {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let costume_name = self.costume.value().await?.to_string();
         self.runtime
             .sprite
@@ -808,7 +806,7 @@ impl Block for SwitchBackdropTo {
         }
     }
 
-    async fn execute(&mut self) -> Next {
+    async fn execute(&mut self) -> Result<Next> {
         let backdrop = self.backdrop.value().await?.to_string();
         self.runtime
             .sprite

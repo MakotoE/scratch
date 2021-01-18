@@ -32,7 +32,11 @@ impl Thread {
         }
 
         let block = self.blocks.get_mut(&self.curr_block).unwrap();
-        let execute_result = block.execute().await;
+        let execute_result = block.execute().await.map_err(|error| ScratchError::Block {
+            id: block.block_info().id,
+            name: block.block_info().name,
+            error,
+        })?;
         match execute_result {
             Next::None => match self.loop_stack.pop() {
                 None => {
@@ -41,14 +45,6 @@ impl Thread {
                 }
                 Some(b) => self.curr_block = b,
             },
-            Next::Err(e) => {
-                return Err(ErrorKind::Block(
-                    block.block_info().name,
-                    block.block_info().id,
-                    Box::new(e),
-                )
-                .into());
-            }
             Next::Continue(b) => self.curr_block = b,
             Next::Loop(b) => {
                 self.loop_stack.push(self.curr_block);

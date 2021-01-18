@@ -5,7 +5,9 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use strum::EnumString;
+use tokio::spawn;
 
+// TODO probably don't need EventSender
 #[derive(Debug)]
 pub struct EventSender {
     broadcaster: Broadcaster,
@@ -18,15 +20,15 @@ impl EventSender {
             mouse_position: CanvasCoordinate::default(),
             pressed_keys: HashSet::with_capacity(1),
         }));
-        wasm_bindgen_futures::spawn_local({
-            let data = data.clone();
-            let broadcaster = broadcaster.clone();
-            async move {
-                if let Err(e) = EventSender::msg_loop(data, broadcaster).await {
-                    log::error!("{}", wrap_err!(e));
-                }
-            }
-        });
+        // spawn({
+        //     let data = data.clone();
+        //     let broadcaster = broadcaster.clone();
+        //     async move {
+        //         if let Err(e) = EventSender::msg_loop(data, broadcaster).await {
+        //             log::error!("{}", e);
+        //         }
+        //     }
+        // });
         Self { broadcaster, data }
     }
 
