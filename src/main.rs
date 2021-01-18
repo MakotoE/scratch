@@ -25,6 +25,27 @@ use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use tokio::sync::RwLock;
 
-fn main() -> Result<()> {
-    app::app()
+#[derive(clap::Clap)]
+#[clap(name = "scratch")]
+struct Options {
+    file_path: String,
+}
+
+fn main() {
+    env_logger::Builder::new()
+        .filter_module("scratch", log::LevelFilter::Trace)
+        .init();
+
+    let result = || -> Result<()> {
+        use clap::Clap;
+        let options = Options::parse();
+        app::app(std::path::Path::new(&options.file_path))
+    }();
+    match result {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!("{:?}", e);
+            std::process::exit(1);
+        }
+    }
 }

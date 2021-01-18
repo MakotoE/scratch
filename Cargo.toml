@@ -1,5 +1,5 @@
 [package]
-name = "scratch_vm"
+name = "scratch"
 version = "0.1.0"
 authors = ["Makoto"]
 edition = "2018"
@@ -34,3 +34,5 @@ piston-gfx_texture = "0.41.0"
 anyhow = "1.0"
 thiserror = "1.0"
 dirs = "3.0"
+env_logger = "0.8"
+clap = "3.0.0-beta.2"

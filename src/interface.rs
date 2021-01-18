@@ -1,9 +1,11 @@
+use crate::file::ScratchFile;
 use conrod_core::image::Id;
 use conrod_core::widget::{id, Button};
 use conrod_core::UiCell;
 use conrod_core::{Positionable, Sizeable, Widget};
 
 pub struct Interface {
+    scratch_file: ScratchFile,
     ids: Ids,
     green_flag_image: Id,
     stop_image: Id,
@@ -17,8 +19,14 @@ widget_ids! {
 }
 
 impl Interface {
-    pub fn new(generator: id::Generator, green_flag_image: Id, stop_image: Id) -> Self {
+    pub fn new(
+        scratch_file: ScratchFile,
+        generator: id::Generator,
+        green_flag_image: Id,
+        stop_image: Id,
+    ) -> Self {
         Self {
+            scratch_file,
             ids: Ids::new(generator),
             green_flag_image,
             stop_image,

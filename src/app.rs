@@ -1,4 +1,5 @@
 use super::*;
+use crate::file::ScratchFile;
 use crate::interface::Interface;
 use conrod_core::text::GlyphCache;
 use conrod_core::widget::{Canvas, FileNavigator};
@@ -11,6 +12,8 @@ use piston_window::{
     G2d, G2dTexture, G2dTextureContext, OpenGL, PistonWindow, Size, Texture, TextureSettings,
     UpdateEvent, Window, WindowSettings,
 };
+use std::fs::File;
+use std::io::BufReader;
 use std::path::Path;
 
 widget_ids! {
@@ -18,7 +21,7 @@ widget_ids! {
     }
 }
 
-pub fn app() -> Result<()> {
+pub fn app(file_path: &Path) -> Result<()> {
     const PAGE_SIZE: Size = Size {
         width: 520.0,
         height: 480.0,
@@ -59,7 +62,10 @@ pub fn app() -> Result<()> {
 
     let mut image_map = conrod_core::image::Map::new();
 
+    let scratch_file = ScratchFile::parse(BufReader::new(File::open(file_path)?))?;
+
     let interface = Interface::new(
+        scratch_file,
         ui.widget_id_generator(),
         image_map.insert(image_texture(
             &mut texture_context,
