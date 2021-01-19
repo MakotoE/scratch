@@ -19,7 +19,11 @@ use std::time::Duration;
 use tokio::time::sleep;
 use value::Value;
 
-fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dyn Block>> {
+fn get_block(
+    id: BlockID,
+    runtime: Runtime,
+    info: &file::Block,
+) -> Result<Box<dyn Block + Send + Sync>> {
     let mut split = info.opcode.split('_');
     let category = split.next().ok_or(Error::msg(format!(
         "block \"{}\": opcode {} does not exist",
@@ -77,7 +81,7 @@ pub trait Block: std::fmt::Debug {
     fn block_inputs(&self) -> BlockInputsPartial;
 
     #[allow(unused_variables)]
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {}
 
     #[allow(unused_variables)]
     fn set_substack(&mut self, key: &str, block: BlockID) {}
@@ -119,7 +123,7 @@ impl Next {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct BlockInfo {
     pub name: &'static str,
     pub id: BlockID,
@@ -165,7 +169,7 @@ pub fn block_tree(
     top_block_id: BlockID,
     runtime: Runtime,
     infos: &HashMap<BlockID, file::Block>,
-) -> Result<(BlockID, HashMap<BlockID, Box<dyn Block>>)> {
+) -> Result<(BlockID, HashMap<BlockID, Box<dyn Block + Send + Sync>>)> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,
         None => {
@@ -176,7 +180,7 @@ pub fn block_tree(
         }
     };
 
-    let mut result: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
+    let mut result: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
     let mut block = get_block(top_block_id, runtime.clone(), &info)?;
 
     if let Some(next_id) = &info.next {
@@ -230,7 +234,7 @@ pub fn block_tree(
                             .as_str()
                             .ok_or_else(input_err)?;
                         Box::new(value::Variable::new(id.to_string(), runtime.clone()))
-                            as Box<dyn Block>
+                            as Box<dyn Block + Send + Sync>
                     }
                     _ => return Err(input_err()),
                 };

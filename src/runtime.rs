@@ -4,20 +4,19 @@ use crate::broadcaster::Broadcaster;
 use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation};
 use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
-use crate::traced_rwlock::TracedRwLock;
 use crate::vm::ThreadID;
 
 #[derive(Debug, Clone)]
 pub struct Runtime {
-    pub sprite: Rc<TracedRwLock<SpriteRuntime>>,
-    pub global: Rc<Global>,
+    pub sprite: Arc<RwLock<SpriteRuntime>>,
+    pub global: Arc<Global>,
     thread_id: ThreadID,
 }
 
 impl Runtime {
     pub fn new(
-        sprite: Rc<TracedRwLock<SpriteRuntime>>,
-        global: Rc<Global>,
+        sprite: Arc<RwLock<SpriteRuntime>>,
+        global: Arc<Global>,
         thread_id: ThreadID,
     ) -> Self {
         Self {
@@ -193,7 +192,7 @@ impl Global {
 
 #[derive(Debug)]
 pub struct Variables {
-    variables: RefCell<HashMap<String, Variable>>,
+    variables: RwLock<HashMap<String, Variable>>,
 }
 
 impl Variables {
@@ -222,19 +221,19 @@ impl Variables {
         }
 
         Self {
-            variables: RefCell::new(variables),
+            variables: RwLock::new(variables),
         }
     }
 
     pub async fn get(&self, key: &str) -> Result<Value> {
-        match self.variables.borrow().get(key) {
+        match self.variables.read().await.get(key) {
             Some(v) => Ok(v.value.clone()),
             None => Err(Error::msg(format!("key does not exist: {}", key))),
         }
     }
 
     pub async fn set(&self, key: &str, value: Value) -> Result<()> {
-        let mut variables = self.variables.borrow_mut();
+        let mut variables = self.variables.write().await;
         let variable = match variables.get_mut(key) {
             Some(v) => v,
             None => return Err(Error::msg(format!("key does not exist: {}", key))),
@@ -248,7 +247,7 @@ impl Variables {
     where
         F: FnOnce(&Value) -> Value,
     {
-        let mut variables = self.variables.borrow_mut();
+        let mut variables = self.variables.write().await;
         let mut variable = match variables.get_mut(key) {
             Some(v) => v,
             None => return Err(Error::msg(format!("key does not exist: {}", key))),
@@ -259,7 +258,7 @@ impl Variables {
     }
 
     pub async fn set_monitored(&self, key: &str, monitored: bool) -> Result<()> {
-        let mut variables = self.variables.borrow_mut();
+        let mut variables = self.variables.write().await;
         match variables.get_mut(key) {
             Some(v) => {
                 v.monitored = monitored;

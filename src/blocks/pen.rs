@@ -2,7 +2,11 @@ use super::*;
 use palette::Mix;
 use palette::{Hsv, IntoColor};
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "penDown" => Box::new(PenDown::new(id, runtime)),
         "penUp" => Box::new(PenUp::new(id, runtime)),
@@ -57,7 +61,7 @@ impl Block for PenDown {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let center = runtime.rectangle().center;
         runtime.pen().pen_down(&center);
         Next::continue_(self.next)
@@ -106,12 +110,7 @@ impl Block for PenUp {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .pen()
-            .pen_up();
+        self.runtime.sprite.write().await.pen().pen_up();
         Next::continue_(self.next)
     }
 }
@@ -121,7 +120,7 @@ pub struct SetPenColorToColor {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    color: Box<dyn Block>,
+    color: Box<dyn Block + Send + Sync>,
 }
 
 impl SetPenColorToColor {
@@ -153,7 +152,7 @@ impl Block for SetPenColorToColor {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "COLOR" {
             self.color = block;
         }
@@ -167,12 +166,7 @@ impl Block for SetPenColorToColor {
 
     async fn execute(&mut self) -> Result<Next> {
         let color: Hsv = self.color.value().await?.try_into()?;
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .pen()
-            .set_color(&color);
+        self.runtime.sprite.write().await.pen().set_color(&color);
         Next::continue_(self.next)
     }
 }
@@ -182,7 +176,7 @@ pub struct SetPenSizeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    size: Box<dyn Block>,
+    size: Box<dyn Block + Send + Sync>,
 }
 
 impl SetPenSizeTo {
@@ -214,7 +208,7 @@ impl Block for SetPenSizeTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "SIZE" {
             self.size = block;
         }
@@ -228,12 +222,7 @@ impl Block for SetPenSizeTo {
 
     async fn execute(&mut self) -> Result<Next> {
         let size: f64 = self.size.value().await?.try_into()?;
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .pen()
-            .set_size(size);
+        self.runtime.sprite.write().await.pen().set_size(size);
         Next::continue_(self.next)
     }
 }
@@ -280,12 +269,7 @@ impl Block for Clear {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .pen()
-            .clear();
+        self.runtime.sprite.write().await.pen().clear();
         Next::continue_(self.next)
     }
 }
@@ -295,7 +279,7 @@ pub struct SetPenShadeToNumber {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    shade: Box<dyn Block>,
+    shade: Box<dyn Block + Send + Sync>,
 }
 
 impl SetPenShadeToNumber {
@@ -349,7 +333,7 @@ impl Block for SetPenShadeToNumber {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "SHADE" {
             self.shade = block;
         }
@@ -363,7 +347,7 @@ impl Block for SetPenShadeToNumber {
 
     async fn execute(&mut self) -> Result<Next> {
         let shade: f64 = self.shade.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let color = runtime.pen().color().into_hsv();
         let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
         runtime.pen().set_color(&new_color);
@@ -376,7 +360,7 @@ pub struct SetPenHueToNumber {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    hue: Box<dyn Block>, // [0, 100]
+    hue: Box<dyn Block + Send + Sync>, // [0, 100]
 }
 
 impl SetPenHueToNumber {
@@ -417,7 +401,7 @@ impl Block for SetPenHueToNumber {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "HUE" {
             self.hue = block;
         }
@@ -431,7 +415,7 @@ impl Block for SetPenHueToNumber {
 
     async fn execute(&mut self) -> Result<Next> {
         let hue: f64 = self.hue.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
         runtime.pen().set_color(&new_color);
         Next::continue_(self.next)

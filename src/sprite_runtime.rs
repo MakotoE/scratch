@@ -25,7 +25,7 @@ pub struct SpriteRuntime {
 #[allow(dead_code)]
 impl SpriteRuntime {
     pub async fn new(
-        target: &Rc<Target>,
+        target: &Target,
         images: &HashMap<String, Image>,
         is_a_clone: bool,
         sprite_name: String,

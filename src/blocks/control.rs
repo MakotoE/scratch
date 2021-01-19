@@ -8,7 +8,11 @@ use std::str::FromStr;
 use strum::EnumString;
 use tokio::time::interval;
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
@@ -29,7 +33,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 #[derive(Debug)]
 pub struct If {
     id: BlockID,
-    condition: Box<dyn Block>,
+    condition: Box<dyn Block + Send + Sync>,
     next: Option<BlockID>,
     substack: Option<BlockID>,
     done: bool,
@@ -65,7 +69,7 @@ impl Block for If {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -99,7 +103,7 @@ impl Block for If {
 pub struct Wait {
     id: BlockID,
     next: Option<BlockID>,
-    duration: Box<dyn Block>,
+    duration: Box<dyn Block + Send + Sync>,
     runtime: Runtime,
 }
 
@@ -132,7 +136,7 @@ impl Block for Wait {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "DURATION" {
             self.duration = block;
         }
@@ -198,7 +202,7 @@ impl Block for Forever {
 #[derive(Debug)]
 pub struct Repeat {
     id: BlockID,
-    times: Box<dyn Block>,
+    times: Box<dyn Block + Send + Sync>,
     next: Option<BlockID>,
     substack: Option<BlockID>,
     count: usize,
@@ -234,7 +238,7 @@ impl Block for Repeat {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "TIMES" {
             self.times = block;
         }
@@ -266,7 +270,7 @@ pub struct RepeatUntil {
     id: BlockID,
     next: Option<BlockID>,
     substack: Option<BlockID>,
-    condition: Box<dyn Block>,
+    condition: Box<dyn Block + Send + Sync>,
 }
 
 impl RepeatUntil {
@@ -298,7 +302,7 @@ impl Block for RepeatUntil {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -327,7 +331,7 @@ impl Block for RepeatUntil {
 pub struct IfElse {
     id: BlockID,
     next: Option<BlockID>,
-    condition: Box<dyn Block>,
+    condition: Box<dyn Block + Send + Sync>,
     substack_true: Option<BlockID>,
     substack_false: Option<BlockID>,
     done: bool,
@@ -368,7 +372,7 @@ impl Block for IfElse {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -403,7 +407,7 @@ impl Block for IfElse {
 pub struct WaitUntil {
     id: BlockID,
     next: Option<BlockID>,
-    condition: Box<dyn Block>,
+    condition: Box<dyn Block + Send + Sync>,
 }
 
 impl WaitUntil {
@@ -434,7 +438,7 @@ impl Block for WaitUntil {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -500,13 +504,7 @@ impl Block for StartAsClone {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        if self
-            .runtime
-            .sprite
-            .read(file!(), line!())
-            .await
-            .is_a_clone()
-        {
+        if self.runtime.sprite.read().await.is_a_clone() {
             Next::continue_(self.next)
         } else {
             Ok(Next::None)
@@ -634,7 +632,7 @@ pub struct CreateCloneOf {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    clone_option: Box<dyn Block>,
+    clone_option: Box<dyn Block + Send + Sync>,
 }
 
 impl CreateCloneOf {
@@ -665,7 +663,7 @@ impl Block for CreateCloneOf {
             vec![("next", &self.next)],
         )
     }
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "CLONE_OPTION" {
             self.clone_option = block;
         }

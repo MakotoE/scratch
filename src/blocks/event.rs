@@ -2,7 +2,11 @@ use crate::broadcaster::BroadcastMsg;
 
 use super::*;
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
         "whenbroadcastreceived" => Box::new(WhenBroadcastReceived::new(id, runtime)),
@@ -55,13 +59,7 @@ impl Block for WhenFlagClicked {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        if self
-            .runtime
-            .sprite
-            .read(file!(), line!())
-            .await
-            .is_a_clone()
-        {
+        if self.runtime.sprite.read().await.is_a_clone() {
             Ok(Next::None)
         } else {
             Next::continue_(self.next)
@@ -148,7 +146,7 @@ pub struct Broadcast {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    message: Box<dyn Block>,
+    message: Box<dyn Block + Send + Sync>,
 }
 
 impl Broadcast {
@@ -180,7 +178,7 @@ impl Block for Broadcast {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "BROADCAST_INPUT" {
             self.message = block;
         }
@@ -207,7 +205,7 @@ pub struct BroadcastAndWait {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    message: Box<dyn Block>,
+    message: Box<dyn Block + Send + Sync>,
 }
 
 impl BroadcastAndWait {
@@ -239,7 +237,7 @@ impl Block for BroadcastAndWait {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "BROADCAST_INPUT" {
             self.message = block;
         }
@@ -313,7 +311,7 @@ impl Block for WhenThisSpriteClicked {
         let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
             if let BroadcastMsg::MouseClick(c) = channel.recv().await? {
-                let curr_rectangle = self.runtime.sprite.read(file!(), line!()).await.rectangle();
+                let curr_rectangle = self.runtime.sprite.read().await.rectangle();
                 if curr_rectangle.contains(&c.into()) {
                     return Next::continue_(self.next);
                 }

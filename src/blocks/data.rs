@@ -1,6 +1,10 @@
 use super::*;
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "setvariableto" => Box::new(SetVariable::new(id, runtime)),
         "changevariableby" => Box::new(ChangeVariable::new(id, runtime)),
@@ -15,7 +19,7 @@ pub struct SetVariable {
     id: BlockID,
     runtime: Runtime,
     variable_id: String,
-    value: Box<dyn Block>,
+    value: Box<dyn Block + Send + Sync>,
     next: Option<BlockID>,
 }
 
@@ -49,7 +53,7 @@ impl Block for SetVariable {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "VALUE" {
             self.value = block;
         }
@@ -84,7 +88,7 @@ pub struct ChangeVariable {
     id: BlockID,
     runtime: Runtime,
     variable_id: String,
-    value: Box<dyn Block>,
+    value: Box<dyn Block + Send + Sync>,
     next: Option<BlockID>,
 }
 
@@ -118,7 +122,7 @@ impl Block for ChangeVariable {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "VALUE" {
             self.value = block;
         }

@@ -7,7 +7,11 @@ use rand::prelude::*;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "movesteps" => Box::new(MoveSteps::new(id, runtime)),
         "gotoxy" => Box::new(GoToXY::new(id, runtime)),
@@ -30,7 +34,7 @@ pub struct MoveSteps {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    steps: Box<dyn Block>,
+    steps: Box<dyn Block + Send + Sync>,
 }
 
 impl MoveSteps {
@@ -62,7 +66,7 @@ impl Block for MoveSteps {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "STEPS" {
             self.steps = block;
         }
@@ -76,7 +80,7 @@ impl Block for MoveSteps {
 
     async fn execute(&mut self) -> Result<Next> {
         let steps: f64 = self.steps.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
         runtime.set_center(position);
         Next::continue_(self.next)
@@ -88,8 +92,8 @@ pub struct GoToXY {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    x: Box<dyn Block>,
-    y: Box<dyn Block>,
+    x: Box<dyn Block + Send + Sync>,
+    y: Box<dyn Block + Send + Sync>,
 }
 
 impl GoToXY {
@@ -122,7 +126,7 @@ impl Block for GoToXY {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "X" => self.x = block,
             "Y" => self.y = block,
@@ -142,7 +146,7 @@ impl Block for GoToXY {
 
         self.runtime
             .sprite
-            .write(file!(), line!())
+            .write()
             .await
             .set_center(SpriteCoordinate { x, y });
         Next::continue_(self.next)
@@ -154,7 +158,7 @@ pub struct ChangeXBy {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    dx: Box<dyn Block>,
+    dx: Box<dyn Block + Send + Sync>,
 }
 
 impl ChangeXBy {
@@ -186,7 +190,7 @@ impl Block for ChangeXBy {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "DX" {
             self.dx = block;
         }
@@ -200,7 +204,7 @@ impl Block for ChangeXBy {
 
     async fn execute(&mut self) -> Result<Next> {
         let x: f64 = self.dx.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x, y: 0.0 });
         runtime.set_center(position);
         Next::continue_(self.next)
@@ -212,7 +216,7 @@ pub struct ChangeYBy {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    dy: Box<dyn Block>,
+    dy: Box<dyn Block + Send + Sync>,
 }
 
 impl ChangeYBy {
@@ -244,7 +248,7 @@ impl Block for ChangeYBy {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "DY" {
             self.dy = block;
         }
@@ -259,7 +263,7 @@ impl Block for ChangeYBy {
     async fn execute(&mut self) -> Result<Next> {
         let y: f64 = self.dy.value().await?.try_into()?;
 
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let position = runtime.center().add(&SpriteCoordinate { x: 0.0, y });
         runtime.set_center(position);
         Next::continue_(self.next)
@@ -271,7 +275,7 @@ pub struct SetX {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    x: Box<dyn Block>,
+    x: Box<dyn Block + Send + Sync>,
 }
 
 impl SetX {
@@ -303,7 +307,7 @@ impl Block for SetX {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "X" {
             self.x = block;
         }
@@ -317,7 +321,7 @@ impl Block for SetX {
 
     async fn execute(&mut self) -> Result<Next> {
         let x: f64 = self.x.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let mut position = runtime.center();
         position.x = x;
         runtime.set_center(position);
@@ -330,7 +334,7 @@ pub struct SetY {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    y: Box<dyn Block>,
+    y: Box<dyn Block + Send + Sync>,
 }
 
 impl SetY {
@@ -362,7 +366,7 @@ impl Block for SetY {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "Y" {
             self.y = block;
         }
@@ -376,7 +380,7 @@ impl Block for SetY {
 
     async fn execute(&mut self) -> Result<Next> {
         let y: f64 = self.y.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         let mut position = runtime.center();
         position.y = y;
         runtime.set_center(position);
@@ -409,10 +413,10 @@ impl Block for XPosition {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 
     async fn value(&self) -> Result<Value> {
-        let runtime = self.runtime.sprite.read(file!(), line!()).await;
+        let runtime = self.runtime.sprite.read().await;
         Ok(runtime.rectangle().center.x.into())
     }
 }
@@ -442,10 +446,10 @@ impl Block for YPosition {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 
     async fn value(&self) -> Result<Value> {
-        let runtime = self.runtime.sprite.read(file!(), line!()).await;
+        let runtime = self.runtime.sprite.read().await;
         Ok(runtime.rectangle().center.y.into())
     }
 }
@@ -475,7 +479,7 @@ impl Block for Direction {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 
     async fn value(&self) -> Result<Value> {
         unimplemented!()
@@ -507,7 +511,7 @@ impl Block for PointingDirection {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 
     async fn value(&self) -> Result<Value> {
         unimplemented!()
@@ -519,7 +523,7 @@ pub struct GoTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    option: Box<dyn Block>,
+    option: Box<dyn Block + Send + Sync>,
     rng: RandomCoordinateGenerator,
 }
 
@@ -553,7 +557,7 @@ impl Block for GoTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "TO" {
             self.option = block;
         }
@@ -599,11 +603,7 @@ impl Block for GoTo {
                 }
             }
         };
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .set_center(new_coordinate);
+        self.runtime.sprite.write().await.set_center(new_coordinate);
 
         Next::continue_(self.next)
     }

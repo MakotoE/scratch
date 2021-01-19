@@ -43,14 +43,16 @@ impl Block for Variable {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 
     async fn value(&self) -> Result<Value> {
         self.runtime.global.variables.get(&self.id).await
     }
 }
 
-pub fn value_block_from_input_arr(arr: &[serde_json::Value]) -> Result<Box<dyn Block>> {
+pub fn value_block_from_input_arr(
+    arr: &[serde_json::Value],
+) -> Result<Box<dyn Block + Send + Sync>> {
     // https://en.scratch-wiki.info/wiki/Scratch_File_Format#Blocks
     let err = || Error::msg("invalid input");
     let value_type = arr.get(0).ok_or_else(err)?.as_i64().ok_or_else(err)?;

@@ -14,7 +14,6 @@ mod runtime;
 mod sprite;
 mod sprite_runtime;
 mod thread;
-mod traced_rwlock;
 mod vm;
 
 use anyhow::{Error, Result};
@@ -23,7 +22,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
+use std::sync::Arc;
+use tokio::spawn;
 use tokio::sync::RwLock;
+use tokio::task::JoinHandle;
 
 #[derive(clap::Clap)]
 #[clap(name = "scratch")]
@@ -31,17 +33,16 @@ struct Options {
     file_path: String,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    use clap::Clap;
+
     env_logger::Builder::new()
         .filter_module("scratch", log::LevelFilter::Trace)
         .init();
 
-    let result = || -> Result<()> {
-        use clap::Clap;
-        let options = Options::parse();
-        app::app(std::path::Path::new(&options.file_path))
-    }();
-    match result {
+    let options = Options::parse();
+    match app::app(std::path::Path::new(&options.file_path)) {
         Ok(_) => {}
         Err(e) => {
             log::error!("{:?}", e);

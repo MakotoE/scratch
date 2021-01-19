@@ -5,7 +5,6 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use strum::EnumString;
-use tokio::spawn;
 
 // TODO probably don't need EventSender
 #[derive(Debug)]

@@ -6,19 +6,19 @@ use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
 use crate::thread::BlockInputs;
-use crate::traced_rwlock::TracedRwLock;
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use std::collections::HashSet;
 use std::thread::sleep;
-use tokio::spawn;
+
 use tokio::sync::{broadcast, mpsc};
 
 #[derive(Debug)]
 pub struct VM {
     control_sender: mpsc::Sender<Control>,
     broadcaster: Broadcaster,
+    vm_task: JoinHandle<()>,
 }
 
 impl VM {
@@ -27,75 +27,84 @@ impl VM {
         debug_sender: mpsc::Sender<DebugInfo>,
         broadcaster: Broadcaster,
     ) -> Result<Self> {
-        let global = Rc::new(Global::new(
-            &scratch_file.project.targets[0].variables,
-            &scratch_file.project.monitors,
-            broadcaster.clone(),
-        ));
-
         let (control_sender, control_receiver) = mpsc::channel(1);
 
-        // spawn({
-        //     let global = global.clone();
-        //
-        //     let control_receiver = ControlReceiverCell::new(control_receiver);
-        //     let broadcaster = BroadcastCell::new(broadcaster);
-        //
-        //     async move {
-        //         loop {
-        //             let sprites = match VM::sprites(&scratch_file, global.clone()).await {
-        //                 Ok(s) => s,
-        //                 Err(e) => {
-        //                     log::error!("{}", e);
-        //                     break;
-        //                 }
-        //             };
-        //             let sprites =
-        //                 SpritesCell::new(sprites, &scratch_file.project.targets, global.clone());
-        //
-        //             match VM::run(&sprites, &control_receiver, &debug_sender, &broadcaster).await {
-        //                 Ok(l) => match l {
-        //                     Loop::Restart => continue,
-        //                     Loop::Break => break,
-        //                 },
-        //                 Err(e) => log::error!("{}", e),
-        //             }
-        //         }
-        //     }
-        // });
+        let vm_task = spawn({
+            let control_receiver = ControlReceiverCell::new(control_receiver);
+
+            let broadcaster = broadcaster.clone();
+
+            async move {
+                let global = Arc::new(Global::new(
+                    &scratch_file.project.targets[0].variables,
+                    &scratch_file.project.monitors,
+                    broadcaster.clone(),
+                ));
+
+                loop {
+                    let sprites = match VM::sprites(&scratch_file, global.clone()).await {
+                        Ok(s) => s,
+                        Err(e) => {
+                            log::error!("{}", e);
+                            break;
+                        }
+                    };
+                    let sprites_cell =
+                        SpritesCell::new(sprites, &scratch_file.project.targets, global.clone());
+
+                    match VM::run(
+                        &sprites_cell,
+                        &control_receiver,
+                        &debug_sender,
+                        &BroadcastCell::new(broadcaster.clone()),
+                    )
+                    .await
+                    {
+                        Ok(l) => match l {
+                            Loop::Restart => continue,
+                            Loop::Break => break,
+                        },
+                        Err(e) => log::error!("{}", e),
+                    }
+                }
+            }
+        });
 
         Ok(Self {
             control_sender,
-            broadcaster: global.broadcaster.clone(),
+            broadcaster,
+            vm_task,
         })
     }
 
     pub async fn block_inputs(
         scratch_file: &ScratchFile,
     ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
-        let global = Rc::new(Global::new(
+        let global = Arc::new(Global::new(
             &scratch_file.project.targets[0].variables,
             &scratch_file.project.monitors,
             Broadcaster::new(),
         ));
-        Ok(VM::sprites(scratch_file, global)
-            .await?
-            .iter()
-            .map(|(id, sprite)| (*id, sprite.block_inputs()))
-            .collect())
+
+        let mut result: HashMap<SpriteID, Vec<BlockInputs>> = HashMap::new();
+        for (id, sprite) in VM::sprites(scratch_file, global).await? {
+            result.insert(id, sprite.block_inputs().await);
+        }
+
+        Ok(result)
     }
 
     async fn sprites(
         scratch_file: &ScratchFile,
-        global: Rc<Global>,
+        global: Arc<Global>,
     ) -> Result<HashMap<SpriteID, Sprite>> {
-        let images = Rc::new(scratch_file.images.clone());
+        let images = Arc::new(scratch_file.images.clone());
 
         let mut futures = FuturesUnordered::new();
         for target in &scratch_file.project.targets {
             futures.push(Sprite::new(
                 global.clone(),
-                Rc::new(target.clone()),
+                target.clone(),
                 images.clone(),
                 false,
             ));
@@ -321,22 +330,22 @@ pub struct ThreadID {
 /// Resolves a lifetime issue with Receiver and FuturesUnordered.
 #[derive(Debug)]
 struct ControlReceiverCell {
-    receiver: RefCell<mpsc::Receiver<Control>>,
+    receiver: RwLock<mpsc::Receiver<Control>>,
 }
 
 impl ControlReceiverCell {
     fn new(receiver: mpsc::Receiver<Control>) -> Self {
         Self {
-            receiver: RefCell::new(receiver),
+            receiver: RwLock::new(receiver),
         }
     }
 
     async fn recv(&self) -> Event {
-        Event::Control(self.receiver.borrow_mut().recv().await)
+        Event::Control(self.receiver.write().await.recv().await)
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct DebugInfo {
     pub thread_id: ThreadID,
     pub block_info: BlockInfo,
@@ -345,19 +354,19 @@ pub struct DebugInfo {
 #[derive(Debug)]
 struct BroadcastCell {
     broadcaster: Broadcaster,
-    receiver: RefCell<broadcast::Receiver<BroadcastMsg>>,
+    receiver: RwLock<broadcast::Receiver<BroadcastMsg>>,
 }
 
 impl BroadcastCell {
     fn new(broadcaster: Broadcaster) -> Self {
         Self {
-            receiver: RefCell::new(broadcaster.subscribe()),
+            receiver: RwLock::new(broadcaster.subscribe()),
             broadcaster,
         }
     }
 
     async fn recv(&self) -> Event {
-        match self.receiver.borrow_mut().recv().await {
+        match self.receiver.write().await.recv().await {
             Ok(msg) => Event::BroadcastMsg(msg),
             Err(e) => Event::Err(Error::msg(e)),
         }
@@ -370,37 +379,36 @@ impl BroadcastCell {
 
 #[derive(Debug)]
 struct SpritesCell {
-    sprites: TracedRwLock<HashMap<SpriteID, Sprite>>,
-    draw_order: RefCell<DrawOrder>,
-    removed_sprites: RefCell<HashSet<SpriteID>>,
-    stopped_threads: RefCell<HashSet<ThreadID>>,
-    global: Rc<Global>,
+    sprites: RwLock<HashMap<SpriteID, Sprite>>,
+    draw_order: RwLock<DrawOrder>,
+    removed_sprites: RwLock<HashSet<SpriteID>>,
+    stopped_threads: RwLock<HashSet<ThreadID>>,
+    global: Arc<Global>,
 }
 
 impl SpritesCell {
-    fn new(sprites: HashMap<SpriteID, Sprite>, targets: &[Target], global: Rc<Global>) -> Self {
+    fn new(sprites: HashMap<SpriteID, Sprite>, targets: &[Target], global: Arc<Global>) -> Self {
         Self {
-            sprites: TracedRwLock::new(sprites),
-            draw_order: RefCell::new(DrawOrder::new(targets)),
-            removed_sprites: RefCell::default(),
-            stopped_threads: RefCell::default(),
+            sprites: RwLock::new(sprites),
+            draw_order: RwLock::new(DrawOrder::new(targets)),
+            removed_sprites: RwLock::default(),
+            stopped_threads: RwLock::default(),
             global,
         }
     }
 
     async fn step(&self, thread_id: ThreadID) -> Event {
-        if self.stopped_threads.borrow_mut().remove(&thread_id)
-            || self.removed_sprites.borrow().contains(&thread_id.sprite_id)
+        if self.stopped_threads.write().await.remove(&thread_id)
+            || self
+                .removed_sprites
+                .read()
+                .await
+                .contains(&thread_id.sprite_id)
         {
             return Event::None;
         }
 
-        match self
-            .sprites
-            .read(file!(), line!())
-            .await
-            .get(&thread_id.sprite_id)
-        {
+        match self.sprites.read().await.get(&thread_id.sprite_id) {
             Some(sprite) => match sprite.step(thread_id.thread_id).await {
                 Ok(_) => Event::Thread(thread_id),
                 Err(e) => Event::Err(e),
@@ -409,8 +417,8 @@ impl SpritesCell {
         }
     }
 
-    fn remove(&self, sprite_id: SpriteID) {
-        self.removed_sprites.borrow_mut().insert(sprite_id);
+    async fn remove(&self, sprite_id: SpriteID) {
+        self.removed_sprites.write().await.insert(sprite_id);
     }
 
     // async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
@@ -418,7 +426,7 @@ impl SpritesCell {
     //     if self.global.need_redraw() {
     //         need_redraw = true;
     //     } else {
-    //         for sprite in self.sprites.read(file!(), line!()).await.values() {
+    //         for sprite in self.sprites.read().await.values() {
     //             if sprite.need_redraw().await {
     //                 need_redraw = true;
     //                 break;
@@ -437,7 +445,7 @@ impl SpritesCell {
     //     context.clear();
     //
     //     self.global.redraw(context).await?;
-    //     let sprites = self.sprites.read(file!(), line!()).await;
+    //     let sprites = self.sprites.read().await;
     //     let removed_sprites = self.removed_sprites.borrow();
     //     for id in self.draw_order.borrow().iter() {
     //         if !removed_sprites.contains(id) {
@@ -456,7 +464,7 @@ impl SpritesCell {
     //     removed_sprite: &SpriteID,
     // ) -> Result<()> {
     //     context.clear();
-    //     let sprites = self.sprites.read(file!(), line!()).await;
+    //     let sprites = self.sprites.read().await;
     //     let removed_sprites = self.removed_sprites.borrow();
     //     for id in self.draw_order.borrow().iter() {
     //         if !removed_sprites.contains(id) && id != removed_sprite {
@@ -471,7 +479,7 @@ impl SpritesCell {
 
     async fn all_thread_ids(&self) -> Vec<ThreadID> {
         let mut result: Vec<ThreadID> = Vec::new();
-        for (sprite_id, sprite) in self.sprites.read(file!(), line!()).await.iter() {
+        for (sprite_id, sprite) in self.sprites.read().await.iter() {
             for thread_id in 0..sprite.number_of_threads() {
                 result.push(ThreadID {
                     sprite_id: *sprite_id,
@@ -484,16 +492,17 @@ impl SpritesCell {
 
     async fn block_info(&self, thread_id: ThreadID) -> BlockInfo {
         self.sprites
-            .read(file!(), line!())
+            .read()
             .await
             .get(&thread_id.sprite_id)
             .unwrap()
             .block_info(thread_id.thread_id)
+            .await
     }
 
     async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
         let new_sprite_id = {
-            let mut sprites = self.sprites.write(file!(), line!()).await;
+            let mut sprites = self.sprites.write().await;
             let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
                 Some(sprite) => sprite.clone_sprite().await?,
                 None => return Err(Error::msg("sprite_id is invalid")),
@@ -502,7 +511,7 @@ impl SpritesCell {
             new_sprite_id
         };
 
-        let mut draw_order = self.draw_order.borrow_mut();
+        let mut draw_order = self.draw_order.write().await;
         let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
         draw_order.insert(index + 1, new_sprite_id);
 
@@ -511,23 +520,23 @@ impl SpritesCell {
 
     async fn number_of_threads(&self, sprite_id: SpriteID) -> usize {
         self.sprites
-            .read(file!(), line!())
+            .read()
             .await
             .get(&sprite_id)
             .unwrap()
             .number_of_threads()
     }
 
-    fn stop(&self, thread_id: ThreadID) {
-        self.stopped_threads.borrow_mut().insert(thread_id);
+    async fn stop(&self, thread_id: ThreadID) {
+        self.stopped_threads.write().await.insert(thread_id);
     }
 
-    fn change_layer(&self, id: SpriteID, change: LayerChange) -> Result<()> {
-        self.draw_order.borrow_mut().change_layer(id, change)
+    async fn change_layer(&self, id: SpriteID, change: LayerChange) -> Result<()> {
+        self.draw_order.write().await.change_layer(id, change)
     }
 
     async fn sprite_rectangle(&self, id: &SpriteID) -> Result<SpriteRectangle> {
-        match self.sprites.read(file!(), line!()).await.get(id) {
+        match self.sprites.read().await.get(id) {
             Some(sprite) => Ok(sprite.rectangle().await),
             None => Err(Error::msg(format!("id not found: {}", id))),
         }

@@ -5,7 +5,11 @@ use crate::sprite_runtime::{HideStatus, Text};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "say" => Box::new(Say::new(id, runtime)),
         "sayforsecs" => Box::new(SayForSecs::new(id, runtime)),
@@ -28,7 +32,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 pub struct Say {
     id: BlockID,
     runtime: Runtime,
-    message: Box<dyn Block>,
+    message: Box<dyn Block + Send + Sync>,
     next: Option<BlockID>,
 }
 
@@ -61,7 +65,7 @@ impl Block for Say {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "MESSAGE" {
             self.message = block;
         }
@@ -75,7 +79,7 @@ impl Block for Say {
 
     async fn execute(&mut self) -> Result<Next> {
         let message = self.message.value().await?.to_string();
-        self.runtime.sprite.write(file!(), line!()).await.say(Text {
+        self.runtime.sprite.write().await.say(Text {
             id: self.id,
             text: Some(message),
         });
@@ -87,8 +91,8 @@ impl Block for Say {
 pub struct SayForSecs {
     id: BlockID,
     runtime: Runtime,
-    message: Box<dyn Block>,
-    secs: Box<dyn Block>,
+    message: Box<dyn Block + Send + Sync>,
+    secs: Box<dyn Block + Send + Sync>,
     next: Option<BlockID>,
 }
 
@@ -125,7 +129,7 @@ impl Block for SayForSecs {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "MESSAGE" => self.message = block,
             "SECS" => self.secs = block,
@@ -143,12 +147,12 @@ impl Block for SayForSecs {
         let message = self.message.value().await?.to_string();
         let seconds: f64 = self.secs.value().await?.try_into()?;
 
-        self.runtime.sprite.write(file!(), line!()).await.say(Text {
+        self.runtime.sprite.write().await.say(Text {
             id: self.id,
             text: Some(message),
         });
         sleep(Duration::from_secs_f64(seconds)).await;
-        self.runtime.sprite.write(file!(), line!()).await.say(Text {
+        self.runtime.sprite.write().await.say(Text {
             id: self.id,
             text: None,
         });
@@ -282,11 +286,7 @@ impl Block for Hide {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .set_hide(HideStatus::Hide);
+        self.runtime.sprite.write().await.set_hide(HideStatus::Hide);
         Next::continue_(self.next)
     }
 }
@@ -333,11 +333,7 @@ impl Block for Show {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .set_hide(HideStatus::Show);
+        self.runtime.sprite.write().await.set_hide(HideStatus::Show);
         Next::continue_(self.next)
     }
 }
@@ -348,7 +344,7 @@ pub struct SetEffectTo {
     runtime: Runtime,
     next: Option<BlockID>,
     effect: Effect,
-    value: Box<dyn Block>,
+    value: Box<dyn Block + Send + Sync>,
 }
 
 impl SetEffectTo {
@@ -381,7 +377,7 @@ impl Block for SetEffectTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "VALUE" {
             self.value = block;
         }
@@ -402,7 +398,7 @@ impl Block for SetEffectTo {
 
     async fn execute(&mut self) -> Result<Next> {
         let value: f64 = self.value.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         match self.effect {
             Effect::Ghost => runtime.set_transparency((100.0 - value) / 100.0),
             _ => unimplemented!(),
@@ -497,12 +493,7 @@ impl Block for NextCostume {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        self.runtime
-            .sprite
-            .write(file!(), line!())
-            .await
-            .costumes()
-            .next_costume();
+        self.runtime.sprite.write().await.costumes().next_costume();
         Next::continue_(self.next)
     }
 }
@@ -513,7 +504,7 @@ pub struct ChangeEffectBy {
     runtime: Runtime,
     next: Option<BlockID>,
     effect: Effect,
-    change: Box<dyn Block>,
+    change: Box<dyn Block + Send + Sync>,
 }
 
 impl ChangeEffectBy {
@@ -546,7 +537,7 @@ impl Block for ChangeEffectBy {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "CHANGE" {
             self.change = block;
         }
@@ -567,7 +558,7 @@ impl Block for ChangeEffectBy {
 
     async fn execute(&mut self) -> Result<Next> {
         let value: f64 = self.change.value().await?.try_into()?;
-        let mut runtime = self.runtime.sprite.write(file!(), line!()).await;
+        let mut runtime = self.runtime.sprite.write().await;
         match self.effect {
             Effect::Ghost => {
                 let current_transparency = runtime.transparency();
@@ -585,7 +576,7 @@ pub struct SetSizeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    size: Box<dyn Block>,
+    size: Box<dyn Block + Send + Sync>,
 }
 
 impl SetSizeTo {
@@ -617,7 +608,7 @@ impl Block for SetSizeTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "SIZE" {
             self.size = block;
         }
@@ -635,7 +626,7 @@ impl Block for SetSizeTo {
 
         self.runtime
             .sprite
-            .write(file!(), line!())
+            .write()
             .await
             .set_scale(Scale { x: scale, y: scale });
 
@@ -648,7 +639,7 @@ pub struct SwitchCostumeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    costume: Box<dyn Block>,
+    costume: Box<dyn Block + Send + Sync>,
 }
 
 impl SwitchCostumeTo {
@@ -680,7 +671,7 @@ impl Block for SwitchCostumeTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "COSTUME" {
             self.costume = block;
         }
@@ -696,7 +687,7 @@ impl Block for SwitchCostumeTo {
         let costume_name = self.costume.value().await?.to_string();
         self.runtime
             .sprite
-            .write(file!(), line!())
+            .write()
             .await
             .costumes()
             .set_current_costume(costume_name)?;
@@ -762,7 +753,7 @@ pub struct SwitchBackdropTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    backdrop: Box<dyn Block>,
+    backdrop: Box<dyn Block + Send + Sync>,
 }
 
 impl SwitchBackdropTo {
@@ -794,7 +785,7 @@ impl Block for SwitchBackdropTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "BACKDROP" {
             self.backdrop = block;
         }
@@ -810,7 +801,7 @@ impl Block for SwitchBackdropTo {
         let backdrop = self.backdrop.value().await?.to_string();
         self.runtime
             .sprite
-            .write(file!(), line!())
+            .write()
             .await
             .costumes()
             .set_current_costume(backdrop)?;

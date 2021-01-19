@@ -1,6 +1,10 @@
 use super::*;
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "play" => Box::new(Play::new(id, runtime)),
         "sounds_menu" => Box::new(SoundsMenu::new(id, runtime)),
@@ -75,7 +79,7 @@ impl Block for SoundsMenu {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 }
 
 #[derive(Debug)]

@@ -5,7 +5,6 @@ use crate::file::{BlockID, Image, Target};
 use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::{BlockInputs, Thread};
-use crate::traced_rwlock::TracedRwLock;
 use crate::vm::ThreadID;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
@@ -13,17 +12,17 @@ use std::hash::{Hash, Hasher};
 
 #[derive(Debug)]
 pub struct Sprite {
-    threads: Vec<RefCell<Thread>>,
+    threads: Vec<RwLock<Thread>>,
     runtime: Runtime,
-    target: Rc<Target>,
-    images: Rc<HashMap<String, Image>>,
+    target: Target,
+    images: Arc<HashMap<String, Image>>,
 }
 
 impl Sprite {
     pub async fn new(
-        global: Rc<Global>,
-        target: Rc<Target>,
-        images: Rc<HashMap<String, Image>>,
+        global: Arc<Global>,
+        target: Target,
+        images: Arc<HashMap<String, Image>>,
         is_a_clone: bool,
     ) -> Result<(SpriteID, Self)> {
         let mut sprite_name = target.name.to_string();
@@ -32,9 +31,9 @@ impl Sprite {
         };
         let sprite_id = SpriteID::from_sprite_name(&sprite_name);
 
-        let mut threads: Vec<RefCell<Thread>> = Vec::new();
+        let mut threads: Vec<RwLock<Thread>> = Vec::new();
 
-        let sprite_runtime = Rc::new(TracedRwLock::new(
+        let sprite_runtime = Arc::new(RwLock::new(
             SpriteRuntime::new(&target, &images, is_a_clone, sprite_name).await?,
         ));
 
@@ -49,7 +48,7 @@ impl Sprite {
             );
 
             let thread = Thread::start(hat_id, runtime, &target.blocks)?;
-            threads.push(RefCell::new(thread));
+            threads.push(RwLock::new(thread));
         }
 
         Ok((
@@ -74,35 +73,32 @@ impl Sprite {
         self.threads.len()
     }
 
-    pub fn block_info(&self, thread_id: usize) -> BlockInfo {
-        self.threads[thread_id].borrow().block_info()
+    pub async fn block_info(&self, thread_id: usize) -> BlockInfo {
+        self.threads[thread_id].read().await.block_info()
     }
 
     pub async fn step(&self, thread_id: usize) -> Result<()> {
-        self.threads[thread_id].borrow_mut().step().await
+        self.threads[thread_id].write().await.step().await
     }
 
     pub async fn need_redraw(&self) -> bool {
-        self.runtime
-            .sprite
-            .read(file!(), line!())
-            .await
-            .need_redraw()
+        self.runtime.sprite.read().await.need_redraw()
     }
 
     // pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
     //     self.runtime
     //         .sprite
-    //         .write(file!(), line!())
+    //         .write()
     //         .await
     //         .redraw(context)
     // }
 
-    pub fn block_inputs(&self) -> Vec<BlockInputs> {
-        self.threads
-            .iter()
-            .map(|t| t.borrow().block_inputs())
-            .collect()
+    pub async fn block_inputs(&self) -> Vec<BlockInputs> {
+        let mut result: Vec<BlockInputs> = Vec::with_capacity(self.threads.len());
+        for thread in &self.threads {
+            result.push(thread.read().await.block_inputs());
+        }
+        result
     }
 
     pub async fn clone_sprite(&self) -> Result<(SpriteID, Sprite)> {
@@ -116,7 +112,7 @@ impl Sprite {
     }
 
     pub async fn rectangle(&self) -> SpriteRectangle {
-        self.runtime.sprite.read(file!(), line!()).await.rectangle()
+        self.runtime.sprite.read().await.rectangle()
     }
 }
 

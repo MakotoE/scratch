@@ -5,7 +5,7 @@ use crate::runtime::Runtime;
 
 #[derive(Debug)]
 pub struct Thread {
-    blocks: HashMap<BlockID, Box<dyn Block>>,
+    blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>>,
     curr_block: BlockID,
     loop_stack: Vec<BlockID>,
     done: bool,
@@ -76,7 +76,7 @@ pub struct BlockInputs {
 impl BlockInputs {
     fn new(
         mut block_inputs: BlockInputsPartial,
-        blocks: &HashMap<BlockID, Box<dyn Block>>,
+        blocks: &HashMap<BlockID, Box<dyn Block + Send + Sync>>,
     ) -> Self {
         Self {
             info: block_inputs.info,

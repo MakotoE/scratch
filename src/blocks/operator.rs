@@ -1,6 +1,10 @@
 use super::*;
 
-pub fn get_block(name: &str, id: BlockID, _runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    _runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "equals" => Box::new(Equals::new(id)),
         "add" => Box::new(Add::new(id)),
@@ -21,8 +25,8 @@ pub fn get_block(name: &str, id: BlockID, _runtime: Runtime) -> Result<Box<dyn B
 #[derive(Debug)]
 pub struct Equals {
     id: BlockID,
-    operand1: Box<dyn Block>,
-    operand2: Box<dyn Block>,
+    operand1: Box<dyn Block + Send + Sync>,
+    operand2: Box<dyn Block + Send + Sync>,
 }
 
 impl Equals {
@@ -56,7 +60,7 @@ impl Block for Equals {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "OPERAND1" => self.operand1 = block,
             "OPERAND2" => self.operand2 = block,
@@ -74,8 +78,8 @@ impl Block for Equals {
 #[derive(Debug)]
 pub struct Add {
     id: BlockID,
-    num1: Box<dyn Block>,
-    num2: Box<dyn Block>,
+    num1: Box<dyn Block + Send + Sync>,
+    num2: Box<dyn Block + Send + Sync>,
 }
 
 impl Add {
@@ -106,7 +110,7 @@ impl Block for Add {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "NUM1" => self.num1 = block,
             "NUM2" => self.num2 = block,
@@ -124,8 +128,8 @@ impl Block for Add {
 #[derive(Debug)]
 pub struct Subtract {
     id: BlockID,
-    num1: Box<dyn Block>,
-    num2: Box<dyn Block>,
+    num1: Box<dyn Block + Send + Sync>,
+    num2: Box<dyn Block + Send + Sync>,
 }
 
 impl Subtract {
@@ -156,7 +160,7 @@ impl Block for Subtract {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "NUM1" => self.num1 = block,
             "NUM2" => self.num2 = block,
@@ -174,8 +178,8 @@ impl Block for Subtract {
 #[derive(Debug)]
 pub struct Multiply {
     id: BlockID,
-    num1: Box<dyn Block>,
-    num2: Box<dyn Block>,
+    num1: Box<dyn Block + Send + Sync>,
+    num2: Box<dyn Block + Send + Sync>,
 }
 
 impl Multiply {
@@ -206,7 +210,7 @@ impl Block for Multiply {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "NUM1" => self.num1 = block,
             "NUM2" => self.num2 = block,
@@ -224,8 +228,8 @@ impl Block for Multiply {
 #[derive(Debug)]
 pub struct Divide {
     id: BlockID,
-    num1: Box<dyn Block>,
-    num2: Box<dyn Block>,
+    num1: Box<dyn Block + Send + Sync>,
+    num2: Box<dyn Block + Send + Sync>,
 }
 
 impl Divide {
@@ -256,7 +260,7 @@ impl Block for Divide {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "NUM1" => self.num1 = block,
             "NUM2" => self.num2 = block,
@@ -274,8 +278,8 @@ impl Block for Divide {
 #[derive(Debug)]
 pub struct And {
     id: BlockID,
-    operand1: Box<dyn Block>,
-    operand2: Box<dyn Block>,
+    operand1: Box<dyn Block + Send + Sync>,
+    operand2: Box<dyn Block + Send + Sync>,
 }
 
 impl And {
@@ -309,7 +313,7 @@ impl Block for And {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "OPERAND1" => self.operand1 = block,
             "OPERAND2" => self.operand2 = block,
@@ -327,8 +331,8 @@ impl Block for And {
 #[derive(Debug)]
 pub struct Or {
     id: BlockID,
-    operand1: Box<dyn Block>,
-    operand2: Box<dyn Block>,
+    operand1: Box<dyn Block + Send + Sync>,
+    operand2: Box<dyn Block + Send + Sync>,
 }
 
 impl Or {
@@ -362,7 +366,7 @@ impl Block for Or {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "OPERAND1" => self.operand1 = block,
             "OPERAND2" => self.operand2 = block,
@@ -380,7 +384,7 @@ impl Block for Or {
 #[derive(Debug)]
 pub struct Not {
     id: BlockID,
-    operand: Box<dyn Block>,
+    operand: Box<dyn Block + Send + Sync>,
 }
 
 impl Not {
@@ -410,7 +414,7 @@ impl Block for Not {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "OPERAND" {
             self.operand = block;
         }
@@ -425,8 +429,8 @@ impl Block for Not {
 #[derive(Debug)]
 pub struct LessThan {
     id: BlockID,
-    operand1: Box<dyn Block>,
-    operand2: Box<dyn Block>,
+    operand1: Box<dyn Block + Send + Sync>,
+    operand2: Box<dyn Block + Send + Sync>,
 }
 
 impl LessThan {
@@ -460,7 +464,7 @@ impl Block for LessThan {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "OPERAND1" => self.operand1 = block,
             "OPERAND2" => self.operand2 = block,
@@ -478,8 +482,8 @@ impl Block for LessThan {
 #[derive(Debug)]
 pub struct GreaterThan {
     id: BlockID,
-    operand1: Box<dyn Block>,
-    operand2: Box<dyn Block>,
+    operand1: Box<dyn Block + Send + Sync>,
+    operand2: Box<dyn Block + Send + Sync>,
 }
 
 impl GreaterThan {
@@ -513,7 +517,7 @@ impl Block for GreaterThan {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "OPERAND1" => self.operand1 = block,
             "OPERAND2" => self.operand2 = block,
@@ -552,7 +556,7 @@ impl Block for Random {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 }
 
 #[derive(Debug)]
@@ -579,5 +583,5 @@ impl Block for Join {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 }

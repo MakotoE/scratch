@@ -8,7 +8,11 @@ use palette::{Alpha, Blend, Hsv, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
+pub fn get_block(
+    name: &str,
+    id: BlockID,
+    runtime: Runtime,
+) -> Result<Box<dyn Block + Send + Sync>> {
     Ok(match name {
         "keypressed" => Box::new(KeyPressed::new(id, runtime)),
         "keyoptions" => Box::new(KeyOptions::new(id, runtime)),
@@ -24,7 +28,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
 pub struct KeyPressed {
     id: BlockID,
     runtime: Runtime,
-    key_option: Box<dyn Block>,
+    key_option: Box<dyn Block + Send + Sync>,
 }
 
 impl KeyPressed {
@@ -55,7 +59,7 @@ impl Block for KeyPressed {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "KEY_OPTION" {
             self.key_option = block;
         }
@@ -131,8 +135,8 @@ impl_try_from_value!(KeyOption);
 pub struct ColorIsTouchingColor {
     id: BlockID,
     runtime: Runtime,
-    sprite_color: Box<dyn Block>,
-    canvas_color: Box<dyn Block>,
+    sprite_color: Box<dyn Block + Send + Sync>,
+    canvas_color: Box<dyn Block + Send + Sync>,
 }
 
 impl ColorIsTouchingColor {
@@ -181,7 +185,7 @@ impl Block for ColorIsTouchingColor {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         match key {
             "COLOR" => self.sprite_color = block,
             "COLOR2" => self.canvas_color = block,
@@ -198,7 +202,7 @@ impl Block for ColorIsTouchingColor {
         //     let canvas_context = CanvasContext::new(&self.buffer_canvas);
         //     self.runtime
         //         .sprite
-        //         .write(file!(), line!())
+        //         .write()
         //         .await
         //         .redraw(&canvas_context)?;
         //     canvas_context.get_image_data()?
@@ -228,7 +232,7 @@ impl Block for ColorIsTouchingColor {
 pub struct TouchingColor {
     id: BlockID,
     runtime: Runtime,
-    color: Box<dyn Block>,
+    color: Box<dyn Block + Send + Sync>,
 }
 
 impl TouchingColor {
@@ -272,7 +276,7 @@ impl Block for TouchingColor {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "COLOR" {
             self.color = block;
         }
@@ -284,7 +288,7 @@ impl Block for TouchingColor {
         //     let canvas_context = CanvasContext::new(&self.buffer_canvas);
         //     self.runtime
         //         .sprite
-        //         .write(file!(), line!())
+        //         .write()
         //         .await
         //         .redraw(&canvas_context)?; // TODO this sets need_redraw to false
         //     canvas_context.get_image_data()?
@@ -344,7 +348,7 @@ fn blend_with_white(color: &Srgba<u8>) -> LinSrgba {
 pub struct TouchingObject {
     id: BlockID,
     runtime: Runtime,
-    menu: Box<dyn Block>,
+    menu: Box<dyn Block + Send + Sync>,
 }
 
 impl TouchingObject {
@@ -382,7 +386,7 @@ impl Block for TouchingObject {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
         if key == "TOUCHINGOBJECTMENU" {
             self.menu = block;
         }
@@ -391,7 +395,7 @@ impl Block for TouchingObject {
     async fn value(&self) -> Result<Value> {
         let option: TouchingObjectOption = self.menu.value().await?.try_into()?;
 
-        let sprite_rectangle = self.runtime.sprite.read(file!(), line!()).await.rectangle();
+        let sprite_rectangle = self.runtime.sprite.read().await.rectangle();
 
         let result = match option {
             TouchingObjectOption::MousePointer => {
