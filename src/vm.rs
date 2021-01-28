@@ -9,9 +9,12 @@ use crate::thread::BlockInputs;
 use futures::future::LocalBoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
+use graphics::math::Matrix2d;
+use graphics::DrawState;
+use piston_window::{G2d, G2dTextureContext};
+use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::thread::sleep;
-
 use tokio::sync::{broadcast, mpsc};
 
 #[derive(Debug)]
@@ -19,41 +22,41 @@ pub struct VM {
     control_sender: mpsc::Sender<Control>,
     broadcaster: Broadcaster,
     vm_task: JoinHandle<()>,
+    sprites: Arc<SpritesCell>,
 }
 
 impl VM {
-    pub async fn start(
+    pub async fn new(
+        texture_context: &mut G2dTextureContext,
         scratch_file: ScratchFile,
         debug_sender: mpsc::Sender<DebugInfo>,
         broadcaster: Broadcaster,
     ) -> Result<Self> {
         let (control_sender, control_receiver) = mpsc::channel(1);
 
+        let global = Arc::new(Global::new(
+            &scratch_file.project.targets[0].variables,
+            &scratch_file.project.monitors,
+            broadcaster.clone(),
+        ));
+
+        let sprites = VM::sprites(texture_context, &scratch_file, global.clone()).await?;
+
+        let sprites_cell = Arc::new(SpritesCell::new(
+            sprites,
+            &scratch_file.project.targets,
+            global.clone(),
+        ));
+
         let vm_task = spawn({
             let control_receiver = ControlReceiverCell::new(control_receiver);
-
             let broadcaster = broadcaster.clone();
+            let sprites_cell = sprites_cell.clone();
 
             async move {
-                let global = Arc::new(Global::new(
-                    &scratch_file.project.targets[0].variables,
-                    &scratch_file.project.monitors,
-                    broadcaster.clone(),
-                ));
-
                 loop {
-                    let sprites = match VM::sprites(&scratch_file, global.clone()).await {
-                        Ok(s) => s,
-                        Err(e) => {
-                            log::error!("{}", e);
-                            break;
-                        }
-                    };
-                    let sprites_cell =
-                        SpritesCell::new(sprites, &scratch_file.project.targets, global.clone());
-
                     match VM::run(
-                        &sprites_cell,
+                        sprites_cell.clone(),
                         &control_receiver,
                         &debug_sender,
                         &BroadcastCell::new(broadcaster.clone()),
@@ -74,57 +77,52 @@ impl VM {
             control_sender,
             broadcaster,
             vm_task,
+            sprites: sprites_cell,
         })
     }
 
-    pub async fn block_inputs(
-        scratch_file: &ScratchFile,
-    ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
-        let global = Arc::new(Global::new(
-            &scratch_file.project.targets[0].variables,
-            &scratch_file.project.monitors,
-            Broadcaster::new(),
-        ));
-
-        let mut result: HashMap<SpriteID, Vec<BlockInputs>> = HashMap::new();
-        for (id, sprite) in VM::sprites(scratch_file, global).await? {
-            result.insert(id, sprite.block_inputs().await);
-        }
-
-        Ok(result)
-    }
+    // pub async fn block_inputs(
+    //     scratch_file: &ScratchFile,
+    // ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
+    //     let global = Arc::new(Global::new(
+    //         &scratch_file.project.targets[0].variables,
+    //         &scratch_file.project.monitors,
+    //         Broadcaster::new(),
+    //     ));
+    //
+    //     let mut result: HashMap<SpriteID, Vec<BlockInputs>> = HashMap::new();
+    //     for (id, sprite) in VM::sprites(scratch_file, global).await? {
+    //         result.insert(id, sprite.block_inputs().await);
+    //     }
+    //
+    //     Ok(result)
+    // }
 
     async fn sprites(
+        texture_context: &mut G2dTextureContext,
         scratch_file: &ScratchFile,
         global: Arc<Global>,
     ) -> Result<HashMap<SpriteID, Sprite>> {
         let images = Arc::new(scratch_file.images.clone());
 
-        let mut futures = FuturesUnordered::new();
+        let mut sprites: HashMap<SpriteID, Sprite> =
+            HashMap::with_capacity(scratch_file.project.targets.len());
         for target in &scratch_file.project.targets {
-            futures.push(Sprite::new(
+            let (id, sprite) = Sprite::new(
+                texture_context,
                 global.clone(),
                 target.clone(),
                 images.clone(),
                 false,
-            ));
+            )
+            .await?;
+            sprites.insert(id, sprite);
         }
-
-        let mut sprites: HashMap<SpriteID, Sprite> =
-            HashMap::with_capacity(scratch_file.project.targets.len());
-        loop {
-            match futures.next().await {
-                Some(r) => {
-                    let sprite = r?;
-                    sprites.insert(sprite.0, sprite.1);
-                }
-                None => return Ok(sprites),
-            }
-        }
+        return Ok(sprites);
     }
 
     async fn run(
-        sprites: &SpritesCell,
+        sprites: Arc<SpritesCell>,
         control_chan: &ControlReceiverCell,
         debug_sender: &mpsc::Sender<DebugInfo>,
         broadcaster: &BroadcastCell,
@@ -293,6 +291,15 @@ impl VM {
 
     pub async fn stop(&self) {
         self.control_sender.send(Control::Stop).await.unwrap();
+    }
+
+    pub async fn redraw(
+        &self,
+        draw_state: &DrawState,
+        transform: Matrix2d,
+        graphics: &mut G2d<'_>,
+    ) {
+        todo!()
     }
 }
 
@@ -500,23 +507,23 @@ impl SpritesCell {
             .await
     }
 
-    async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
-        let new_sprite_id = {
-            let mut sprites = self.sprites.write().await;
-            let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
-                Some(sprite) => sprite.clone_sprite().await?,
-                None => return Err(Error::msg("sprite_id is invalid")),
-            };
-            sprites.insert(new_sprite_id, new_sprite);
-            new_sprite_id
-        };
-
-        let mut draw_order = self.draw_order.write().await;
-        let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
-        draw_order.insert(index + 1, new_sprite_id);
-
-        Ok(new_sprite_id)
-    }
+    // async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
+    //     let new_sprite_id = {
+    //         let mut sprites = self.sprites.write().await;
+    //         let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
+    //             Some(sprite) => sprite.clone_sprite().await?,
+    //             None => return Err(Error::msg("sprite_id is invalid")),
+    //         };
+    //         sprites.insert(new_sprite_id, new_sprite);
+    //         new_sprite_id
+    //     };
+    //
+    //     let mut draw_order = self.draw_order.write().await;
+    //     let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
+    //     draw_order.insert(index + 1, new_sprite_id);
+    //
+    //     Ok(new_sprite_id)
+    // }
 
     async fn number_of_threads(&self, sprite_id: SpriteID) -> usize {
         self.sprites

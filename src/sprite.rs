@@ -6,6 +6,7 @@ use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
+use piston_window::G2dTextureContext;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -20,6 +21,7 @@ pub struct Sprite {
 
 impl Sprite {
     pub async fn new(
+        texture_context: &mut G2dTextureContext,
         global: Arc<Global>,
         target: Target,
         images: Arc<HashMap<String, Image>>,
@@ -34,7 +36,7 @@ impl Sprite {
         let mut threads: Vec<RwLock<Thread>> = Vec::new();
 
         let sprite_runtime = Arc::new(RwLock::new(
-            SpriteRuntime::new(&target, &images, is_a_clone, sprite_name).await?,
+            SpriteRuntime::new(texture_context, &target, &images, is_a_clone, sprite_name).await?,
         ));
 
         for hat_id in find_hats(&target.blocks) {
@@ -101,8 +103,12 @@ impl Sprite {
         result
     }
 
-    pub async fn clone_sprite(&self) -> Result<(SpriteID, Sprite)> {
+    pub async fn clone_sprite(
+        &self,
+        texture_context: &mut G2dTextureContext,
+    ) -> Result<(SpriteID, Sprite)> {
         Sprite::new(
+            texture_context,
             self.runtime.global.clone(),
             self.target.clone(),
             self.images.clone(),

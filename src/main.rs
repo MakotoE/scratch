@@ -42,7 +42,7 @@ async fn main() {
         .init();
 
     let options = Options::parse();
-    match app::app(std::path::Path::new(&options.file_path)) {
+    match app::app(std::path::Path::new(&options.file_path)).await {
         Ok(_) => {}
         Err(e) => {
             log::error!("{:?}", e);

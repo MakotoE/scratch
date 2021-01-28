@@ -5,6 +5,11 @@ use crate::coordinate::{
 use crate::coordinate::{CanvasRectangle, Scale};
 use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
+use gfx_device_gl::Resources;
+use gfx_texture::{Texture, TextureSettings};
+use graphics::math::Matrix2d;
+use graphics::DrawState;
+use piston_window::{G2d, G2dTextureContext};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -25,6 +30,7 @@ pub struct SpriteRuntime {
 #[allow(dead_code)]
 impl SpriteRuntime {
     pub async fn new(
+        texture_context: &mut G2dTextureContext,
         target: &Target,
         images: &HashMap<String, Image>,
         is_a_clone: bool,
@@ -43,7 +49,7 @@ impl SpriteRuntime {
                 y: target.y,
             },
             scale: Scale { x: scale, y: scale },
-            costumes: Costumes::new(&target.costumes, images).await?,
+            costumes: Costumes::new(texture_context, &target.costumes, images).await?,
             costume_transparency: 1.0,
             text: Text {
                 id: BlockID::default(),
@@ -90,26 +96,36 @@ impl SpriteRuntime {
     //     Ok(())
     // }
 
-    // fn draw_costume(
-    //     context: &CanvasContext,
-    //     costume: &Costume,
-    //     position: &SpriteCoordinate,
-    //     scale: &Scale,
-    //     alpha: f64,
-    // ) -> Result<()> {
-    //     let rectangle = CanvasRectangle {
-    //         top_left: CanvasCoordinate::from(*position).add(&CanvasCoordinate {
-    //             x: -costume.center.x * costume.scale * scale.x,
-    //             y: -costume.center.y * costume.scale * scale.y,
-    //         }),
-    //         size: costume.image_size.multiply(scale),
-    //     };
-    //     context.set_global_alpha(alpha);
-    //     context.draw_image(&costume.image, &rectangle)?;
-    //     context.set_global_alpha(1.0);
-    //     Ok(())
-    // }
-    //
+    fn draw_costume(
+        texture_context: &mut G2dTextureContext,
+        draw_state: &DrawState,
+        transform: Matrix2d,
+        graphics: &mut G2d,
+        costume: &Costume,
+        position: &SpriteCoordinate,
+        scale: &Scale,
+        alpha: f64,
+    ) {
+        let rectangle = CanvasRectangle {
+            top_left: CanvasCoordinate::from(*position).add(&CanvasCoordinate {
+                x: -costume.center.x * costume.scale * scale.x,
+                y: -costume.center.y * costume.scale * scale.y,
+            }),
+            size: costume.image_size.multiply(scale),
+        };
+        graphics::Image {
+            color: None,
+            source_rectangle: None,
+            rectangle: Some([
+                rectangle.top_left.x,
+                rectangle.top_left.y,
+                rectangle.size.width,
+                rectangle.size.height,
+            ]),
+        }
+        .draw(&costume.texture, draw_state, transform, graphics);
+    }
+
     // fn draw_text_bubble(context: &CanvasContext, text: &str) -> Result<()> {
     //     // Original implementation:
     //     // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
@@ -292,47 +308,54 @@ pub struct Costume {
     scale: f64,
     name: String,
     center: SpriteCoordinate,
+    texture: Texture<Resources>,
 }
 
 impl Costume {
-    pub async fn new(costume: &file::Costume, image_file: &Image) -> Result<Self> {
-        todo!()
-        // let parts = js_sys::Array::new_with_length(1);
-        // let arr: js_sys::Uint8Array = match image_file {
-        //     Image::SVG(b) => b.as_slice().into(),
-        //     Image::PNG(b) => b.as_slice().into(),
-        // };
-        // parts.set(0, arr.unchecked_into());
-        //
-        // let mut properties = BlobPropertyBag::new();
-        // let image_type = match image_file {
-        //     Image::SVG(_) => "image/svg+xml",
-        //     Image::PNG(_) => "image/png",
-        // };
-        // properties.type_(image_type);
-        //
-        // let blob = Blob::new_with_u8_array_sequence_and_options(&parts, &properties)?;
-        // let url = Url::create_object_url_with_blob(&blob)?;
-        //
-        // let image = HtmlImageElement::new()?;
-        // image.set_src(&url);
-        // JsFuture::from(image.decode()).await?;
-        //
-        // Url::revoke_object_url(&url)?;
-        //
-        // Ok(Self {
-        //     image_size: Size {
-        //         width: image.width() as f64 / costume.bitmap_resolution,
-        //         height: image.height() as f64 / costume.bitmap_resolution,
-        //     },
-        //     image,
-        //     scale: 1.0 / costume.bitmap_resolution,
-        //     name: costume.name.clone(),
-        //     center: SpriteCoordinate {
-        //         x: costume.rotation_center_x,
-        //         y: costume.rotation_center_y,
-        //     },
-        // })
+    pub async fn new(
+        texture_context: &mut G2dTextureContext,
+        costume: &file::Costume,
+        image_file: &Image,
+    ) -> Result<Self> {
+        let (texture, width, height) = match image_file {
+            Image::SVG(b) => {
+                let mut options = usvg::Options::default();
+                options.fontdb.load_system_fonts();
+
+                let tree = usvg::Tree::from_data(b, &options)?;
+                let size = tree.svg_node().size.to_screen_size();
+                let mut pixmap =
+                    tiny_skia::Pixmap::new(size.width() * 2, size.height() * 2).unwrap();
+
+                let width = pixmap.width();
+                let height = pixmap.height();
+
+                resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut())
+                    .ok_or(Error::msg("svg error"))?;
+                let image = image::ImageBuffer::from_raw(width, height, pixmap.take())
+                    .ok_or(Error::msg("svg error"))?;
+                (
+                    Texture::from_image(texture_context, &image, &TextureSettings::new())?,
+                    width as f64,
+                    height as f64,
+                )
+            }
+            Image::PNG(_) => todo!(),
+        };
+
+        Ok(Self {
+            image_size: Size {
+                width: width / costume.bitmap_resolution,
+                height: height / costume.bitmap_resolution,
+            },
+            scale: 1.0 / costume.bitmap_resolution,
+            name: costume.name.clone(),
+            center: SpriteCoordinate {
+                x: costume.rotation_center_x,
+                y: costume.rotation_center_y,
+            },
+            texture,
+        })
     }
 
     pub fn new_blank(costume: &file::Costume) -> Result<Self> {
@@ -347,6 +370,7 @@ impl Costume {
                 y: costume.rotation_center_y,
             },
             scale: 1.0,
+            texture: todo!(),
         })
     }
 }
@@ -358,12 +382,16 @@ pub struct Costumes {
 }
 
 impl Costumes {
-    async fn new(costume_data: &[file::Costume], images: &HashMap<String, Image>) -> Result<Self> {
+    async fn new(
+        texture_context: &mut G2dTextureContext,
+        costume_data: &[file::Costume],
+        images: &HashMap<String, Image>,
+    ) -> Result<Self> {
         let mut costumes: Vec<Costume> = Vec::with_capacity(costume_data.len());
         for costume in costume_data {
             let costume = if let Some(md5ext) = &costume.md5ext {
                 match images.get(md5ext) {
-                    Some(file) => Costume::new(&costume, file).await?,
+                    Some(file) => Costume::new(texture_context, &costume, file).await?,
                     None => return Err(Error::msg(format!("image not found: {}", md5ext))),
                 }
             } else {

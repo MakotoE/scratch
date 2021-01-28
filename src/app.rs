@@ -15,13 +15,14 @@ use piston_window::{
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+use tokio::task::spawn_blocking;
 
 widget_ids! {
     struct Ids {
     }
 }
 
-pub fn app(file_path: &Path) -> Result<()> {
+pub async fn app(file_path: &Path) -> Result<()> {
     const PAGE_SIZE: Size = Size {
         width: 520.0,
         height: 480.0,
@@ -64,18 +65,25 @@ pub fn app(file_path: &Path) -> Result<()> {
 
     let scratch_file = ScratchFile::parse(BufReader::new(File::open(file_path)?))?;
 
-    let interface = Interface::new(
+    let green_flag_id = image_map.insert(image_texture(
+        &mut texture_context,
+        Path::new("assets/green_flag.svg"),
+    )?);
+
+    let stop_image_id = image_map.insert(image_texture(
+        &mut texture_context,
+        Path::new("assets/stop.svg"),
+    )?);
+
+    let id_generator = ui.widget_id_generator();
+    let mut interface = Interface::new(
+        &mut texture_context,
         scratch_file,
-        ui.widget_id_generator(),
-        image_map.insert(image_texture(
-            &mut texture_context,
-            Path::new("assets/green_flag.svg"),
-        )?),
-        image_map.insert(image_texture(
-            &mut texture_context,
-            Path::new("assets/stop.svg"),
-        )?),
-    );
+        interface::Ids::new(id_generator),
+        green_flag_id,
+        stop_image_id,
+    )
+    .await?;
 
     let mut character_cache = window.load_font("assets/Roboto-Regular.ttf").unwrap();
 
