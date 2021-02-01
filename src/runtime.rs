@@ -5,6 +5,12 @@ use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation}
 use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
 use crate::vm::ThreadID;
+use graphics::character::CharacterCache;
+use graphics::math::Matrix2d;
+use graphics::types::FontSize;
+use graphics::Transformed;
+use graphics::{rectangle, text, DrawState};
+use piston_window::{G2d, Glyphs};
 
 #[derive(Debug, Clone)]
 pub struct Runtime {
@@ -52,142 +58,135 @@ impl Global {
         true
     }
 
-    // pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-    //     todo!()
-    //     for variable in self.variables.variables.borrow().values() {
-    //         if variable.monitored {
-    //             Global::draw_monitor(
-    //                 context,
-    //                 &variable.position,
-    //                 &variable.name,
-    //                 &variable.value.clone().to_string(),
-    //             )?;
-    //         }
-    //     }
-    //     Ok(())
-    // }
+    pub async fn redraw(
+        &self,
+        draw_state: &DrawState,
+        transform: Matrix2d,
+        graphics: &mut G2d<'_>,
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        for variable in self.variables.variables.read().await.values() {
+            if variable.monitored {
+                Global::draw_monitor(
+                    draw_state,
+                    transform.trans_pos([variable.position.x, variable.position.y]),
+                    graphics,
+                    character_cache,
+                    &variable.name,
+                    &variable.value.clone().to_string(),
+                )?;
+            }
+        }
+        Ok(())
+    }
 
-    // fn draw_monitor(
-    //     context: &CanvasContext,
-    //     position: &CanvasCoordinate,
-    //     variable_name: &str,
-    //     value_str: &str,
-    // ) -> Result<()> {
-    //     const NAME_FONT: &str = "12px Helvetica, sans-serif";
-    //     const VALUE_FONT: &str = "12px Helvetica, sans-serif";
-    //
-    //     context.set_font(NAME_FONT);
-    //     let name_width = context.measure_text(variable_name)?;
-    //
-    //     context.set_font(VALUE_FONT);
-    //     let value_width = context.measure_text(value_str)?;
-    //
-    //     let orange_rectangle_width = f64::max(39.0 - value_width, value_width + 4.0);
-    //
-    //     Global::draw_rectangle(
-    //         context,
-    //         &CanvasRectangle {
-    //             top_left: *position,
-    //             size: Size {
-    //                 width: name_width + orange_rectangle_width + 24.0,
-    //                 height: 20.0,
-    //             },
-    //         },
-    //         3.5,
-    //     )?;
-    //     context.set_fill_style("#e6f0ff");
-    //     context.fill();
-    //     context.set_stroke_style("#c4ccd9");
-    //     context.set_line_width(1.0);
-    //     context.stroke();
-    //
-    //     context.set_fill_style("#575e75");
-    //     context.set_font(NAME_FONT);
-    //     context.fill_text(
-    //         variable_name,
-    //         &position.add(&CanvasCoordinate { x: 7.0, y: 14.0 }),
-    //     )?;
-    //
-    //     let orange_position = position.add(&CanvasCoordinate {
-    //         x: name_width + 16.0,
-    //         y: 3.0,
-    //     });
-    //     Global::draw_rectangle(
-    //         context,
-    //         &CanvasRectangle {
-    //             top_left: orange_position,
-    //             size: Size {
-    //                 width: orange_rectangle_width,
-    //                 height: 14.0,
-    //             },
-    //         },
-    //         3.5,
-    //     )?;
-    //     context.set_fill_style("#ff8c1a");
-    //     context.fill();
-    //
-    //     context.set_fill_style("#ffffff");
-    //     context.set_font(VALUE_FONT);
-    //     context.fill_text(
-    //         value_str,
-    //         &orange_position.add(&CanvasCoordinate {
-    //             x: (orange_rectangle_width - value_width) / 2.0,
-    //             y: 11.5,
-    //         }),
-    //     )?;
-    //     Ok(())
-    // }
-    //
-    // fn draw_rectangle(
-    //     context: &CanvasContext,
-    //     rectangle: &CanvasRectangle,
-    //     corner_radius: f64,
-    // ) -> Result<()> {
-    //     let context = context.with_transformation(Transformation::translate(rectangle.top_left));
-    //     context.begin_path();
-    //     context.move_to(&CanvasCoordinate {
-    //         x: corner_radius,
-    //         y: 0.0,
-    //     });
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: rectangle.size.width - corner_radius,
-    //             y: corner_radius,
-    //         },
-    //         corner_radius,
-    //         Corner::TopRight,
-    //         Direction::Clockwise,
-    //     )?;
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: rectangle.size.width - corner_radius,
-    //             y: rectangle.size.height - corner_radius,
-    //         },
-    //         corner_radius,
-    //         Corner::BottomRight,
-    //         Direction::Clockwise,
-    //     )?;
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: corner_radius,
-    //             y: rectangle.size.height - corner_radius,
-    //         },
-    //         corner_radius,
-    //         Corner::BottomLeft,
-    //         Direction::Clockwise,
-    //     )?;
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: corner_radius,
-    //             y: corner_radius,
-    //         },
-    //         corner_radius,
-    //         Corner::TopLeft,
-    //         Direction::Clockwise,
-    //     )?;
-    //     context.close_path();
-    //     Ok(())
-    // }
+    fn draw_monitor(
+        draw_state: &DrawState,
+        transform: Matrix2d,
+        graphics: &mut G2d<'_>,
+        character_cache: &mut Glyphs,
+        variable_name: &str,
+        value_str: &str,
+    ) -> Result<()> {
+        const FONT_SIZE: FontSize = 14;
+
+        let name_width = character_cache.width(FONT_SIZE, variable_name)?;
+        let value_width = character_cache.width(FONT_SIZE, value_str)?;
+
+        let orange_rectangle_width = f64::max(39.0 - value_width, value_width + 4.0);
+
+        rectangle::Rectangle {
+            color: [0.9, 0.94, 1.0, 1.0],
+            shape: rectangle::Shape::Round(3.5, 8),
+            border: Some(rectangle::Border {
+                color: [0.77, 0.8, 0.85, 1.0],
+                radius: 1.0,
+            }),
+        }
+        .draw(
+            [0.0, 0.0, name_width + orange_rectangle_width + 24.0, 20.0],
+            draw_state,
+            transform,
+            graphics,
+        );
+        // Global::draw_rectangle(
+        //     context,
+        //     &CanvasRectangle {
+        //         top_left: *position,
+        //         size: Size {
+        //             width: name_width + orange_rectangle_width + 24.0,
+        //             height: 20.0,
+        //         },
+        //     },
+        //     3.5,
+        // )?;
+        // context.set_fill_style("#e6f0ff");
+        // context.fill();
+        // context.set_stroke_style("#c4ccd9");
+        // context.set_line_width(1.0);
+        // context.stroke();
+
+        text::Text {
+            color: [0.34, 0.37, 0.46, 1.0],
+            font_size: FONT_SIZE,
+            round: false,
+        }
+        .draw(
+            variable_name,
+            character_cache,
+            draw_state,
+            transform.trans_pos([7.0, 14.0]),
+            graphics,
+        )?;
+
+        // context.set_fill_style("#575e75");
+        // context.set_font(NAME_FONT);
+        // context.fill_text(
+        //     variable_name,
+        //     &position.add(&CanvasCoordinate { x: 7.0, y: 14.0 }),
+        // )?;
+
+        let orange_transform = transform.trans_pos([name_width + 16.0, 3.0]);
+        rectangle::Rectangle {
+            color: [1.0, 0.55, 0.1, 1.0],
+            shape: rectangle::Shape::Round(3.5, 8),
+            border: None,
+        }
+        .draw(
+            [0.0, 0.0, orange_rectangle_width, 14.0],
+            draw_state,
+            orange_transform,
+            graphics,
+        );
+
+        // Global::draw_rectangle(
+        //     context,
+        //     &CanvasRectangle {
+        //         top_left: orange_position,
+        //         size: Size {
+        //             width: orange_rectangle_width,
+        //             height: 14.0,
+        //         },
+        //     },
+        //     3.5,
+        // )?;
+        // context.set_fill_style("#ff8c1a");
+        // context.fill();
+
+        text::Text {
+            color: [1.0, 1.0, 1.0, 1.0],
+            font_size: FONT_SIZE,
+            round: false,
+        }
+        .draw(
+            variable_name,
+            character_cache,
+            draw_state,
+            orange_transform.trans_pos([(orange_rectangle_width - value_width) / 2.0, 11.5]),
+            graphics,
+        )?;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]

@@ -8,7 +8,7 @@ use conrod_core::UiCell;
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::math::Matrix2d;
 use graphics::DrawState;
-use piston_window::{G2d, G2dTextureContext};
+use piston_window::{G2d, G2dTextureContext, Glyphs};
 use tokio::sync::mpsc;
 
 pub struct Interface {
@@ -58,5 +58,15 @@ impl Interface {
             .set(self.ids.stop_button, ui_cell);
     }
 
-    pub fn draw_2d(draw_state: &DrawState, transform: Matrix2d, graphics: &mut G2d) {}
+    pub async fn draw_2d(
+        &mut self,
+        draw_state: &DrawState,
+        transform: Matrix2d,
+        graphics: &mut G2d<'_>,
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        self.vm
+            .redraw(draw_state, transform, graphics, character_cache)
+            .await
+    }
 }

@@ -4,23 +4,20 @@ use crate::interface::Interface;
 use conrod_core::text::GlyphCache;
 use conrod_core::widget::{Canvas, FileNavigator};
 use conrod_core::{Borderable, Colorable, Positionable, Sizeable, Theme, Widget};
+use gfx_graphics::GfxGraphics;
 use graphics::math::Matrix2d;
 use graphics::rectangle::Shape;
-use graphics::{DrawState, Rectangle};
+use graphics::{Context, DrawState, Rectangle};
 use piston_window::texture::UpdateTexture;
 use piston_window::{
-    G2d, G2dTexture, G2dTextureContext, OpenGL, PistonWindow, Size, Texture, TextureSettings,
-    UpdateEvent, Window, WindowSettings,
+    G2d, G2dTexture, G2dTextureContext, OpenGL, OpenGLWindow, PistonWindow, RenderEvent, Size,
+    Texture, TextureSettings, UpdateEvent, Window, WindowSettings,
 };
 use std::fs::File;
+use std::future::Future;
 use std::io::BufReader;
 use std::path::Path;
 use tokio::task::spawn_blocking;
-
-widget_ids! {
-    struct Ids {
-    }
-}
 
 pub async fn app(file_path: &Path) -> Result<()> {
     const PAGE_SIZE: Size = Size {
@@ -89,8 +86,6 @@ pub async fn app(file_path: &Path) -> Result<()> {
 
     let mut text_vertex_data: Vec<u8> = Vec::new();
 
-    let ids = Ids::new(ui.widget_id_generator());
-
     while let Some(event) = window.next() {
         let size = window.size();
         if let Some(e) = conrod_piston::event::convert(event.clone(), size.width, size.height) {
@@ -99,13 +94,22 @@ pub async fn app(file_path: &Path) -> Result<()> {
 
         event.update(|_| {
             let mut ui_cell = ui.set_widgets();
-
             interface.widgets(&mut ui_cell);
         });
 
-        window.draw_2d(&event, |context, graphics, device| {
+        if let Some(args) = event.render_args() {
+            window.window.make_current();
+
+            let device = &mut window.device;
+            let mut graphics = GfxGraphics::new(
+                &mut window.encoder,
+                &window.output_color,
+                &window.output_stencil,
+                &mut window.g2d,
+            );
+            let context = Context::new_viewport(args.viewport());
             if let Some(primitives) = ui.draw_if_changed() {
-                draw_border(&context.draw_state, context.transform, graphics);
+                draw_border(&context.draw_state, context.transform, &mut graphics);
 
                 let cache_queued_glyphs = |_: &mut G2d,
                                            cache: &mut G2dTexture,
@@ -127,7 +131,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
                 conrod_piston::draw::primitives(
                     primitives,
                     context,
-                    graphics,
+                    &mut graphics,
                     &mut text_texture_cache,
                     &mut glyph_cache,
                     &image_map,
@@ -135,10 +139,22 @@ pub async fn app(file_path: &Path) -> Result<()> {
                     |img| img,
                 );
 
+                interface
+                    .draw_2d(
+                        &context.draw_state,
+                        context.transform,
+                        &mut graphics,
+                        &mut character_cache,
+                    )
+                    .await
+                    .unwrap();
+
+                // Might need to graphics.flush_colored()
+                window.encoder.flush(device);
                 texture_context.encoder.flush(device);
                 character_cache.factory.encoder.flush(device);
             }
-        });
+        }
     }
 
     Ok(())

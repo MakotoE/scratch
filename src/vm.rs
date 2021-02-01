@@ -11,7 +11,7 @@ use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use graphics::math::Matrix2d;
 use graphics::DrawState;
-use piston_window::{G2d, G2dTextureContext};
+use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::thread::sleep;
@@ -294,12 +294,15 @@ impl VM {
     }
 
     pub async fn redraw(
-        &self,
+        &mut self,
         draw_state: &DrawState,
         transform: Matrix2d,
         graphics: &mut G2d<'_>,
-    ) {
-        todo!()
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        self.sprites
+            .redraw(draw_state, transform, graphics, character_cache)
+            .await
     }
 }
 
@@ -428,42 +431,55 @@ impl SpritesCell {
         self.removed_sprites.write().await.insert(sprite_id);
     }
 
-    // async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-    //     let mut need_redraw = false;
-    //     if self.global.need_redraw() {
-    //         need_redraw = true;
-    //     } else {
-    //         for sprite in self.sprites.read().await.values() {
-    //             if sprite.need_redraw().await {
-    //                 need_redraw = true;
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //
-    //     if !need_redraw {
-    //         return Ok(());
-    //     }
-    //
-    //     self.force_redraw(&context).await
-    // }
+    async fn redraw(
+        &self,
+        draw_state: &DrawState,
+        transform: Matrix2d,
+        graphics: &mut G2d<'_>,
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        let mut need_redraw = false;
+        if self.global.need_redraw() {
+            need_redraw = true;
+        } else {
+            for sprite in self.sprites.read().await.values() {
+                if sprite.need_redraw().await {
+                    need_redraw = true;
+                    break;
+                }
+            }
+        }
 
-    // async fn force_redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-    //     context.clear();
-    //
-    //     self.global.redraw(context).await?;
-    //     let sprites = self.sprites.read().await;
-    //     let removed_sprites = self.removed_sprites.borrow();
-    //     for id in self.draw_order.borrow().iter() {
-    //         if !removed_sprites.contains(id) {
-    //             match sprites.get(id) {
-    //                 Some(s) => s.redraw(context).await?,
-    //                 None => return Err(Error::msg(format!("id not found: {}", id))),
-    //             }
-    //         }
-    //     }
-    //     Ok(())
-    // }
+        if !need_redraw {
+            return Ok(());
+        }
+
+        self.force_redraw(draw_state, transform, graphics, character_cache)
+            .await
+    }
+
+    async fn force_redraw(
+        &self,
+        draw_state: &DrawState,
+        transform: Matrix2d,
+        graphics: &mut G2d<'_>,
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        self.global
+            .redraw(draw_state, transform, graphics, character_cache)
+            .await?;
+        // let sprites = self.sprites.read().await;
+        // let removed_sprites = self.removed_sprites.borrow();
+        // for id in self.draw_order.borrow().iter() {
+        //     if !removed_sprites.contains(id) {
+        //         match sprites.get(id) {
+        //             Some(s) => s.redraw(context).await?,
+        //             None => return Err(Error::msg(format!("id not found: {}", id))),
+        //         }
+        //     }
+        // }
+        Ok(())
+    }
 
     // async fn draw_without_sprite(
     //     &self,
