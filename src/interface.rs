@@ -7,7 +7,7 @@ use conrod_core::widget::{id, Button};
 use conrod_core::UiCell;
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::math::Matrix2d;
-use graphics::DrawState;
+use graphics::{Context, DrawState};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use tokio::sync::mpsc;
 
@@ -60,13 +60,10 @@ impl Interface {
 
     pub async fn draw_2d(
         &mut self,
-        draw_state: &DrawState,
-        transform: Matrix2d,
+        context: &mut Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
-        self.vm
-            .redraw(draw_state, transform, graphics, character_cache)
-            .await
+        self.vm.redraw(context, graphics, character_cache).await
     }
 }

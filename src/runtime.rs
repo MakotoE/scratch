@@ -8,8 +8,8 @@ use crate::vm::ThreadID;
 use graphics::character::CharacterCache;
 use graphics::math::Matrix2d;
 use graphics::types::FontSize;
-use graphics::Transformed;
 use graphics::{rectangle, text, DrawState};
+use graphics::{Context, Transformed};
 use piston_window::{G2d, Glyphs};
 
 #[derive(Debug, Clone)]
@@ -60,16 +60,17 @@ impl Global {
 
     pub async fn redraw(
         &self,
-        draw_state: &DrawState,
-        transform: Matrix2d,
+        context: &mut Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
         for variable in self.variables.variables.read().await.values() {
             if variable.monitored {
+                context.transform = context
+                    .transform
+                    .trans_pos([variable.position.x, variable.position.y]);
                 Global::draw_monitor(
-                    draw_state,
-                    transform.trans_pos([variable.position.x, variable.position.y]),
+                    context,
                     graphics,
                     character_cache,
                     &variable.name,
@@ -81,8 +82,7 @@ impl Global {
     }
 
     fn draw_monitor(
-        draw_state: &DrawState,
-        transform: Matrix2d,
+        context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
         variable_name: &str,
@@ -105,8 +105,8 @@ impl Global {
         }
         .draw(
             [0.0, 0.0, name_width + orange_rectangle_width + 24.0, 20.0],
-            draw_state,
-            transform,
+            &context.draw_state,
+            context.transform,
             graphics,
         );
         // Global::draw_rectangle(
@@ -134,8 +134,8 @@ impl Global {
         .draw(
             variable_name,
             character_cache,
-            draw_state,
-            transform.trans_pos([7.0, 14.0]),
+            &context.draw_state,
+            context.transform.trans_pos([7.0, 14.0]),
             graphics,
         )?;
 
@@ -146,7 +146,7 @@ impl Global {
         //     &position.add(&CanvasCoordinate { x: 7.0, y: 14.0 }),
         // )?;
 
-        let orange_transform = transform.trans_pos([name_width + 16.0, 3.0]);
+        let orange_transform = context.transform.trans_pos([name_width + 16.0, 3.0]);
         rectangle::Rectangle {
             color: [1.0, 0.55, 0.1, 1.0],
             shape: rectangle::Shape::Round(3.5, 8),
@@ -154,7 +154,7 @@ impl Global {
         }
         .draw(
             [0.0, 0.0, orange_rectangle_width, 14.0],
-            draw_state,
+            &context.draw_state,
             orange_transform,
             graphics,
         );
@@ -181,7 +181,7 @@ impl Global {
         .draw(
             variable_name,
             character_cache,
-            draw_state,
+            &context.draw_state,
             orange_transform.trans_pos([(orange_rectangle_width - value_width) / 2.0, 11.5]),
             graphics,
         )?;

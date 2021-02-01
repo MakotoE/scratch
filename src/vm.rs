@@ -10,7 +10,7 @@ use futures::future::{BoxFuture, LocalBoxFuture};
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use graphics::math::Matrix2d;
-use graphics::DrawState;
+use graphics::{Context, DrawState};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::borrow::Borrow;
 use std::collections::HashSet;
@@ -266,13 +266,12 @@ impl VM {
 
     pub async fn redraw(
         &mut self,
-        draw_state: &DrawState,
-        transform: Matrix2d,
+        context: &mut Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
         self.sprites
-            .redraw(draw_state, transform, graphics, character_cache)
+            .redraw(context, graphics, character_cache)
             .await
     }
 }
@@ -403,8 +402,7 @@ impl SpritesCell {
 
     async fn redraw(
         &self,
-        draw_state: &DrawState,
-        transform: Matrix2d,
+        context: &mut Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
@@ -424,19 +422,17 @@ impl SpritesCell {
             return Ok(());
         }
 
-        self.force_redraw(draw_state, transform, graphics, character_cache)
-            .await
+        self.force_redraw(context, graphics, character_cache).await
     }
 
     async fn force_redraw(
         &self,
-        draw_state: &DrawState,
-        transform: Matrix2d,
+        context: &mut Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
         self.global
-            .redraw(draw_state, transform, graphics, character_cache)
+            .redraw(context, graphics, character_cache)
             .await?;
         // let sprites = self.sprites.read().await;
         // let removed_sprites = self.removed_sprites.borrow();

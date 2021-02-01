@@ -107,7 +107,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
                 &window.output_stencil,
                 &mut window.g2d,
             );
-            let context = Context::new_viewport(args.viewport());
+            let mut context = Context::new_viewport(args.viewport());
             if let Some(primitives) = ui.draw_if_changed() {
                 draw_border(&context.draw_state, context.transform, &mut graphics);
 
@@ -140,12 +140,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
                 );
 
                 interface
-                    .draw_2d(
-                        &context.draw_state,
-                        context.transform,
-                        &mut graphics,
-                        &mut character_cache,
-                    )
+                    .draw_2d(&mut context, &mut graphics, &mut character_cache)
                     .await
                     .unwrap();
 
