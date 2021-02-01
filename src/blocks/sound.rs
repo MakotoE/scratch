@@ -26,7 +26,7 @@ impl Play {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Play {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -66,7 +66,7 @@ impl SoundsMenu {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SoundsMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -94,7 +94,7 @@ impl PlayUntilDone {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for PlayUntilDone {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -130,7 +130,7 @@ impl StopAllSounds {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for StopAllSounds {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

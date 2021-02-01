@@ -48,7 +48,7 @@ impl MoveSteps {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for MoveSteps {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -108,7 +108,7 @@ impl GoToXY {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for GoToXY {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -172,7 +172,7 @@ impl ChangeXBy {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ChangeXBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -230,7 +230,7 @@ impl ChangeYBy {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ChangeYBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -289,7 +289,7 @@ impl SetX {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetX {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -348,7 +348,7 @@ impl SetY {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetY {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -400,7 +400,7 @@ impl XPosition {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for XPosition {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -433,7 +433,7 @@ impl YPosition {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for YPosition {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -466,7 +466,7 @@ impl Direction {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Direction {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -498,7 +498,7 @@ impl PointingDirection {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for PointingDirection {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -539,7 +539,7 @@ impl GoTo {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for GoTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -655,7 +655,7 @@ impl GoToMenu {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for GoToMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

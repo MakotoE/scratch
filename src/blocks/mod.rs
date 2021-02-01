@@ -74,7 +74,7 @@ fn add_error_context(id: BlockID, category: &str, error: Error) -> Error {
     .into()
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 pub trait Block: std::fmt::Debug {
     fn block_info(&self) -> BlockInfo;
 
@@ -268,7 +268,7 @@ const MILLIS_PER_SECOND: f64 = 1000.0;
 #[derive(Debug)]
 pub struct EmptyInput {}
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for EmptyInput {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -294,7 +294,7 @@ impl Block for EmptyInput {
 #[derive(Debug)]
 pub struct EmptyFalse {}
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for EmptyFalse {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

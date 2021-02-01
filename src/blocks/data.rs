@@ -35,7 +35,7 @@ impl SetVariable {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -104,7 +104,7 @@ impl ChangeVariable {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ChangeVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -174,7 +174,7 @@ impl HideVariable {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for HideVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -234,7 +234,7 @@ impl ShowVariable {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ShowVariable {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

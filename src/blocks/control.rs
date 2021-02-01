@@ -51,7 +51,7 @@ impl If {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for If {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -118,7 +118,7 @@ impl Wait {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Wait {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -167,7 +167,7 @@ impl Forever {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Forever {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -220,7 +220,7 @@ impl Repeat {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Repeat {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -284,7 +284,7 @@ impl RepeatUntil {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for RepeatUntil {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -350,7 +350,7 @@ impl IfElse {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for IfElse {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -420,7 +420,7 @@ impl WaitUntil {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for WaitUntil {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -479,7 +479,7 @@ impl StartAsClone {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for StartAsClone {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -524,7 +524,7 @@ impl DeleteThisClone {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for DeleteThisClone {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -566,7 +566,7 @@ impl Stop {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Stop {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -646,7 +646,7 @@ impl CreateCloneOf {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for CreateCloneOf {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -696,7 +696,7 @@ impl CreateCloneOfMenu {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for CreateCloneOfMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

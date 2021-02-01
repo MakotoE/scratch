@@ -41,7 +41,7 @@ impl KeyPressed {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for KeyPressed {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -99,7 +99,7 @@ impl KeyOptions {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for KeyOptions {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -164,7 +164,7 @@ impl ColorIsTouchingColor {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ColorIsTouchingColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -258,7 +258,7 @@ impl TouchingColor {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for TouchingColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -368,7 +368,7 @@ impl TouchingObject {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for TouchingObject {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -451,7 +451,7 @@ impl TouchingObjectMenu {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for TouchingObjectMenu {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

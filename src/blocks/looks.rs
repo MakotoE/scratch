@@ -47,7 +47,7 @@ impl Say {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Say {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -108,7 +108,7 @@ impl SayForSecs {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SayForSecs {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -179,7 +179,7 @@ impl GoToFrontBack {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for GoToFrontBack {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -261,7 +261,7 @@ impl Hide {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Hide {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -308,7 +308,7 @@ impl Show {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Show {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -359,7 +359,7 @@ impl SetEffectTo {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetEffectTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -468,7 +468,7 @@ impl NextCostume {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for NextCostume {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -519,7 +519,7 @@ impl ChangeEffectBy {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ChangeEffectBy {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -590,7 +590,7 @@ impl SetSizeTo {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetSizeTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -653,7 +653,7 @@ impl SwitchCostumeTo {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SwitchCostumeTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -712,7 +712,7 @@ impl Costume {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Costume {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -767,7 +767,7 @@ impl SwitchBackdropTo {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SwitchBackdropTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -824,7 +824,7 @@ impl Backdrops {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Backdrops {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

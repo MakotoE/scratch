@@ -34,7 +34,7 @@ impl WhenFlagClicked {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for WhenFlagClicked {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -88,7 +88,7 @@ impl WhenBroadcastReceived {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for WhenBroadcastReceived {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -160,7 +160,7 @@ impl Broadcast {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Broadcast {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -219,7 +219,7 @@ impl BroadcastAndWait {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for BroadcastAndWait {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -283,7 +283,7 @@ impl WhenThisSpriteClicked {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for WhenThisSpriteClicked {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

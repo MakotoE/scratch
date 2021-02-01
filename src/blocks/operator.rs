@@ -39,7 +39,7 @@ impl Equals {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Equals {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -92,7 +92,7 @@ impl Add {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Add {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -142,7 +142,7 @@ impl Subtract {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Subtract {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -192,7 +192,7 @@ impl Multiply {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Multiply {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -242,7 +242,7 @@ impl Divide {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Divide {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -292,7 +292,7 @@ impl And {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for And {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -345,7 +345,7 @@ impl Or {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Or {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -396,7 +396,7 @@ impl Not {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Not {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -443,7 +443,7 @@ impl LessThan {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for LessThan {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -496,7 +496,7 @@ impl GreaterThan {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for GreaterThan {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -543,7 +543,7 @@ impl Random {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Random {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -570,7 +570,7 @@ impl Join {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Join {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

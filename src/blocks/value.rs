@@ -17,7 +17,7 @@ impl Variable {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Variable {
     fn block_info(&self) -> BlockInfo {
         // Start from first dash or zero
@@ -78,7 +78,7 @@ pub struct ValueNumber {
     number: f64,
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ValueNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -106,7 +106,7 @@ pub struct ValueString {
     string: String,
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ValueString {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -142,7 +142,7 @@ impl ValueColor {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for ValueColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {

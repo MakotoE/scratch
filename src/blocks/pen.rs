@@ -36,7 +36,7 @@ impl PenDown {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for PenDown {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -85,7 +85,7 @@ impl PenUp {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for PenUp {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -134,7 +134,7 @@ impl SetPenColorToColor {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetPenColorToColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -190,7 +190,7 @@ impl SetPenSizeTo {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetPenSizeTo {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -244,7 +244,7 @@ impl Clear {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for Clear {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -315,7 +315,7 @@ impl SetPenShadeToNumber {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetPenShadeToNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
@@ -383,7 +383,7 @@ impl SetPenHueToNumber {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Block for SetPenHueToNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
