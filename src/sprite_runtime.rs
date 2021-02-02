@@ -97,8 +97,8 @@ impl SpriteRuntime {
             let position: CanvasCoordinate = self.position.into();
             let size = self.costumes.current_costume().image_size;
             context.transform = context.transform.trans(
-                position.x + size.width / 8.0,
-                position.y + -50.0 - size.height / 4.0,
+                position.x - 8.0 + size.width / 8.0,
+                position.y - 44.0 - size.height / 4.0,
             );
             SpriteRuntime::draw_text_bubble(text, context, graphics, character_cache)?;
         }
