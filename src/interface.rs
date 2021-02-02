@@ -73,7 +73,7 @@ impl Interface {
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
-        context.transform = context.transform.trans_pos([20.0, 50.0]);
+        context.transform = context.transform.trans(20.0, 50.0);
         self.vm.redraw(context, graphics, character_cache).await
     }
 }

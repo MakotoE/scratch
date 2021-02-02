@@ -68,7 +68,7 @@ impl Global {
             if variable.monitored {
                 context.transform = context
                     .transform
-                    .trans_pos([variable.position.x, variable.position.y]);
+                    .trans(variable.position.x, variable.position.y);
                 Global::draw_monitor(
                     context,
                     graphics,
@@ -135,7 +135,7 @@ impl Global {
             variable_name,
             character_cache,
             &context.draw_state,
-            context.transform.trans_pos([7.0, 14.0]),
+            context.transform.trans(7.0, 14.0),
             graphics,
         )?;
 
@@ -146,7 +146,7 @@ impl Global {
         //     &position.add(&CanvasCoordinate { x: 7.0, y: 14.0 }),
         // )?;
 
-        let orange_transform = context.transform.trans_pos([name_width + 16.0, 3.0]);
+        let orange_transform = context.transform.trans(name_width + 16.0, 3.0);
         rectangle::Rectangle {
             color: [1.0, 0.55, 0.1, 1.0],
             shape: rectangle::Shape::Round(3.5, 8),
@@ -182,7 +182,7 @@ impl Global {
             variable_name,
             character_cache,
             &context.draw_state,
-            orange_transform.trans_pos([(orange_rectangle_width - value_width) / 2.0, 11.5]),
+            orange_transform.trans((orange_rectangle_width - value_width) / 2.0, 11.5),
             graphics,
         )?;
         Ok(())

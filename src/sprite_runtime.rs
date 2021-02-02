@@ -5,11 +5,16 @@ use crate::coordinate::{
 use crate::coordinate::{CanvasRectangle, Scale};
 use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
+use flo_curves::{bezier, BezierCurve, Coord2};
 use gfx_device_gl::Resources;
 use gfx_texture::{Texture, TextureSettings};
+use graphics::character::CharacterCache;
 use graphics::math::Matrix2d;
-use graphics::{Context, DrawState};
+use graphics::types::FontSize;
+use graphics::Transformed;
+use graphics::{line, CircleArc, Context, DrawState};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
+use std::f64::consts::TAU;
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -88,17 +93,15 @@ impl SpriteRuntime {
             self.costume_transparency,
         );
 
-        // if let Some(text) = &self.text.text {
-        //     let position: CanvasCoordinate = self.position.into();
-        //     let size = self.costumes.current_costume().image_size;
-        //     let context = context.with_transformation(Transformation::translate(position.add(
-        //         &CanvasCoordinate {
-        //             x: size.width as f64 / 4.0,
-        //             y: -50.0 - size.height as f64 / 2.0,
-        //         },
-        //     )));
-        //     SpriteRuntime::draw_text_bubble(&context, text)?;
-        // }
+        if let Some(text) = &self.text.text {
+            let position: CanvasCoordinate = self.position.into();
+            let size = self.costumes.current_costume().image_size;
+            context.transform = context.transform.trans(
+                position.x + size.width / 8.0,
+                position.y + -50.0 - size.height / 4.0,
+            );
+            SpriteRuntime::draw_text_bubble(text, context, graphics, character_cache)?;
+        }
         Ok(())
     }
 
@@ -137,119 +140,120 @@ impl SpriteRuntime {
         );
     }
 
-    // fn draw_text_bubble(context: &CanvasContext, text: &str) -> Result<()> {
-    //     // Original implementation:
-    //     // https://github.com/LLK/scratch-render/blob/954cfff02b08069a082cbedd415c1fecd9b1e4fb/src/TextBubbleSkin.js#L149
-    //     const CORNER_RADIUS: f64 = 16.0;
-    //     const PADDING: f64 = 10.0;
-    //     const HEIGHT: f64 = CORNER_RADIUS + PADDING * 2.0;
-    //
-    //     context.set_font("14px Helvetica, sans-serif");
-    //     let line_width = context.measure_text(text)?;
-    //     let width = line_width.max(50.0) + PADDING * 2.0;
-    //
-    //     context.begin_path();
-    //
-    //     // Corners
-    //     context.move_to(&CanvasCoordinate {
-    //         x: width - CORNER_RADIUS,
-    //         y: HEIGHT,
-    //     });
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: width - CORNER_RADIUS,
-    //             y: HEIGHT - CORNER_RADIUS,
-    //         },
-    //         CORNER_RADIUS,
-    //         Corner::BottomRight,
-    //         Direction::CounterClockwise,
-    //     )?;
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: width - CORNER_RADIUS,
-    //             y: CORNER_RADIUS,
-    //         },
-    //         CORNER_RADIUS,
-    //         Corner::TopRight,
-    //         Direction::CounterClockwise,
-    //     )?;
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: CORNER_RADIUS,
-    //             y: CORNER_RADIUS,
-    //         },
-    //         CORNER_RADIUS,
-    //         Corner::TopLeft,
-    //         Direction::CounterClockwise,
-    //     )?;
-    //     context.rounded_corner(
-    //         &CanvasCoordinate {
-    //             x: CORNER_RADIUS,
-    //             y: HEIGHT - CORNER_RADIUS,
-    //         },
-    //         CORNER_RADIUS,
-    //         Corner::BottomLeft,
-    //         Direction::CounterClockwise,
-    //     )?;
-    //
-    //     // Tail
-    //     context.bezier_curve_to(
-    //         &CanvasCoordinate {
-    //             x: CORNER_RADIUS,
-    //             y: 4.0 + HEIGHT,
-    //         },
-    //         &CanvasCoordinate {
-    //             x: -4.0 + CORNER_RADIUS,
-    //             y: 8.0 + HEIGHT,
-    //         },
-    //         &CanvasCoordinate {
-    //             x: -4.0 + CORNER_RADIUS,
-    //             y: 10.0 + HEIGHT,
-    //         },
-    //     );
-    //     context.arc_to(
-    //         &CanvasCoordinate {
-    //             x: -4.0 + CORNER_RADIUS,
-    //             y: 12.0 + HEIGHT,
-    //         },
-    //         &CanvasCoordinate {
-    //             x: -2.0 + CORNER_RADIUS,
-    //             y: 12.0 + HEIGHT,
-    //         },
-    //         2.0,
-    //     )?;
-    //     context.bezier_curve_to(
-    //         &CanvasCoordinate {
-    //             x: 1.0 + CORNER_RADIUS,
-    //             y: 12.0 + HEIGHT,
-    //         },
-    //         &CanvasCoordinate {
-    //             x: 11.0 + CORNER_RADIUS,
-    //             y: 8.0 + HEIGHT,
-    //         },
-    //         &CanvasCoordinate {
-    //             x: 16.0 + CORNER_RADIUS,
-    //             y: HEIGHT,
-    //         },
-    //     );
-    //     context.close_path();
-    //
-    //     context.set_fill_style("white");
-    //     context.set_stroke_style("rgba(0, 0, 0, 0.15)");
-    //     context.set_line_width(4.0);
-    //     context.stroke();
-    //     context.fill();
-    //
-    //     context.set_fill_style("#575E75");
-    //     context.fill_text(
-    //         text,
-    //         &CanvasCoordinate {
-    //             x: PADDING,
-    //             y: PADDING + 0.9 * 15.0,
-    //         },
-    //     )?;
-    //     Ok(())
-    // }
+    fn draw_text_bubble(
+        text: &str,
+        context: &mut Context,
+        graphics: &mut G2d,
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        const COLOR: graphics::types::Color = [0.0, 0.0, 0.0, 0.3];
+        const LINE_THICKNESS: f64 = 1.0;
+        const FONT_SIZE: FontSize = 14;
+
+        const RIGHT: f64 = 0.0;
+        const DOWN: f64 = TAU / 4.0;
+        const LEFT: f64 = TAU / 2.0;
+        const UP: f64 = 3.0 * TAU / 4.0;
+        const RADIUS: f64 = 16.0;
+        const PADDING: f64 = 10.0;
+        const HEIGHT: f64 = RADIUS + PADDING * 2.0;
+
+        let arc = |start: f64, end: f64, x: f64, y: f64, graphics: &mut G2d| {
+            CircleArc {
+                color: COLOR,
+                radius: LINE_THICKNESS,
+                start,
+                end,
+                resolution: 16,
+            }
+            .draw(
+                [x, y, RADIUS * 2.0, RADIUS * 2.0],
+                &context.draw_state,
+                context.transform,
+                graphics,
+            );
+        };
+
+        let line = |start_x: f64, start_y: f64, end_x: f64, end_y: f64, graphics: &mut G2d| {
+            line::Line {
+                color: COLOR,
+                radius: LINE_THICKNESS,
+                shape: line::Shape::Square,
+            }
+            .draw(
+                [start_x, start_y, end_x, end_y],
+                &context.draw_state,
+                context.transform,
+                graphics,
+            );
+        };
+
+        let curve = |curve: bezier::Curve<Coord2>, graphics: &mut G2d| {
+            const SUBDIVISIONS: usize = 8;
+            let Coord2(mut last_x, mut last_y) = curve.start_point();
+            for pos in 0..=SUBDIVISIONS {
+                let Coord2(x, y) = curve.point_at_pos(pos as f64 / SUBDIVISIONS as f64);
+                line(last_x, last_y, x, y, graphics);
+                last_x = x;
+                last_y = y;
+            }
+        };
+
+        let width = f64::max(character_cache.width(FONT_SIZE, text)?, 50.0) + PADDING * 2.0;
+
+        arc(
+            RIGHT,
+            DOWN,
+            width - RADIUS * 2.0,
+            HEIGHT - RADIUS * 2.0,
+            graphics,
+        );
+        line(width, HEIGHT - RADIUS, width, RADIUS, graphics);
+        arc(UP, RIGHT, width - RADIUS * 2.0, 0.0, graphics);
+        line(width - RADIUS, 0.0, RADIUS, 0.0, graphics);
+        arc(LEFT, UP, 0.0, 0.0, graphics);
+        line(0.0, RADIUS, 0.0, HEIGHT - RADIUS, graphics);
+        arc(DOWN, LEFT, 0.0, HEIGHT - RADIUS * 2.0, graphics);
+
+        curve(
+            bezier::Curve {
+                start_point: Coord2(RADIUS, HEIGHT),
+                end_point: Coord2(-3.3 + RADIUS, 9.7 + HEIGHT),
+                control_points: (
+                    Coord2(RADIUS - 2.4, 4.0 + HEIGHT),
+                    Coord2(-4.6 + RADIUS, 8.3 + HEIGHT),
+                ),
+            },
+            graphics,
+        );
+        curve(
+            bezier::Curve {
+                start_point: Coord2(-3.3 + RADIUS, 9.7 + HEIGHT),
+                end_point: Coord2(16.0 + RADIUS, HEIGHT),
+                control_points: (
+                    Coord2(-0.6 + RADIUS, 11.0 + HEIGHT),
+                    Coord2(4.5 + RADIUS, 11.1 + HEIGHT),
+                ),
+            },
+            graphics,
+        );
+
+        line(16.0 + RADIUS, HEIGHT, width - RADIUS, HEIGHT, graphics);
+
+        graphics::text::Text {
+            color: [0.34, 0.37, 0.46, 1.0],
+            font_size: FONT_SIZE,
+            round: false,
+        }
+        .draw(
+            text,
+            character_cache,
+            &context.draw_state,
+            context.transform.trans(PADDING, PADDING + 0.9 * 15.0),
+            graphics,
+        )?;
+        Ok(())
+    }
 
     pub fn need_redraw(&self) -> bool {
         self.need_redraw

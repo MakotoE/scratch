@@ -44,8 +44,8 @@ async fn main() {
         .init();
 
     let options = Options::parse();
-    match app::app(std::path::Path::new(&options.file_path)).await {
-        Ok(_) => {}
-        Err(e) => panic!("{:?}", e),
+
+    if let Err(e) = app::app(std::path::Path::new(&options.file_path)).await {
+        panic!("{:?}", e)
     }
 }
