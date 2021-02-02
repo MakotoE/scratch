@@ -67,7 +67,7 @@ impl VM {
                             Loop::Restart => continue,
                             Loop::Break => break,
                         },
-                        Err(e) => log::error!("{}", e),
+                        Err(e) => panic!("{:?}", e),
                     }
                 }
             }

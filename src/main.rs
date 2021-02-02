@@ -46,9 +46,6 @@ async fn main() {
     let options = Options::parse();
     match app::app(std::path::Path::new(&options.file_path)).await {
         Ok(_) => {}
-        Err(e) => {
-            log::error!("{:?}", e);
-            std::process::exit(1);
-        }
+        Err(e) => panic!("{:?}", e),
     }
 }

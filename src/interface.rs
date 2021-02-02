@@ -1,10 +1,10 @@
 use super::*;
 use crate::broadcaster::Broadcaster;
 use crate::file::ScratchFile;
-use crate::vm::VM;
+use crate::vm::{DebugInfo, VM};
 use conrod_core::image::Id;
 use conrod_core::widget::{id, Button};
-use conrod_core::UiCell;
+use conrod_core::{Color, UiCell};
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::math::Matrix2d;
 use graphics::Transformed;
@@ -18,6 +18,7 @@ pub struct Interface {
     green_flag_image: Id,
     stop_image: Id,
     vm: VM,
+    debug_receiver: mpsc::Receiver<DebugInfo>,
 }
 
 widget_ids! {
@@ -44,18 +45,25 @@ impl Interface {
             green_flag_image,
             stop_image,
             vm,
+            debug_receiver: receiver,
         })
     }
 
-    pub fn widgets(&mut self, ui_cell: &mut UiCell) {
-        Button::image(self.green_flag_image)
+    pub async fn widgets(&mut self, ui_cell: &mut UiCell<'_>) {
+        let green_flag_event = Button::image(self.green_flag_image)
             .top_left_with_margins(10.0, 25.0)
             .w_h(30.0, 30.0)
+            .image_color_with_feedback(Color::Rgba(1.0, 1.0, 1.0, 1.0))
             .set(self.ids.green_flag_button, ui_cell);
+
+        if green_flag_event.was_clicked() {
+            self.vm.continue_().await;
+        }
 
         Button::image(self.stop_image)
             .top_left_with_margins(10.0, 70.0)
             .w_h(30.0, 30.0)
+            .image_color_with_feedback(Color::Rgba(1.0, 1.0, 1.0, 1.0))
             .set(self.ids.stop_button, ui_cell);
     }
 

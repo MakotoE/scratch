@@ -10,8 +10,8 @@ use graphics::rectangle::Shape;
 use graphics::{Context, DrawState, Rectangle};
 use piston_window::texture::UpdateTexture;
 use piston_window::{
-    G2d, G2dTexture, G2dTextureContext, OpenGL, OpenGLWindow, PistonWindow, RenderEvent, Size,
-    Texture, TextureSettings, UpdateEvent, Window, WindowSettings,
+    Event, G2d, G2dTexture, G2dTextureContext, Loop, OpenGL, OpenGLWindow, PistonWindow,
+    RenderEvent, Size, Texture, TextureSettings, UpdateEvent, Window, WindowSettings,
 };
 use std::fs::File;
 use std::future::Future;
@@ -92,10 +92,10 @@ pub async fn app(file_path: &Path) -> Result<()> {
             ui.handle_event(e);
         }
 
-        event.update(|_| {
+        if let Event::Loop(Loop::Update(_)) = event {
             let mut ui_cell = ui.set_widgets();
-            interface.widgets(&mut ui_cell);
-        });
+            interface.widgets(&mut ui_cell).await;
+        }
 
         if let Some(args) = event.render_args() {
             window.window.make_current();
