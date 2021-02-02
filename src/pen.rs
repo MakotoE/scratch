@@ -1,6 +1,9 @@
 use crate::blocks::value::HsvDisplay;
 use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::pen::PenStatus::PenUp;
+use graphics::{line, Context};
+use palette::{IntoColor, LinSrgb, Srgb};
+use piston_window::G2d;
 
 #[derive(Debug)]
 pub struct Pen {
@@ -66,12 +69,11 @@ impl Pen {
             .push(Line::new(&palette::Hsv::new(0.0, 1.0, 1.0), 1.0));
     }
 
-    // pub fn draw(&self, context: &CanvasContext) {
-    //     context.set_line_cap("round");
-    //     for line in &self.lines {
-    //         line.draw(context, None);
-    //     }
-    // }
+    pub fn draw(&self, context: &mut Context, graphics: &mut G2d<'_>) {
+        for line in &self.lines {
+            line.draw(context, graphics);
+        }
+    }
 
     fn new_line(&mut self) {
         let last_point = self.lines.last().unwrap().last_point();
@@ -126,27 +128,40 @@ impl Line {
         self.points.push(*position);
     }
 
-    // fn draw(&self, context: &CanvasContext, extra_point: Option<SpriteCoordinate>) {
-    //     context.begin_path();
-    //     for (i, point) in self.points.iter().enumerate() {
-    //         let position: CanvasCoordinate = (*point).into();
-    //         if i == 0 {
-    //             context.move_to(&position);
-    //
-    //             if self.points.len() == 1 {
-    //                 context.line_to(&position);
-    //             }
-    //         } else {
-    //             context.line_to(&position);
-    //         }
-    //     }
-    //
-    //     if let Some(extra_point) = extra_point {
-    //         context.line_to(&extra_point.into());
-    //     }
-    //
-    //     context.set_stroke_style(&format!("{}", HsvDisplay(self.color)));
-    //     context.set_line_width(self.size);
-    //     context.stroke();
-    // }
+    fn draw(&self, context: &mut Context, graphics: &mut G2d<'_>) {
+        let rgb: LinSrgb = self.color.into_rgb();
+        let line = line::Line {
+            color: [rgb.red, rgb.green, rgb.blue, 1.0],
+            radius: self.size / 2.0,
+            shape: line::Shape::Round,
+        };
+
+        let mut iter = self.points.iter();
+        if let Some(point0) = iter.next() {
+            if self.points.len() == 1 {
+                let position: CanvasCoordinate = (*point0).into();
+                line.draw(
+                    [position.x, position.y, position.x, position.y],
+                    &context.draw_state,
+                    context.transform,
+                    graphics,
+                );
+            } else {
+                let mut last_position: CanvasCoordinate = (*point0).into();
+                for point in iter {
+                    let position: CanvasCoordinate = (*point).into();
+                    line.draw(
+                        [position.x, position.y, last_position.x, last_position.y],
+                        &context.draw_state,
+                        context.transform,
+                        graphics,
+                    );
+
+                    last_position = position;
+                }
+            }
+        } else {
+            return;
+        };
+    }
 }

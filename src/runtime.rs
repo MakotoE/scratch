@@ -109,22 +109,6 @@ impl Global {
             context.transform,
             graphics,
         );
-        // Global::draw_rectangle(
-        //     context,
-        //     &CanvasRectangle {
-        //         top_left: *position,
-        //         size: Size {
-        //             width: name_width + orange_rectangle_width + 24.0,
-        //             height: 20.0,
-        //         },
-        //     },
-        //     3.5,
-        // )?;
-        // context.set_fill_style("#e6f0ff");
-        // context.fill();
-        // context.set_stroke_style("#c4ccd9");
-        // context.set_line_width(1.0);
-        // context.stroke();
 
         text::Text {
             color: [0.34, 0.37, 0.46, 1.0],
@@ -139,13 +123,6 @@ impl Global {
             graphics,
         )?;
 
-        // context.set_fill_style("#575e75");
-        // context.set_font(NAME_FONT);
-        // context.fill_text(
-        //     variable_name,
-        //     &position.add(&CanvasCoordinate { x: 7.0, y: 14.0 }),
-        // )?;
-
         let orange_transform = context.transform.trans(name_width + 16.0, 3.0);
         rectangle::Rectangle {
             color: [1.0, 0.55, 0.1, 1.0],
@@ -158,20 +135,6 @@ impl Global {
             orange_transform,
             graphics,
         );
-
-        // Global::draw_rectangle(
-        //     context,
-        //     &CanvasRectangle {
-        //         top_left: orange_position,
-        //         size: Size {
-        //             width: orange_rectangle_width,
-        //             height: 14.0,
-        //         },
-        //     },
-        //     3.5,
-        // )?;
-        // context.set_fill_style("#ff8c1a");
-        // context.fill();
 
         text::Text {
             color: [1.0, 1.0, 1.0, 1.0],

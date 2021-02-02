@@ -82,7 +82,7 @@ impl SpriteRuntime {
             return Ok(());
         }
 
-        // self.pen.draw(context);
+        self.pen.draw(context, graphics);
 
         SpriteRuntime::draw_costume(
             context,
