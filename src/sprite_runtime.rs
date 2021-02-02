@@ -13,8 +13,11 @@ use graphics::math::Matrix2d;
 use graphics::types::FontSize;
 use graphics::Transformed;
 use graphics::{line, CircleArc, Context, DrawState};
+use image::png::PngDecoder;
+use image::{DynamicImage, ImageBuffer, ImageDecoder, RgbaImage};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::f64::consts::TAU;
+use std::io::Cursor;
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -347,21 +350,32 @@ impl Costume {
 
                 resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut())
                     .ok_or(Error::msg("svg error"))?;
-                let image = image::ImageBuffer::from_raw(width, height, pixmap.take())
+                let image = ImageBuffer::from_raw(width, height, pixmap.take())
                     .ok_or(Error::msg("svg error"))?;
                 (
                     Texture::from_image(texture_context, &image, &TextureSettings::new())?,
-                    width as f64,
-                    height as f64,
+                    width,
+                    height,
                 )
             }
-            Image::PNG(_) => todo!(),
+            Image::PNG(b) => {
+                let decoder = PngDecoder::new(Cursor::new(b))?;
+                let x = decoder.dimensions().0;
+                let y = decoder.dimensions().1;
+                let dynamic_image = DynamicImage::from_decoder(decoder)?;
+                let image = dynamic_image.as_rgba8().ok_or(Error::msg("png error"))?;
+                (
+                    Texture::from_image(texture_context, image, &TextureSettings::new())?,
+                    x * 2,
+                    y * 2,
+                )
+            }
         };
 
         Ok(Self {
             image_size: Size {
-                width: width / costume.bitmap_resolution,
-                height: height / costume.bitmap_resolution,
+                width: width as f64 / costume.bitmap_resolution,
+                height: height as f64 / costume.bitmap_resolution,
             },
             scale: 1.0 / costume.bitmap_resolution,
             name: costume.name.clone(),
