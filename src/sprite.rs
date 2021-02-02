@@ -6,7 +6,8 @@ use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
-use piston_window::G2dTextureContext;
+use graphics::Context;
+use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -87,13 +88,18 @@ impl Sprite {
         self.runtime.sprite.read().await.need_redraw()
     }
 
-    // pub async fn redraw(&self, context: &CanvasContext<'_>) -> Result<()> {
-    //     self.runtime
-    //         .sprite
-    //         .write()
-    //         .await
-    //         .redraw(context)
-    // }
+    pub async fn redraw(
+        &self,
+        context: &mut Context,
+        graphics: &mut G2d<'_>,
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        self.runtime
+            .sprite
+            .write()
+            .await
+            .redraw(context, graphics, character_cache)
+    }
 
     pub async fn block_inputs(&self) -> Vec<BlockInputs> {
         let mut result: Vec<BlockInputs> = Vec::with_capacity(self.threads.len());

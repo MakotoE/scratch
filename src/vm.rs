@@ -1,7 +1,7 @@
 use super::*;
 use crate::blocks::BlockInfo;
 use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
-use crate::coordinate::SpriteRectangle;
+use crate::coordinate::{canvas_const, SpriteRectangle};
 use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
@@ -10,7 +10,7 @@ use futures::future::{BoxFuture, LocalBoxFuture};
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use graphics::math::Matrix2d;
-use graphics::{Context, DrawState};
+use graphics::{rectangle, Context, DrawState};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::borrow::Borrow;
 use std::collections::HashSet;
@@ -431,19 +431,34 @@ impl SpritesCell {
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
+        rectangle::Rectangle {
+            color: [1.0, 1.0, 1.0, 1.0],
+            shape: rectangle::Shape::Square,
+            border: Some(rectangle::Border {
+                color: [0.0, 0.0, 0.0, 1.0],
+                radius: 0.5,
+            }),
+        }
+        .draw(
+            [0.0, 0.0, canvas_const::X_MAX, canvas_const::Y_MAX],
+            &context.draw_state,
+            context.transform,
+            graphics,
+        );
+
         self.global
             .redraw(context, graphics, character_cache)
             .await?;
-        // let sprites = self.sprites.read().await;
-        // let removed_sprites = self.removed_sprites.borrow();
-        // for id in self.draw_order.borrow().iter() {
-        //     if !removed_sprites.contains(id) {
-        //         match sprites.get(id) {
-        //             Some(s) => s.redraw(context).await?,
-        //             None => return Err(Error::msg(format!("id not found: {}", id))),
-        //         }
-        //     }
-        // }
+        let sprites = self.sprites.read().await;
+        let removed_sprites = self.removed_sprites.read().await;
+        for id in self.draw_order.read().await.iter() {
+            if !removed_sprites.contains(id) {
+                match sprites.get(id) {
+                    Some(s) => s.redraw(context, graphics, character_cache).await?,
+                    None => return Err(Error::msg(format!("id not found: {}", id))),
+                }
+            }
+        }
         Ok(())
     }
 

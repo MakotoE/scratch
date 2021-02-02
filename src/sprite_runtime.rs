@@ -8,8 +8,8 @@ use crate::pen::Pen;
 use gfx_device_gl::Resources;
 use gfx_texture::{Texture, TextureSettings};
 use graphics::math::Matrix2d;
-use graphics::DrawState;
-use piston_window::{G2d, G2dTextureContext};
+use graphics::{Context, DrawState};
+use piston_window::{G2d, G2dTextureContext, Glyphs};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -65,56 +65,62 @@ impl SpriteRuntime {
         })
     }
 
-    // pub fn redraw(&mut self, context: &CanvasContext) -> Result<()> {
-    //     self.need_redraw = false;
-    //
-    //     if let HideStatus::Hide = self.hide {
-    //         return Ok(());
-    //     }
-    //
-    //     self.pen.draw(context);
-    //
-    //     SpriteRuntime::draw_costume(
-    //         context,
-    //         self.costumes.current_costume(),
-    //         &self.position,
-    //         &self.scale,
-    //         self.costume_transparency,
-    //     )?;
-    //
-    //     if let Some(text) = &self.text.text {
-    //         let position: CanvasCoordinate = self.position.into();
-    //         let size = self.costumes.current_costume().image_size;
-    //         let context = context.with_transformation(Transformation::translate(position.add(
-    //             &CanvasCoordinate {
-    //                 x: size.width as f64 / 4.0,
-    //                 y: -50.0 - size.height as f64 / 2.0,
-    //             },
-    //         )));
-    //         SpriteRuntime::draw_text_bubble(&context, text)?;
-    //     }
-    //     Ok(())
-    // }
+    pub fn redraw(
+        &mut self,
+        context: &mut Context,
+        graphics: &mut G2d<'_>,
+        character_cache: &mut Glyphs,
+    ) -> Result<()> {
+        self.need_redraw = false;
+
+        if let HideStatus::Hide = self.hide {
+            return Ok(());
+        }
+
+        // self.pen.draw(context);
+
+        SpriteRuntime::draw_costume(
+            context,
+            graphics,
+            self.costumes.current_costume(),
+            &self.position,
+            &self.scale,
+            self.costume_transparency,
+        );
+
+        // if let Some(text) = &self.text.text {
+        //     let position: CanvasCoordinate = self.position.into();
+        //     let size = self.costumes.current_costume().image_size;
+        //     let context = context.with_transformation(Transformation::translate(position.add(
+        //         &CanvasCoordinate {
+        //             x: size.width as f64 / 4.0,
+        //             y: -50.0 - size.height as f64 / 2.0,
+        //         },
+        //     )));
+        //     SpriteRuntime::draw_text_bubble(&context, text)?;
+        // }
+        Ok(())
+    }
 
     fn draw_costume(
-        texture_context: &mut G2dTextureContext,
-        draw_state: &DrawState,
-        transform: Matrix2d,
+        context: &mut Context,
         graphics: &mut G2d,
         costume: &Costume,
         position: &SpriteCoordinate,
         scale: &Scale,
         alpha: f64,
     ) {
-        let rectangle = CanvasRectangle {
+        let mut rectangle = CanvasRectangle {
             top_left: CanvasCoordinate::from(*position).add(&CanvasCoordinate {
                 x: -costume.center.x * costume.scale * scale.x,
                 y: -costume.center.y * costume.scale * scale.y,
             }),
             size: costume.image_size.multiply(scale),
         };
+        rectangle.size.width /= 2.0;
+        rectangle.size.height /= 2.0;
         graphics::Image {
-            color: None,
+            color: Some([1.0, 1.0, 1.0, 1.0]),
             source_rectangle: None,
             rectangle: Some([
                 rectangle.top_left.x,
@@ -123,7 +129,12 @@ impl SpriteRuntime {
                 rectangle.size.height,
             ]),
         }
-        .draw(&costume.texture, draw_state, transform, graphics);
+        .draw(
+            &costume.texture,
+            &context.draw_state,
+            context.transform,
+            graphics,
+        );
     }
 
     // fn draw_text_bubble(context: &CanvasContext, text: &str) -> Result<()> {

@@ -7,6 +7,7 @@ use conrod_core::widget::{id, Button};
 use conrod_core::UiCell;
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::math::Matrix2d;
+use graphics::Transformed;
 use graphics::{Context, DrawState};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use tokio::sync::mpsc;
@@ -64,6 +65,7 @@ impl Interface {
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
+        context.transform = context.transform.trans_pos([20.0, 50.0]);
         self.vm.redraw(context, graphics, character_cache).await
     }
 }
