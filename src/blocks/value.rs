@@ -4,6 +4,7 @@ use serde::Serializer;
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::repeat;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Variable {
@@ -58,9 +59,14 @@ pub fn value_block_from_input_arr(
     let value_type = arr.get(0).ok_or_else(err)?.as_i64().ok_or_else(err)?;
     let value = arr.get(1).ok_or_else(err)?;
     Ok(match value_type {
-        4 | 5 | 6 | 7 | 8 => Box::new(ValueNumber {
-            number: value.as_f64().unwrap(),
-        }),
+        4 | 5 | 6 | 7 | 8 => {
+            let number = if let Some(f) = value.as_f64() {
+                f
+            } else {
+                f64::from_str(value.as_str().unwrap())?
+            };
+            Box::new(ValueNumber { number })
+        }
         9 => Box::new(ValueColor::new(value.as_str().unwrap())?),
         10 | 11 => Box::new(ValueString {
             string: if let serde_json::Value::String(s) = value {

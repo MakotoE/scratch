@@ -431,21 +431,6 @@ impl SpritesCell {
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
-        rectangle::Rectangle {
-            color: [1.0, 1.0, 1.0, 1.0],
-            shape: rectangle::Shape::Square,
-            border: Some(rectangle::Border {
-                color: [0.0, 0.0, 0.0, 1.0],
-                radius: 0.5,
-            }),
-        }
-        .draw(
-            [0.0, 0.0, canvas_const::X_MAX, canvas_const::Y_MAX],
-            &context.draw_state,
-            context.transform,
-            graphics,
-        );
-
         self.global
             .redraw(context, graphics, character_cache)
             .await?;

@@ -108,67 +108,48 @@ pub async fn app(file_path: &Path) -> Result<()> {
                 &mut window.g2d,
             );
             let mut context = Context::new_viewport(args.viewport());
-            if let Some(primitives) = ui.draw_if_changed() {
-                draw_border(&context.draw_state, context.transform, &mut graphics);
 
-                let cache_queued_glyphs = |_: &mut G2d,
-                                           cache: &mut G2dTexture,
-                                           rect: conrod_core::text::rt::Rect<u32>,
-                                           data: &[u8]| {
-                    text_vertex_data.clear();
-                    text_vertex_data.extend(data.iter().flat_map(|&b| vec![255, 255, 255, b]));
-                    UpdateTexture::update(
-                        cache,
-                        &mut texture_context,
-                        piston_window::texture::Format::Rgba8,
-                        &text_vertex_data[..],
-                        [rect.min.x, rect.min.y],
-                        [rect.width(), rect.height()],
-                    )
-                    .unwrap()
-                };
+            let cache_queued_glyphs = |_: &mut G2d,
+                                       cache: &mut G2dTexture,
+                                       rect: conrod_core::text::rt::Rect<u32>,
+                                       data: &[u8]| {
+                text_vertex_data.clear();
+                text_vertex_data.extend(data.iter().flat_map(|&b| vec![255, 255, 255, b]));
+                UpdateTexture::update(
+                    cache,
+                    &mut texture_context,
+                    piston_window::texture::Format::Rgba8,
+                    &text_vertex_data[..],
+                    [rect.min.x, rect.min.y],
+                    [rect.width(), rect.height()],
+                )
+                .unwrap()
+            };
 
-                conrod_piston::draw::primitives(
-                    primitives,
-                    context,
-                    &mut graphics,
-                    &mut text_texture_cache,
-                    &mut glyph_cache,
-                    &image_map,
-                    cache_queued_glyphs,
-                    |img| img,
-                );
+            interface
+                .draw_2d(&mut context, &mut graphics, &mut character_cache)
+                .await
+                .unwrap();
 
-                interface
-                    .draw_2d(&mut context, &mut graphics, &mut character_cache)
-                    .await
-                    .unwrap();
+            conrod_piston::draw::primitives(
+                ui.draw(),
+                context,
+                &mut graphics,
+                &mut text_texture_cache,
+                &mut glyph_cache,
+                &image_map,
+                cache_queued_glyphs,
+                |img| img,
+            );
 
-                // Might need to graphics.flush_colored()
-                window.encoder.flush(device);
-                texture_context.encoder.flush(device);
-                character_cache.factory.encoder.flush(device);
-            }
+            // Might need to call graphics.flush_colored()
+            window.encoder.flush(device);
+            texture_context.encoder.flush(device);
+            character_cache.factory.encoder.flush(device);
         }
     }
 
     Ok(())
-}
-
-fn draw_border(draw_state: &DrawState, transform: Matrix2d, graphics: &mut G2d) {
-    let rectangle = Rectangle {
-        color: [1.0, 1.0, 1.0, 1.0],
-        shape: Shape::Square,
-        border: None,
-    };
-    // Top
-    rectangle.draw([0.0, 0.0, 520.0, 50.0], draw_state, transform, graphics);
-    // Bottom
-    rectangle.draw([0.0, 410.0, 520.0, 480.0], draw_state, transform, graphics);
-    // Left
-    rectangle.draw([0.0, 50.0, 20.0, 410.0], draw_state, transform, graphics);
-    // Right
-    rectangle.draw([500.0, 50.0, 480.0, 410.0], draw_state, transform, graphics);
 }
 
 fn image_texture(

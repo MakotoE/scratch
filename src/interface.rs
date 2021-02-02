@@ -1,5 +1,6 @@
 use super::*;
 use crate::broadcaster::Broadcaster;
+use crate::coordinate::canvas_const;
 use crate::file::ScratchFile;
 use crate::vm::{DebugInfo, VM};
 use conrod_core::image::Id;
@@ -7,7 +8,7 @@ use conrod_core::widget::{id, Button};
 use conrod_core::{Color, UiCell};
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::math::Matrix2d;
-use graphics::Transformed;
+use graphics::{rectangle, Transformed};
 use graphics::{Context, DrawState};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use tokio::sync::mpsc;
@@ -73,7 +74,74 @@ impl Interface {
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
+        rectangle::Rectangle {
+            color: [1.0, 1.0, 1.0, 1.0],
+            shape: rectangle::Shape::Square,
+            border: None,
+        }
+        .draw(
+            [20.0, 50.0, canvas_const::X_MAX, canvas_const::Y_MAX],
+            &context.draw_state,
+            context.transform,
+            graphics,
+        );
+
+        let original_transform = context.transform;
         context.transform = context.transform.trans(20.0, 50.0);
-        self.vm.redraw(context, graphics, character_cache).await
+        self.vm.redraw(context, graphics, character_cache).await?;
+
+        context.transform = original_transform;
+        draw_border(context, graphics);
+        Ok(())
     }
+}
+
+fn draw_border(context: &mut Context, graphics: &mut G2d) {
+    let rectangle = rectangle::Rectangle {
+        color: [1.0, 1.0, 1.0, 1.0],
+        shape: rectangle::Shape::Square,
+        border: None,
+    };
+    // Top
+    rectangle.draw(
+        [0.0, 0.0, 520.0, 50.0],
+        &context.draw_state,
+        context.transform,
+        graphics,
+    );
+    // Bottom
+    rectangle.draw(
+        [0.0, 410.0, 520.0, 480.0],
+        &context.draw_state,
+        context.transform,
+        graphics,
+    );
+    // Left
+    rectangle.draw(
+        [0.0, 50.0, 20.0, 410.0],
+        &context.draw_state,
+        context.transform,
+        graphics,
+    );
+    // Right
+    rectangle.draw(
+        [500.0, 50.0, 480.0, 410.0],
+        &context.draw_state,
+        context.transform,
+        graphics,
+    );
+    rectangle::Rectangle {
+        color: [0.0, 0.0, 0.0, 0.0],
+        shape: rectangle::Shape::Square,
+        border: Some(rectangle::Border {
+            color: [0.0, 0.0, 0.0, 1.0],
+            radius: 0.5,
+        }),
+    }
+    .draw(
+        [20.0, 50.0, canvas_const::X_MAX, canvas_const::Y_MAX],
+        &context.draw_state,
+        context.transform,
+        graphics,
+    );
 }
