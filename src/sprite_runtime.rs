@@ -37,19 +37,13 @@ pub struct SpriteRuntime {
 
 #[allow(dead_code)]
 impl SpriteRuntime {
-    pub async fn new(
-        texture_context: &mut G2dTextureContext,
-        target: &Target,
-        images: &HashMap<String, Image>,
-        is_a_clone: bool,
-        sprite_name: String,
-    ) -> Result<Self> {
+    pub fn new(target: &Target, is_a_clone: bool, sprite_name: String) -> Self {
         let scale = if target.is_stage {
             1.0
         } else {
             target.size / 100.0
         };
-        Ok(Self {
+        Self {
             sprite_name,
             need_redraw: true,
             position: SpriteCoordinate {
@@ -57,7 +51,7 @@ impl SpriteRuntime {
                 y: target.y,
             },
             scale: Scale { x: scale, y: scale },
-            costumes: Costumes::new(texture_context, &target.costumes, images).await?,
+            costumes: Costumes::default(),
             costume_transparency: 1.0,
             text: Text {
                 id: BlockID::default(),
@@ -70,7 +64,18 @@ impl SpriteRuntime {
             } else {
                 HideStatus::Hide
             },
-        })
+        }
+    }
+
+    pub async fn add_costumes(
+        &mut self,
+        texture_context: &mut G2dTextureContext,
+        costumes: &[file::Costume],
+        images: &HashMap<String, Image>,
+    ) -> Result<()> {
+        self.costumes
+            .add_costumes(texture_context, costumes, images)
+            .await
     }
 
     pub fn redraw(
@@ -404,19 +409,20 @@ impl Costume {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Costumes {
     costumes: Vec<Costume>,
     current_costume: usize,
 }
 
 impl Costumes {
-    async fn new(
+    async fn add_costumes(
+        &mut self,
         texture_context: &mut G2dTextureContext,
         costume_data: &[file::Costume],
         images: &HashMap<String, Image>,
-    ) -> Result<Self> {
-        let mut costumes: Vec<Costume> = Vec::with_capacity(costume_data.len());
+    ) -> Result<()> {
+        self.costumes.reserve(costume_data.len());
         for costume in costume_data {
             let costume = if let Some(md5ext) = &costume.md5ext {
                 match images.get(md5ext) {
@@ -426,12 +432,9 @@ impl Costumes {
             } else {
                 Costume::new_blank(&costume)?
             };
-            costumes.push(costume);
+            self.costumes.push(costume);
         }
-        Ok(Self {
-            costumes,
-            current_costume: 0,
-        })
+        Ok(())
     }
 
     fn current_costume(&self) -> &Costume {

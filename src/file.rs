@@ -236,10 +236,34 @@ pub struct Meta {
     pub agent: String,
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum Image {
     SVG(Vec<u8>),
     PNG(Vec<u8>),
+}
+
+impl Debug for Image {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut vec_len = 0usize;
+        match self {
+            Image::SVG(v) => {
+                vec_len = v.len();
+                write!(f, "SVG(")?;
+            }
+            Image::PNG(v) => {
+                vec_len = v.len();
+                write!(f, "PNG(")?;
+            }
+        }
+
+        if vec_len > 0 {
+            write!(f, "[...]")?;
+        } else {
+            write!(f, "[]")?;
+        }
+
+        write!(f, ")")
+    }
 }
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Default, Hash)]

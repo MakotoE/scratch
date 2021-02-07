@@ -108,14 +108,10 @@ impl VM {
         let mut sprites: HashMap<SpriteID, Sprite> =
             HashMap::with_capacity(scratch_file.project.targets.len());
         for target in &scratch_file.project.targets {
-            let (id, sprite) = Sprite::new(
-                texture_context,
-                global.clone(),
-                target.clone(),
-                images.clone(),
-                false,
-            )
-            .await?;
+            let (id, mut sprite) = Sprite::new(global.clone(), target.clone(), false).await?;
+            sprite
+                .add_costumes(texture_context, &target.costumes, &images)
+                .await?;
             sprites.insert(id, sprite);
         }
         return Ok(sprites);
