@@ -10,6 +10,7 @@ mod coordinate;
 mod error;
 mod event_sender;
 mod file;
+mod fileviewer;
 mod interface;
 mod pen;
 mod runtime;
@@ -32,7 +33,15 @@ use tokio::task::JoinHandle;
 #[derive(clap::Clap)]
 #[clap(name = "scratch")]
 struct Options {
+    command: Command,
     file_path: String,
+}
+
+#[derive(strum::EnumString)]
+#[strum(serialize_all = "snake_case")]
+enum Command {
+    Vm,
+    Viewer,
 }
 
 #[tokio::main]
@@ -44,8 +53,11 @@ async fn main() {
         .init();
 
     let options = Options::parse();
+    let path = std::path::Path::new(&options.file_path);
 
-    if let Err(e) = app::app(std::path::Path::new(&options.file_path)).await {
-        panic!("{:?}", e)
+    match options.command {
+        Command::Vm => app::app(path).await,
+        Command::Viewer => fileviewer::fileviewer(path).await,
     }
+    .unwrap_or_else(|e| panic!("{:?}", e));
 }

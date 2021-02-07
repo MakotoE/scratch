@@ -1,5 +1,5 @@
 # Scratch From Scratch (Under development)
 
 ```
-cargo run <path to scratch file>
+cargo run vm <path to scratch file>
 ```
