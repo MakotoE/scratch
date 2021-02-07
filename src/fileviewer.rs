@@ -62,7 +62,7 @@ where
 
         for (thread_id, inputs) in sprite.block_inputs.iter().enumerate() {
             writeln!(w, "{}", format!("Thread {}", thread_id).underline())?;
-            output_block(w, inputs, 0)?;
+            output_block(w, inputs, 1)?;
         }
 
         writeln!(w)?;
@@ -76,17 +76,22 @@ where
 {
     writeln!(w, "{} {}", inputs.info.name, inputs.info.id)?;
 
-    let indent_str: String = "  ".repeat(indent_count);
-    for field in &inputs.fields {
+    const SINGLE_INDENT: &str = "|   ";
+    let base: String = SINGLE_INDENT.repeat(indent_count);
+    let raised: String = base.clone() + "| ";
+    let base_plus_indent: String = base.clone() + SINGLE_INDENT;
+    for (&id, value) in &inputs.fields {
         // TODO each value should output their value as JSON encoded value
-        writeln!(w, "{}{}: \"{}\"", indent_str, field.0, field.1)?;
+        writeln!(w, "{}{}: \"{}\"", raised, id, value)?;
     }
 
     for (&name, input) in inputs.inputs.iter().chain(&inputs.stacks) {
         if name == "next" {
+            write!(w, "{}", base)?;
             output_block(w, &input, indent_count)?;
         } else {
-            write!(w, "{}{}: ", indent_str, name)?;
+            writeln!(w, "{}{}:", raised, name)?;
+            write!(w, "{}", base_plus_indent)?;
             output_block(w, &input, indent_count + 1)?;
         }
     }
