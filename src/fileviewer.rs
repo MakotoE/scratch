@@ -93,3 +93,57 @@ where
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::file::ScratchFile;
+    use std::io::Cursor;
+
+    #[tokio::test]
+    async fn test_block_inputs() {
+        {
+            assert!(block_inputs(&Vec::new()).await.unwrap().is_empty());
+        }
+        {
+            let dir = std::path::Path::new(file!())
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("test_saves")
+                .join("say.sb3");
+            let file = std::fs::File::open(dir).unwrap();
+            let scratch_file = ScratchFile::parse(&file).unwrap();
+            assert!(!block_inputs(&scratch_file.project.targets)
+                .await
+                .unwrap()
+                .is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_output_block_inputs() {
+        {
+            let mut result: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+            output_block_inputs(&mut result, &Vec::new()).unwrap();
+            assert!(result.get_ref().is_empty());
+        }
+        {
+            let dir = std::path::Path::new(file!())
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("test_saves")
+                .join("say.sb3");
+            let file = std::fs::File::open(dir).unwrap();
+            let scratch_file = ScratchFile::parse(&file).unwrap();
+            let block_inputs = block_inputs(&scratch_file.project.targets).await.unwrap();
+
+            let mut result: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+            output_block_inputs(&mut result, &block_inputs).unwrap();
+            assert!(!result.get_ref().is_empty());
+        }
+    }
+}

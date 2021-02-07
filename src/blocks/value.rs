@@ -343,49 +343,23 @@ macro_rules! impl_try_from_value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn test_str_to_color() {
-        struct Test {
-            s: &'static str,
-            expected: Hsv,
-            expect_err: bool,
-        }
-
-        let tests = vec![
-            Test {
-                s: "",
-                expected: Hsv::new(0.0, 0.0, 0.0),
-                expect_err: true,
-            },
-            Test {
-                s: "#",
-                expected: Hsv::new(0.0, 0.0, 0.0),
-                expect_err: true,
-            },
-            Test {
-                s: "#000000",
-                expected: Hsv::new(0.0, 0.0, 0.0),
-                expect_err: false,
-            },
-            Test {
-                s: "#ffffff",
-                expected: Hsv::new(0.0, 0.0, 1.0),
-                expect_err: false,
-            },
-            Test {
-                s: "#ffffffa",
-                expected: Hsv::new(0.0, 0.0, 0.0),
-                expect_err: true,
-            },
-        ];
-
-        for (i, test) in tests.iter().enumerate() {
-            let result: Result<Hsv> = str_to_color(test.s);
-            assert_eq!(result.is_err(), test.expect_err, "{}", i);
-            if !test.expect_err {
-                assert_eq!(result.unwrap(), test.expected, "{}", i);
-            }
+    #[rstest(
+        s,
+        expected,
+        expect_err,
+        case("", Hsv::new(0.0, 0.0, 0.0), true),
+        case("#", Hsv::new(0.0, 0.0, 0.0), true),
+        case("#000000", Hsv::new(0.0, 0.0, 0.0), false),
+        case("#ffffff", Hsv::new(0.0, 0.0, 1.0), false),
+        case("#ffffffa", Hsv::new(0.0, 0.0, 0.0), true)
+    )]
+    fn test_str_to_color(s: &'static str, expected: Hsv, expect_err: bool) {
+        let result = str_to_color(s);
+        assert_eq!(result.is_err(), expect_err);
+        if !expect_err {
+            assert_eq!(result.unwrap(), expected);
         }
     }
 
@@ -395,38 +369,15 @@ mod tests {
         assert_eq!(result, "#ff0000")
     }
 
-    mod value {
-        use super::*;
-
-        #[test]
-        fn test_to_string() {
-            struct Test {
-                value: Value,
-                expected: &'static str,
-            }
-
-            let tests = vec![
-                Test {
-                    value: Value::String("a".into()),
-                    expected: "a",
-                },
-                Test {
-                    value: Value::Number(1.0),
-                    expected: "1",
-                },
-                Test {
-                    value: Value::Number(1.1),
-                    expected: "1.1",
-                },
-                Test {
-                    value: Value::Bool(false),
-                    expected: "false",
-                },
-            ];
-
-            for (i, test) in tests.iter().enumerate() {
-                assert_eq!(test.value.to_string(), test.expected, "{}", i);
-            }
-        }
+    #[rstest(
+        value,
+        expected,
+        case (Value::String("a".into()), "a"),
+        case (Value::Number(1.0), "1"),
+        case (Value::Number(1.1), "1.1"),
+        case (Value::Bool(false), "false"),
+    )]
+    fn test_to_string(value: Value, expected: &'static str) {
+        assert_eq!(value.to_string(), expected);
     }
 }

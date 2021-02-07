@@ -1987,6 +1987,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rstest"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dec448bc157977efdc0a71369cf923915b0c4806b1b2449c3fb011071d6f7c38"
+dependencies = [
+ "cfg-if 0.1.10",
+ "proc-macro2 1.0.24",
+ "quote 1.0.8",
+ "rustc_version",
+ "syn",
+]
+
+[[package]]
 name = "rust-argon2"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2124,6 +2137,7 @@ dependencies = [
  "piston_window",
  "rand 0.8.0",
  "resvg",
+ "rstest",
  "serde",
  "serde_json",
  "strum",
