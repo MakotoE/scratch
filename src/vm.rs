@@ -29,7 +29,6 @@ impl VM {
     pub async fn new(
         texture_context: &mut G2dTextureContext,
         scratch_file: ScratchFile,
-        debug_sender: mpsc::Sender<DebugInfo>,
         broadcaster: Broadcaster,
     ) -> Result<Self> {
         let (control_sender, control_receiver) = mpsc::channel(1);
@@ -58,7 +57,6 @@ impl VM {
                     match VM::run(
                         sprites_cell.clone(),
                         &control_receiver,
-                        &debug_sender,
                         &BroadcastCell::new(broadcaster.clone()),
                     )
                     .await
@@ -80,23 +78,6 @@ impl VM {
             sprites: sprites_cell,
         })
     }
-
-    // pub async fn block_inputs(
-    //     scratch_file: &ScratchFile,
-    // ) -> Result<HashMap<SpriteID, Vec<BlockInputs>>> {
-    //     let global = Arc::new(Global::new(
-    //         &scratch_file.project.targets[0].variables,
-    //         &scratch_file.project.monitors,
-    //         Broadcaster::new(),
-    //     ));
-    //
-    //     let mut result: HashMap<SpriteID, Vec<BlockInputs>> = HashMap::new();
-    //     for (id, sprite) in VM::sprites(scratch_file, global).await? {
-    //         result.insert(id, sprite.block_inputs().await);
-    //     }
-    //
-    //     Ok(result)
-    // }
 
     async fn sprites(
         texture_context: &mut G2dTextureContext,
@@ -120,7 +101,6 @@ impl VM {
     async fn run(
         sprites: Arc<SpritesCell>,
         control_chan: &ControlReceiverCell,
-        debug_sender: &mpsc::Sender<DebugInfo>,
         broadcaster: &BroadcastCell,
     ) -> Result<Loop> {
         let mut futures: FuturesUnordered<BoxFuture<Event>> = FuturesUnordered::new();
@@ -130,12 +110,13 @@ impl VM {
         let mut paused_threads: Vec<ThreadID> = Vec::new();
         for thread_id in sprites.all_thread_ids().await {
             paused_threads.push(thread_id);
-            debug_sender
-                .send(DebugInfo {
+            log::trace!(
+                "{}",
+                DebugInfo {
                     thread_id,
                     block_info: sprites.block_info(thread_id).await,
-                })
-                .await?;
+                }
+            );
         }
 
         let mut current_state = Control::Pause;
@@ -147,12 +128,13 @@ impl VM {
                     Control::Continue => futures.push(Box::pin(sprites.step(thread_id))),
                     Control::Step | Control::Pause => {
                         paused_threads.push(thread_id);
-                        debug_sender
-                            .send(DebugInfo {
+                        log::trace!(
+                            "{}",
+                            DebugInfo {
                                 thread_id,
                                 block_info: sprites.block_info(thread_id).await,
-                            })
-                            .await?;
+                            }
+                        );
                         current_state = Control::Pause;
                     }
                     _ => unreachable!(),
@@ -324,6 +306,19 @@ impl ControlReceiverCell {
 pub struct DebugInfo {
     pub thread_id: ThreadID,
     pub block_info: BlockInfo,
+}
+
+impl Display for DebugInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "sprite: {}, thread: {}, block name: {}, block id: {}",
+            self.thread_id.sprite_id,
+            self.thread_id.thread_id,
+            self.block_info.name,
+            self.block_info.id
+        )
+    }
 }
 
 #[derive(Debug)]

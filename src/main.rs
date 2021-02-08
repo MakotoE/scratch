@@ -49,9 +49,7 @@ enum Command {
 async fn main() {
     use clap::Clap;
 
-    env_logger::Builder::new()
-        .filter_module("scratch", log::LevelFilter::Trace)
-        .init();
+    env_logger::init();
 
     let options = Options::parse();
     let path = std::path::Path::new(&options.file_path);

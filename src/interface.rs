@@ -19,7 +19,6 @@ pub struct Interface {
     green_flag_image: Id,
     stop_image: Id,
     vm: VM,
-    debug_receiver: mpsc::Receiver<DebugInfo>,
 }
 
 widget_ids! {
@@ -37,16 +36,14 @@ impl Interface {
         green_flag_image: Id,
         stop_image: Id,
     ) -> Result<Self> {
-        let (sender, receiver) = mpsc::channel(8);
         let broadcaster = Broadcaster::new();
-        let vm = VM::new(texture_context, scratch_file.clone(), sender, broadcaster).await?;
+        let vm = VM::new(texture_context, scratch_file.clone(), broadcaster).await?;
         Ok(Self {
             scratch_file,
             ids,
             green_flag_image,
             stop_image,
             vm,
-            debug_receiver: receiver,
         })
     }
 
