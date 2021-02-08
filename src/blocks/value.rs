@@ -89,7 +89,7 @@ impl Block for ValueNumber {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Number",
-            id: BlockID::default(),
+            id: BlockID::pseudo_id(),
         }
     }
 
@@ -117,7 +117,7 @@ impl Block for ValueString {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "String",
-            id: BlockID::default(),
+            id: BlockID::pseudo_id(),
         }
     }
 
@@ -153,7 +153,7 @@ impl Block for ValueColor {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "Color",
-            id: BlockID::default(),
+            id: BlockID::pseudo_id(),
         }
     }
 

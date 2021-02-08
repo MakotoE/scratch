@@ -271,6 +271,13 @@ pub struct BlockID {
     id: [u8; 20],
 }
 
+impl BlockID {
+    /// Indicates block that did not come from the .sb3 file.
+    pub fn pseudo_id() -> BlockID {
+        BlockID::try_from("                    ").unwrap()
+    }
+}
+
 impl Debug for BlockID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("BlockID { ")?;

@@ -65,7 +65,7 @@ impl Thread {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockInputs {
     pub info: BlockInfo,
     pub fields: HashMap<&'static str, String>,

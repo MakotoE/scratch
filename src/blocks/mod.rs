@@ -123,13 +123,13 @@ impl Next {
     }
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BlockInfo {
     pub name: &'static str,
     pub id: BlockID,
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockInputsPartial {
     pub info: BlockInfo,
     pub fields: HashMap<&'static str, String>,
@@ -273,7 +273,7 @@ impl Block for EmptyInput {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "EmptyInput",
-            id: BlockID::default(),
+            id: BlockID::pseudo_id(),
         }
     }
 
@@ -299,7 +299,7 @@ impl Block for EmptyFalse {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "EmptyFalse",
-            id: BlockID::default(),
+            id: BlockID::pseudo_id(),
         }
     }
 
