@@ -61,11 +61,15 @@ impl Interface {
             self.vm.continue_().await;
         }
 
-        Button::image(self.stop_image)
+        let stop_flag_event = Button::image(self.stop_image)
             .top_left_with_margins(10.0, 70.0)
             .w_h(30.0, 30.0)
             .image_color_with_feedback(Color::Rgba(1.0, 1.0, 1.0, 1.0))
             .set(self.ids.stop_button, ui_cell);
+
+        if stop_flag_event.was_clicked() {
+            self.vm.stop().await;
+        }
     }
 
     pub async fn draw_2d(
