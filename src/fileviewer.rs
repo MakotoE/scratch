@@ -81,8 +81,7 @@ where
     let raised: String = base.clone() + "| ";
     let base_plus_indent: String = base.clone() + SINGLE_INDENT;
     for (&id, value) in &inputs.fields {
-        // TODO each value should output their value as JSON encoded value
-        writeln!(w, "{}{}: \"{}\"", raised, id, value)?;
+        writeln!(w, "{}{}: {}", raised, id, value)?;
     }
 
     for (&name, input) in inputs.inputs.iter().chain(&inputs.stacks) {

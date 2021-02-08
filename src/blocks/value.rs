@@ -124,7 +124,7 @@ impl Block for ValueString {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("string", self.string.clone())],
+            vec![("string", serde_json::to_string(&self.string).unwrap())],
             vec![],
             vec![],
         )
