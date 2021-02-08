@@ -24,13 +24,7 @@ fn get_block(
     runtime: Runtime,
     info: &file::Block,
 ) -> Result<Box<dyn Block + Send + Sync>> {
-    let mut split = info.opcode.split('_');
-    let category = split.next().ok_or(Error::msg(format!(
-        "block \"{}\": opcode {} does not exist",
-        id, info.opcode
-    )))?;
-
-    let name = split.next().ok_or(Error::msg(format!(
+    let (category, name) = info.opcode.split_once('_').ok_or(Error::msg(format!(
         "block \"{}\": opcode {} does not exist",
         id, info.opcode
     )))?;

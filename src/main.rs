@@ -1,4 +1,5 @@
 #![feature(async_closure)]
+#![feature(str_split_once)]
 
 #[macro_use]
 extern crate conrod_core;

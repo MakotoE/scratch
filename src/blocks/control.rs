@@ -13,6 +13,10 @@ pub fn get_block(
     id: BlockID,
     runtime: Runtime,
 ) -> Result<Box<dyn Block + Send + Sync>> {
+    if id.to_string() == "Q5f/aL`v|8" {
+        dbg!();
+    }
+
     Ok(match name {
         "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
