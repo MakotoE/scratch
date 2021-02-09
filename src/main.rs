@@ -58,5 +58,8 @@ async fn main() {
         Command::Vm => app::app(path).await,
         Command::Viewer => fileviewer::fileviewer(path).await,
     }
-    .unwrap_or_else(|e| panic!("{:?}", e));
+    .unwrap_or_else(|e| {
+        log::error!("fatal: {:?}", e);
+        std::process::exit(1);
+    });
 }
