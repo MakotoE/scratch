@@ -5,7 +5,7 @@ use graphics::{line, Context};
 use palette::{IntoColor, LinSrgb, Srgb};
 use piston_window::G2d;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pen {
     lines: Vec<Line>,
     pen_status: PenStatus,

@@ -5,6 +5,7 @@ use crate::coordinate::{canvas_const, SpriteRectangle};
 use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
+use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::BlockInputs;
 use futures::future::{BoxFuture, LocalBoxFuture};
 use futures::stream::FuturesUnordered;
@@ -89,7 +90,10 @@ impl VM {
         let mut sprites: HashMap<SpriteID, Sprite> =
             HashMap::with_capacity(scratch_file.project.targets.len());
         for target in &scratch_file.project.targets {
-            let (id, mut sprite) = Sprite::new(global.clone(), target.clone(), false).await?;
+            let sprite_runtime = SpriteRuntime::new(&target);
+            let id = SpriteID::from_sprite_name(&target.name);
+            let mut sprite =
+                Sprite::new(id, sprite_runtime, global.clone(), target.clone()).await?;
             sprite
                 .add_costumes(texture_context, &target.costumes, &images)
                 .await?;
@@ -161,20 +165,20 @@ impl VM {
                     log::info!("broadcast: {:?}", &msg);
                     match msg {
                         BroadcastMsg::Clone(from_sprite) => {
-                            // let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
-                            // for thread_id in 0..sprites.number_of_threads(new_sprite_id).await {
-                            //     let id = ThreadID {
-                            //         sprite_id: new_sprite_id,
-                            //         thread_id,
-                            //     };
-                            //     match current_state {
-                            //         Control::Continue | Control::Step => {
-                            //             futures.push(Box::pin(sprites.step(id)))
-                            //         }
-                            //         Control::Pause => paused_threads.push(id),
-                            //         _ => unreachable!(),
-                            //     }
-                            // }
+                            let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
+                            for thread_id in 0..sprites.number_of_threads(new_sprite_id).await {
+                                let id = ThreadID {
+                                    sprite_id: new_sprite_id,
+                                    thread_id,
+                                };
+                                match current_state {
+                                    Control::Continue | Control::Step => {
+                                        futures.push(Box::pin(sprites.step(id)))
+                                    }
+                                    Control::Pause => paused_threads.push(id),
+                                    _ => unreachable!(),
+                                }
+                            }
                         }
                         BroadcastMsg::DeleteClone(sprite_id) => {
                             sprites.remove(sprite_id).await;
@@ -480,23 +484,24 @@ impl SpritesCell {
             .await
     }
 
-    // async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
-    //     let new_sprite_id = {
-    //         let mut sprites = self.sprites.write().await;
-    //         let (new_sprite_id, new_sprite) = match sprites.get(&sprite_id) {
-    //             Some(sprite) => sprite.clone_sprite().await?,
-    //             None => return Err(Error::msg("sprite_id is invalid")),
-    //         };
-    //         sprites.insert(new_sprite_id, new_sprite);
-    //         new_sprite_id
-    //     };
-    //
-    //     let mut draw_order = self.draw_order.write().await;
-    //     let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
-    //     draw_order.insert(index + 1, new_sprite_id);
-    //
-    //     Ok(new_sprite_id)
-    // }
+    async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
+        let new_sprite_id = {
+            let mut sprites = self.sprites.write().await;
+            let new_sprite_id = SpriteID::from_sprite_name(&(format!("{}", sprite_id) + "clone"));
+            let new_sprite = match sprites.get(&sprite_id) {
+                Some(sprite) => sprite.clone_sprite(new_sprite_id).await?,
+                None => return Err(Error::msg("sprite_id is invalid")),
+            };
+            sprites.insert(new_sprite_id, new_sprite);
+            new_sprite_id
+        };
+
+        let mut draw_order = self.draw_order.write().await;
+        let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
+        draw_order.insert(index + 1, new_sprite_id);
+
+        Ok(new_sprite_id)
+    }
 
     async fn number_of_threads(&self, sprite_id: SpriteID) -> usize {
         self.sprites

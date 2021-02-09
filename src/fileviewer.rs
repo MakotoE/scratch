@@ -3,6 +3,7 @@ use crate::broadcaster::Broadcaster;
 use crate::file::ScratchFile;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
+use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::BlockInputs;
 use colored::Colorize;
 use std::fs::File;
@@ -38,10 +39,12 @@ async fn block_inputs(targets: &[file::Target]) -> Result<Vec<SpriteBlocks>> {
     let mut block_inputs: Vec<SpriteBlocks> = Vec::with_capacity(targets.len());
 
     for target in targets {
-        let (id, sprite) = Sprite::new(global.clone(), target.clone(), false).await?;
+        let sprite_runtime = SpriteRuntime::new(&target);
+        let sprite_id = SpriteID::from_sprite_name(&target.name);
+        let sprite = Sprite::new(sprite_id, sprite_runtime, global.clone(), target.clone()).await?;
         block_inputs.push(SpriteBlocks {
             name: target.name.clone(),
-            id,
+            id: sprite_id,
             block_inputs: sprite.block_inputs().await,
         });
     }

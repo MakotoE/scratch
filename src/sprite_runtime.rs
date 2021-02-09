@@ -19,10 +19,8 @@ use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::f64::consts::TAU;
 use std::io::Cursor;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpriteRuntime {
-    /// To make debugging easier
-    sprite_name: String,
     is_a_clone: bool,
     need_redraw: bool,
     position: SpriteCoordinate,
@@ -37,14 +35,13 @@ pub struct SpriteRuntime {
 
 #[allow(dead_code)]
 impl SpriteRuntime {
-    pub fn new(target: &Target, is_a_clone: bool, sprite_name: String) -> Self {
+    pub fn new(target: &Target) -> Self {
         let scale = if target.is_stage {
             1.0
         } else {
             target.size / 100.0
         };
         Self {
-            sprite_name,
             need_redraw: true,
             position: SpriteCoordinate {
                 x: target.x,
@@ -58,7 +55,7 @@ impl SpriteRuntime {
                 text: None,
             },
             pen: Pen::new(),
-            is_a_clone,
+            is_a_clone: false,
             hide: if target.is_stage || target.visible {
                 HideStatus::Show
             } else {
@@ -322,6 +319,23 @@ impl SpriteRuntime {
     /// 0.0 = transparent, 1.0 = opaque
     pub fn set_transparency(&mut self, transparency: f64) {
         self.costume_transparency = transparency;
+    }
+
+    pub fn clone_sprite_runtime(&self) -> SpriteRuntime {
+        SpriteRuntime {
+            is_a_clone: true,
+            need_redraw: true,
+            position: self.position,
+            scale: self.scale,
+            costumes: self.costumes.clone(),
+            costume_transparency: self.costume_transparency,
+            text: Text {
+                id: BlockID::default(),
+                text: None,
+            },
+            pen: Pen::new(),
+            hide: self.hide,
+        }
     }
 }
 

@@ -21,27 +21,16 @@ pub struct Sprite {
 
 impl Sprite {
     pub async fn new(
+        sprite_id: SpriteID,
+        sprite_runtime: SpriteRuntime,
         global: Arc<Global>,
         target: Target,
-        is_a_clone: bool,
-    ) -> Result<(SpriteID, Self)> {
-        let mut sprite_name = target.name.to_string();
-        if is_a_clone {
-            sprite_name += "-clone";
-        };
-        let sprite_id = SpriteID::from_sprite_name(&sprite_name);
-
+    ) -> Result<Self> {
         let mut threads: Vec<RwLock<Thread>> = Vec::new();
-
-        let sprite_runtime = Arc::new(RwLock::new(SpriteRuntime::new(
-            &target,
-            is_a_clone,
-            sprite_name,
-        )));
 
         for hat_id in find_hats(&target.blocks) {
             let runtime = Runtime::new(
-                sprite_runtime.clone(),
+                Arc::new(RwLock::new(sprite_runtime.clone())),
                 global.clone(),
                 ThreadID {
                     sprite_id,
@@ -53,21 +42,18 @@ impl Sprite {
             threads.push(RwLock::new(thread));
         }
 
-        Ok((
-            sprite_id,
-            Self {
-                threads,
-                runtime: Runtime::new(
-                    sprite_runtime,
-                    global.clone(),
-                    ThreadID {
-                        sprite_id,
-                        thread_id: 0,
-                    },
-                ),
-                target,
-            },
-        ))
+        Ok(Self {
+            threads,
+            runtime: Runtime::new(
+                Arc::new(RwLock::new(sprite_runtime)),
+                global.clone(),
+                ThreadID {
+                    sprite_id,
+                    thread_id: 0,
+                },
+            ),
+            target,
+        })
     }
 
     pub async fn add_costumes(
@@ -121,8 +107,15 @@ impl Sprite {
         result
     }
 
-    pub async fn clone_sprite(&self) -> Result<(SpriteID, Sprite)> {
-        Sprite::new(self.runtime.global.clone(), self.target.clone(), true).await
+    pub async fn clone_sprite(&self, new_sprite_id: SpriteID) -> Result<Sprite> {
+        let sprite_runtime = self.runtime.sprite.read().await.clone_sprite_runtime();
+        Sprite::new(
+            new_sprite_id,
+            sprite_runtime,
+            self.runtime.global.clone(),
+            self.target.clone(),
+        )
+        .await
     }
 
     pub async fn rectangle(&self) -> SpriteRectangle {
