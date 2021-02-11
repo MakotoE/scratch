@@ -4,8 +4,10 @@ use crate::coordinate::canvas_const;
 use crate::file::ScratchFile;
 use crate::vm::{DebugInfo, VM};
 use conrod_core::image::Id;
+use conrod_core::position::Relative;
+use conrod_core::widget::button::Flat;
 use conrod_core::widget::{id, Button};
-use conrod_core::{Color, UiCell};
+use conrod_core::{Borderable, Color, Colorable, Labelable, UiCell};
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::math::Matrix2d;
 use graphics::{rectangle, Transformed};
@@ -25,6 +27,8 @@ widget_ids! {
     pub struct Ids {
         green_flag_button,
         stop_button,
+        pause_continue_button,
+        step_button,
     }
 }
 
@@ -67,6 +71,24 @@ impl Interface {
         if stop_flag_event.was_clicked() {
             self.vm.stop().await;
         }
+
+        Interface::button(19.0, "Pause").set(self.ids.pause_continue_button, ui_cell);
+        Interface::button(155.0, "Step").set(self.ids.step_button, ui_cell);
+    }
+
+    fn button(left: f64, label: &str) -> Button<Flat> {
+        Button::new()
+            .color(Color::Hsla(0.0, 0.0, 0.9, 1.0))
+            .hover_color(Color::Hsla(0.0, 0.0, 0.87, 1.0))
+            .press_color(Color::Hsla(0.0, 0.0, 0.83, 1.0))
+            .border(1.5)
+            .border_color(Color::Hsla(0.0, 0.0, 0.5, 1.0))
+            .top_left_with_margins(425.0, left)
+            .label(label)
+            .label_font_size(15)
+            .label_hsl(0.15, 0.15, 0.15)
+            .label_y(Relative::Scalar(1.0))
+            .w_h(120.0, 30.0)
     }
 
     pub async fn draw_2d(
