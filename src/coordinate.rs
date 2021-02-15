@@ -194,44 +194,6 @@ impl From<SpriteRectangle> for CanvasRectangle {
     }
 }
 
-#[derive(Debug, Copy, Clone, Default)]
-pub struct Transformation {
-    pub translate: CanvasCoordinate,
-    pub scale: Scale,
-}
-
-impl Transformation {
-    pub fn translate(translate: CanvasCoordinate) -> Self {
-        Self {
-            translate,
-            scale: Scale::default(),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn scale(scale: Scale) -> Self {
-        Self {
-            translate: CanvasCoordinate::default(),
-            scale,
-        }
-    }
-
-    pub fn apply_transformation(&self, other: &Transformation) -> Self {
-        Self {
-            translate: self.translate.add(&other.translate),
-            scale: self.scale.multiply(&other.scale),
-        }
-    }
-
-    pub fn apply_to_coordinate(&self, coordinate: &CanvasCoordinate) -> CanvasCoordinate {
-        coordinate.add(&self.translate).scale(&self.scale)
-    }
-
-    pub fn apply_to_rectangle(&self, rectangle: &CanvasRectangle) -> CanvasRectangle {
-        rectangle.translate(&self.translate).scale(&self.scale)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
