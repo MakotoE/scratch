@@ -21,6 +21,7 @@ pub struct Interface {
     green_flag_image: Id,
     stop_image: Id,
     vm: VM,
+    pause_state: PauseState,
 }
 
 widget_ids! {
@@ -30,6 +31,12 @@ widget_ids! {
         pause_continue_button,
         step_button,
     }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum PauseState {
+    Paused,
+    Running,
 }
 
 impl Interface {
@@ -48,6 +55,7 @@ impl Interface {
             green_flag_image,
             stop_image,
             vm,
+            pause_state: PauseState::Paused,
         })
     }
 
@@ -60,6 +68,7 @@ impl Interface {
 
         if green_flag_event.was_clicked() {
             self.vm.continue_().await;
+            self.pause_state = PauseState::Running;
         }
 
         let stop_flag_event = Button::image(self.stop_image)
@@ -72,8 +81,29 @@ impl Interface {
             self.vm.stop().await;
         }
 
-        Interface::button(19.0, "Pause").set(self.ids.pause_continue_button, ui_cell);
-        Interface::button(155.0, "Step").set(self.ids.step_button, ui_cell);
+        let pause_button_text = match self.pause_state {
+            PauseState::Paused => "Continue",
+            PauseState::Running => "Pause",
+        };
+        let pause_continue_event =
+            Interface::button(19.0, pause_button_text).set(self.ids.pause_continue_button, ui_cell);
+        if pause_continue_event.was_clicked() {
+            match self.pause_state {
+                PauseState::Paused => {
+                    self.vm.continue_().await;
+                    self.pause_state = PauseState::Paused;
+                }
+                PauseState::Running => {
+                    self.vm.pause().await;
+                    self.pause_state = PauseState::Paused;
+                }
+            }
+        }
+
+        let step_event = Interface::button(155.0, "Step").set(self.ids.step_button, ui_cell);
+        if step_event.was_clicked() {
+            self.vm.step().await;
+        }
     }
 
     fn button(left: f64, label: &str) -> Button<Flat> {

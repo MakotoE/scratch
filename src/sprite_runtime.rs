@@ -21,6 +21,7 @@ use std::io::Cursor;
 
 #[derive(Debug, Clone)]
 pub struct SpriteRuntime {
+    sprite_name: String,
     is_a_clone: bool,
     need_redraw: bool,
     position: SpriteCoordinate,
@@ -42,6 +43,7 @@ impl SpriteRuntime {
             target.size / 100.0
         };
         Self {
+            sprite_name: target.name.clone(),
             need_redraw: true,
             position: SpriteCoordinate {
                 x: target.x,
@@ -89,18 +91,27 @@ impl SpriteRuntime {
 
         self.pen.draw(context, graphics);
 
-        SpriteRuntime::draw_costume(
-            context,
-            graphics,
-            self.costumes.current_costume(),
-            &self.position,
-            &self.scale,
-            self.costume_transparency,
-        );
+        if let Some(c) = self.costumes.current_costume() {
+            SpriteRuntime::draw_costume(
+                context,
+                graphics,
+                c,
+                &self.position,
+                &self.scale,
+                self.costume_transparency,
+            );
+        }
 
         if let Some(text) = &self.text.text {
             let position: CanvasCoordinate = self.position.into();
-            let size = self.costumes.current_costume().image_size;
+            let size = if let Some(c) = self.costumes.current_costume() {
+                c.image_size
+            } else {
+                Size {
+                    width: 0.0,
+                    height: 0.0,
+                }
+            };
             context.transform = context.transform.trans(
                 position.x - 8.0 + size.width / 8.0,
                 position.y - 44.0 - size.height / 4.0,
@@ -283,13 +294,17 @@ impl SpriteRuntime {
     }
 
     pub fn rectangle(&self) -> SpriteRectangle {
+        let size = if let Some(c) = self.costumes.current_costume() {
+            c.image_size.multiply(&self.scale)
+        } else {
+            Size {
+                width: 0.0,
+                height: 0.0,
+            }
+        };
         SpriteRectangle {
             center: self.position,
-            size: self
-                .costumes
-                .current_costume()
-                .image_size
-                .multiply(&self.scale),
+            size,
         }
     }
 
@@ -323,6 +338,7 @@ impl SpriteRuntime {
 
     pub fn clone_sprite_runtime(&self) -> SpriteRuntime {
         SpriteRuntime {
+            sprite_name: self.sprite_name.clone() + "-clone",
             is_a_clone: true,
             need_redraw: true,
             position: self.position,
@@ -451,8 +467,8 @@ impl Costumes {
         Ok(())
     }
 
-    fn current_costume(&self) -> &Costume {
-        &self.costumes[self.current_costume]
+    fn current_costume(&self) -> Option<&Costume> {
+        self.costumes.get(self.current_costume)
     }
 
     pub fn set_current_costume(&mut self, current_costume: String) -> Result<()> {
