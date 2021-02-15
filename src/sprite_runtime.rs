@@ -111,8 +111,8 @@ impl SpriteRuntime {
             };
             let mut c = *context;
             c.transform = c.transform.trans(
-                position.x - 8.0 + size.width / 8.0,
-                position.y - 44.0 - size.height / 4.0,
+                position.x - 8.0 + size.width / 4.0,
+                position.y - 44.0 - size.height / 2.0,
             );
             SpriteRuntime::draw_text_bubble(text, &mut c, graphics, character_cache)?;
         }
@@ -130,8 +130,8 @@ impl SpriteRuntime {
         let mut rectangle: Rectangle = [
             position.x - costume.center.x * costume.scale * scale.x,
             position.y - costume.center.y * costume.scale * scale.y,
-            costume.image_size.width * scale.x / 2.0,
-            costume.image_size.height * scale.y / 2.0,
+            costume.image_size.width * scale.x,
+            costume.image_size.height * scale.y,
         ];
         graphics::Image {
             color: Some([1.0, 1.0, 1.0, 1.0]),
@@ -399,8 +399,8 @@ impl Costume {
 
         Ok(Self {
             image_size: Size {
-                width: width as f64 / costume.bitmap_resolution,
-                height: height as f64 / costume.bitmap_resolution,
+                width: width as f64 / costume.bitmap_resolution / 2.0,
+                height: height as f64 / costume.bitmap_resolution / 2.0,
             },
             scale: 1.0
                 / if costume.bitmap_resolution == 0.0 {
