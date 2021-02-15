@@ -69,7 +69,7 @@ fn add_error_context(id: BlockID, category: &str, error: Error) -> Error {
 }
 
 #[async_trait]
-pub trait Block: std::fmt::Debug {
+pub trait Block: std::fmt::Debug + Sync + Send {
     fn block_info(&self) -> BlockInfo;
 
     fn block_inputs(&self) -> BlockInputsPartial;
