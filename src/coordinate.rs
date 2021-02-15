@@ -1,3 +1,5 @@
+use graphics::types::Rectangle;
+
 /// Center = 0, 0
 /// Left = -240, right = +240
 /// Top = +180, bottom = -180
@@ -156,41 +158,10 @@ impl SpriteRectangle {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct CanvasRectangle {
-    pub top_left: CanvasCoordinate,
-    pub size: Size,
-}
-
-impl CanvasRectangle {
-    pub fn translate(&self, coordinate: &CanvasCoordinate) -> CanvasRectangle {
-        CanvasRectangle {
-            top_left: self.top_left.add(coordinate),
-            size: self.size,
-        }
-    }
-
-    pub fn scale(&self, scale: &Scale) -> CanvasRectangle {
-        CanvasRectangle {
-            top_left: self.top_left,
-            size: self.size.multiply(scale),
-        }
-    }
-
-    pub fn contains(&self, coordinate: &CanvasCoordinate) -> bool {
-        coordinate.x >= self.top_left.x
-            && coordinate.y >= self.top_left.y
-            && coordinate.x <= self.top_left.x + self.size.width
-            && coordinate.y <= self.top_left.y + self.size.height
-    }
-}
-
-impl From<SpriteRectangle> for CanvasRectangle {
-    fn from(s: SpriteRectangle) -> Self {
-        Self {
-            top_left: s.top_left().into(),
-            size: s.size,
-        }
+impl Into<Rectangle> for SpriteRectangle {
+    fn into(self) -> Rectangle {
+        let top_left: CanvasCoordinate = self.top_left().into();
+        [top_left.x, top_left.y, self.size.width, self.size.height]
     }
 }
 

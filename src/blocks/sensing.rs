@@ -1,8 +1,9 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
-use crate::coordinate::{canvas_const, CanvasRectangle};
+use crate::coordinate::{canvas_const, CanvasCoordinate};
 use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
+use graphics::types::Rectangle;
 use ndarray::{Array2, Zip};
 use palette::{Alpha, Blend, Hsv, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
@@ -360,11 +361,18 @@ impl TouchingObject {
         }
     }
 
-    fn sprite_on_edge(rectangle: &CanvasRectangle) -> bool {
-        rectangle.top_left.x < 0.0
-            || rectangle.top_left.y < 0.0
-            || rectangle.top_left.x + rectangle.size.width > canvas_const::X_MAX
-            || rectangle.top_left.y + rectangle.size.height > canvas_const::Y_MAX
+    fn sprite_on_edge(rectangle: &Rectangle) -> bool {
+        rectangle[0] < 0.0
+            || rectangle[1] < 0.0
+            || rectangle[0] + rectangle[2] > canvas_const::X_MAX
+            || rectangle[1] + rectangle[3] > canvas_const::Y_MAX
+    }
+
+    fn rectangle_contains(rectangle: &Rectangle, coordinate: &CanvasCoordinate) -> bool {
+        coordinate.x >= rectangle[0]
+            && coordinate.y >= rectangle[1]
+            && coordinate.x <= rectangle[0] + rectangle[2]
+            && coordinate.y <= rectangle[1] + rectangle[3]
     }
 }
 
@@ -405,11 +413,11 @@ impl Block for TouchingObject {
                     .broadcaster
                     .send(BroadcastMsg::RequestMousePosition)?;
 
-                let canvas_rectangle: CanvasRectangle = sprite_rectangle.into();
+                let canvas_rectangle: Rectangle = sprite_rectangle.into();
                 let mut channel = self.runtime.global.broadcaster.subscribe();
                 loop {
                     if let BroadcastMsg::MousePosition(position) = channel.recv().await? {
-                        break canvas_rectangle.contains(&position);
+                        break TouchingObject::rectangle_contains(&canvas_rectangle, &position);
                     }
                 }
             }

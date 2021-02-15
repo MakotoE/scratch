@@ -1,13 +1,13 @@
 use super::*;
+use crate::coordinate::Scale;
 use crate::coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle};
-use crate::coordinate::{CanvasRectangle, Scale};
 use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
 use flo_curves::{bezier, BezierCurve, Coord2};
 use gfx_device_gl::Resources;
 use gfx_texture::{Texture, TextureSettings};
 use graphics::character::CharacterCache;
-use graphics::types::FontSize;
+use graphics::types::{FontSize, Rectangle};
 use graphics::Transformed;
 use graphics::{line, CircleArc, Context};
 use image::codecs::png::PngDecoder;
@@ -93,7 +93,7 @@ impl SpriteRuntime {
                 context,
                 graphics,
                 c,
-                &self.position,
+                &self.position.into(),
                 &self.scale,
                 self.costume_transparency,
             );
@@ -123,28 +123,20 @@ impl SpriteRuntime {
         context: &mut Context,
         graphics: &mut G2d,
         costume: &Costume,
-        position: &SpriteCoordinate,
+        position: &CanvasCoordinate,
         scale: &Scale,
         alpha: f64,
     ) {
-        let mut rectangle = CanvasRectangle {
-            top_left: CanvasCoordinate::from(*position).add(&CanvasCoordinate {
-                x: -costume.center.x * costume.scale * scale.x,
-                y: -costume.center.y * costume.scale * scale.y,
-            }),
-            size: costume.image_size.multiply(scale),
-        };
-        rectangle.size.width /= 2.0;
-        rectangle.size.height /= 2.0;
+        let mut rectangle: Rectangle = [
+            position.x - costume.center.x * costume.scale * scale.x,
+            position.y - costume.center.y * costume.scale * scale.y,
+            costume.image_size.width * scale.x / 2.0,
+            costume.image_size.height * scale.y / 2.0,
+        ];
         graphics::Image {
             color: Some([1.0, 1.0, 1.0, 1.0]),
             source_rectangle: None,
-            rectangle: Some([
-                rectangle.top_left.x,
-                rectangle.top_left.y,
-                rectangle.size.width,
-                rectangle.size.height,
-            ]),
+            rectangle: Some(rectangle),
         }
         .draw(
             &costume.texture,
