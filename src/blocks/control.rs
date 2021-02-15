@@ -458,7 +458,6 @@ impl Block for WaitUntil {
                 return Next::continue_(self.next);
             }
         }
-        unreachable!()
     }
 }
 

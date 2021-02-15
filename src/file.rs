@@ -244,17 +244,16 @@ pub enum Image {
 
 impl Debug for Image {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut vec_len = 0usize;
-        match self {
+        let mut vec_len = match self {
             Image::SVG(v) => {
-                vec_len = v.len();
                 write!(f, "SVG(")?;
+                v.len()
             }
             Image::PNG(v) => {
-                vec_len = v.len();
                 write!(f, "PNG(")?;
+                v.len()
             }
-        }
+        };
 
         if vec_len > 0 {
             write!(f, "[...]")?;
