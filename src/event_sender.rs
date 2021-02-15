@@ -10,32 +10,37 @@ use strum::EnumString;
 #[derive(Debug)]
 pub struct EventSender {
     broadcaster: Broadcaster,
-    data: Rc<RefCell<Data>>,
+    data: Arc<RwLock<Data>>,
+    msg_loop: JoinHandle<()>,
 }
 
 impl EventSender {
     pub fn new(broadcaster: Broadcaster) -> Self {
-        let data = Rc::new(RefCell::new(Data {
+        let data = Arc::new(RwLock::new(Data {
             mouse_position: CanvasCoordinate::default(),
             pressed_keys: HashSet::with_capacity(1),
         }));
-        // spawn({
-        //     let data = data.clone();
-        //     let broadcaster = broadcaster.clone();
-        //     async move {
-        //         if let Err(e) = EventSender::msg_loop(data, broadcaster).await {
-        //             log::error!("{}", e);
-        //         }
-        //     }
-        // });
-        Self { broadcaster, data }
+        let msg_loop = spawn({
+            let data = data.clone();
+            let broadcaster = broadcaster.clone();
+            async move {
+                if let Err(e) = EventSender::msg_loop(data, broadcaster).await {
+                    log::error!("{}", e);
+                }
+            }
+        });
+        Self {
+            broadcaster,
+            data,
+            msg_loop,
+        }
     }
 
-    async fn msg_loop(data: Rc<RefCell<Data>>, broadcaster: Broadcaster) -> Result<()> {
+    async fn msg_loop(data: Arc<RwLock<Data>>, broadcaster: Broadcaster) -> Result<()> {
         let mut receiver = broadcaster.subscribe();
         loop {
             let msg = receiver.recv().await?;
-            if let Some(m) = data.borrow().respond(msg) {
+            if let Some(m) = data.read().await.respond(msg) {
                 broadcaster.send(m)?;
             }
         }
@@ -45,16 +50,16 @@ impl EventSender {
         self.broadcaster.send(BroadcastMsg::MouseClick(coordinate))
     }
 
-    pub fn mouse_move(&mut self, coordinate: CanvasCoordinate) {
-        self.data.borrow_mut().mouse_position = coordinate;
+    pub async fn mouse_move(&mut self, coordinate: CanvasCoordinate) {
+        self.data.write().await.mouse_position = coordinate;
     }
 
-    pub fn key_down(&mut self, key: KeyboardKey) {
-        self.data.borrow_mut().pressed_keys.insert(key);
+    pub async fn key_down(&mut self, key: KeyboardKey) {
+        self.data.write().await.pressed_keys.insert(key);
     }
 
-    pub fn key_up(&mut self, key: &KeyboardKey) {
-        self.data.borrow_mut().pressed_keys.remove(key);
+    pub async fn key_up(&mut self, key: &KeyboardKey) {
+        self.data.write().await.pressed_keys.remove(key);
     }
 }
 
