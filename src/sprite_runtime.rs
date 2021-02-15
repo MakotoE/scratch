@@ -19,7 +19,7 @@ use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::f64::consts::TAU;
 use std::io::Cursor;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SpriteRuntime {
     sprite_name: String,
     is_a_clone: bool,

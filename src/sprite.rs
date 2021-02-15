@@ -28,9 +28,11 @@ impl Sprite {
     ) -> Result<Self> {
         let mut threads: Vec<RwLock<Thread>> = Vec::new();
 
+        let sprite_runtime_ref = Arc::new(RwLock::new(sprite_runtime));
+
         for hat_id in find_hats(&target.blocks) {
             let runtime = Runtime::new(
-                Arc::new(RwLock::new(sprite_runtime.clone())),
+                sprite_runtime_ref.clone(),
                 global.clone(),
                 ThreadID {
                     sprite_id,
@@ -45,7 +47,7 @@ impl Sprite {
         Ok(Self {
             threads,
             runtime: Runtime::new(
-                Arc::new(RwLock::new(sprite_runtime)),
+                sprite_runtime_ref,
                 global.clone(),
                 ThreadID {
                     sprite_id,
