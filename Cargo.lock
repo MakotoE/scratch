@@ -2135,6 +2135,7 @@ dependencies = [
  "piston2d-gfx_graphics",
  "piston2d-graphics",
  "piston_window",
+ "pistoncore-input",
  "rand 0.8.0",
  "resvg",
  "rstest",

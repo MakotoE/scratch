@@ -14,13 +14,13 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-pub async fn app(file_path: &Path) -> Result<()> {
-    const PAGE_SIZE: Size = Size {
-        width: 520.0,
-        height: 480.0,
-    };
+pub const WINDOW_SIZE: Size = Size {
+    width: 520.0,
+    height: 480.0,
+};
 
-    let mut window: PistonWindow = WindowSettings::new("Scratch", PAGE_SIZE)
+pub async fn app(file_path: &Path) -> Result<()> {
+    let mut window: PistonWindow = WindowSettings::new("Scratch", WINDOW_SIZE)
         .graphics_api(OpenGL::V3_2)
         .samples(8)
         .vsync(true)
@@ -28,7 +28,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
         .build()
         .unwrap();
 
-    let mut ui = conrod_core::UiBuilder::new([PAGE_SIZE.width, PAGE_SIZE.height])
+    let mut ui = conrod_core::UiBuilder::new([WINDOW_SIZE.width, WINDOW_SIZE.height])
         .theme(Theme::default())
         .build();
 
@@ -40,15 +40,15 @@ pub async fn app(file_path: &Path) -> Result<()> {
 
     let mut text_texture_cache = G2dTexture::from_memory_alpha(
         &mut texture_context,
-        &[128; (PAGE_SIZE.width * PAGE_SIZE.height) as usize],
-        PAGE_SIZE.width as u32,
-        PAGE_SIZE.height as u32,
+        &[128; (WINDOW_SIZE.width * WINDOW_SIZE.height) as usize],
+        WINDOW_SIZE.width as u32,
+        WINDOW_SIZE.height as u32,
         &TextureSettings::new(),
     )
     .unwrap();
 
     let mut glyph_cache = GlyphCache::builder()
-        .dimensions(PAGE_SIZE.width as u32, PAGE_SIZE.height as u32)
+        .dimensions(WINDOW_SIZE.width as u32, WINDOW_SIZE.height as u32)
         .scale_tolerance(0.1)
         .position_tolerance(0.1)
         .build();
@@ -87,60 +87,68 @@ pub async fn app(file_path: &Path) -> Result<()> {
             ui.handle_event(e);
         }
 
-        if let Event::Loop(Loop::Update(_)) = event {
-            let mut ui_cell = ui.set_widgets();
-            interface.widgets(&mut ui_cell).await;
-        }
+        match event {
+            Event::Loop(Loop::Update(_)) => {
+                let mut ui_cell = ui.set_widgets();
+                interface.widgets(&mut ui_cell).await;
+            }
+            Event::Input(input, _) => {
+                interface.input(input).await?;
+            }
+            event => {
+                if let Some(args) = event.render_args() {
+                    window.window.make_current();
 
-        if let Some(args) = event.render_args() {
-            window.window.make_current();
+                    let device = &mut window.device;
+                    let mut graphics = GfxGraphics::new(
+                        &mut window.encoder,
+                        &window.output_color,
+                        &window.output_stencil,
+                        &mut window.g2d,
+                    );
+                    let mut context = Context::new_viewport(args.viewport());
 
-            let device = &mut window.device;
-            let mut graphics = GfxGraphics::new(
-                &mut window.encoder,
-                &window.output_color,
-                &window.output_stencil,
-                &mut window.g2d,
-            );
-            let mut context = Context::new_viewport(args.viewport());
+                    let cache_queued_glyphs =
+                        |_: &mut G2d,
+                         cache: &mut G2dTexture,
+                         rect: conrod_core::text::rt::Rect<u32>,
+                         data: &[u8]| {
+                            text_vertex_data.clear();
+                            text_vertex_data
+                                .extend(data.iter().flat_map(|&b| vec![255, 255, 255, b]));
+                            UpdateTexture::update(
+                                cache,
+                                &mut texture_context,
+                                piston_window::texture::Format::Rgba8,
+                                &text_vertex_data[..],
+                                [rect.min.x, rect.min.y],
+                                [rect.width(), rect.height()],
+                            )
+                            .unwrap()
+                        };
 
-            let cache_queued_glyphs = |_: &mut G2d,
-                                       cache: &mut G2dTexture,
-                                       rect: conrod_core::text::rt::Rect<u32>,
-                                       data: &[u8]| {
-                text_vertex_data.clear();
-                text_vertex_data.extend(data.iter().flat_map(|&b| vec![255, 255, 255, b]));
-                UpdateTexture::update(
-                    cache,
-                    &mut texture_context,
-                    piston_window::texture::Format::Rgba8,
-                    &text_vertex_data[..],
-                    [rect.min.x, rect.min.y],
-                    [rect.width(), rect.height()],
-                )
-                .unwrap()
-            };
+                    interface
+                        .draw_2d(&mut context, &mut graphics, &mut character_cache)
+                        .await
+                        .unwrap();
 
-            interface
-                .draw_2d(&mut context, &mut graphics, &mut character_cache)
-                .await
-                .unwrap();
+                    conrod_piston::draw::primitives(
+                        ui.draw(),
+                        context,
+                        &mut graphics,
+                        &mut text_texture_cache,
+                        &mut glyph_cache,
+                        &image_map,
+                        cache_queued_glyphs,
+                        |img| img,
+                    );
 
-            conrod_piston::draw::primitives(
-                ui.draw(),
-                context,
-                &mut graphics,
-                &mut text_texture_cache,
-                &mut glyph_cache,
-                &image_map,
-                cache_queued_glyphs,
-                |img| img,
-            );
-
-            // Might need to call graphics.flush_colored()
-            window.encoder.flush(device);
-            texture_context.encoder.flush(device);
-            character_cache.factory.encoder.flush(device);
+                    // Might need to call graphics.flush_colored()
+                    window.encoder.flush(device);
+                    texture_context.encoder.flush(device);
+                    character_cache.factory.encoder.flush(device);
+                }
+            }
         }
     }
 

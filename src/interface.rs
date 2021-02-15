@@ -1,6 +1,7 @@
 use super::*;
-use crate::broadcaster::Broadcaster;
-use crate::coordinate::canvas_const;
+use crate::app::WINDOW_SIZE;
+use crate::broadcaster::{BroadcastMsg, Broadcaster};
+use crate::coordinate::{canvas_const, CanvasCoordinate};
 use crate::file::ScratchFile;
 use crate::vm::VM;
 use conrod_core::image::Id;
@@ -11,7 +12,8 @@ use conrod_core::{Borderable, Color, Colorable, Labelable, UiCell};
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::Context;
 use graphics::{rectangle, Transformed};
-use piston_window::{G2d, G2dTextureContext, Glyphs};
+use input::{mouse, Motion};
+use piston_window::{G2d, G2dTextureContext, Glyphs, Input};
 
 pub struct Interface {
     ids: Ids,
@@ -19,6 +21,8 @@ pub struct Interface {
     stop_image: Id,
     vm: VM,
     pause_state: PauseState,
+    broadcaster: Broadcaster,
+    mouse_position: CanvasCoordinate,
 }
 
 widget_ids! {
@@ -45,13 +49,15 @@ impl Interface {
         stop_image: Id,
     ) -> Result<Self> {
         let broadcaster = Broadcaster::new();
-        let vm = VM::new(texture_context, scratch_file, broadcaster).await?;
+        let vm = VM::new(texture_context, scratch_file, broadcaster.clone()).await?;
         Ok(Self {
             ids,
             green_flag_image,
             stop_image,
             vm,
             pause_state: PauseState::Paused,
+            broadcaster,
+            mouse_position: CanvasCoordinate::default(),
         })
     }
 
@@ -143,7 +149,34 @@ impl Interface {
         draw_border(context, graphics);
         Ok(())
     }
+
+    pub async fn input(&mut self, input: Input) -> Result<()> {
+        match input {
+            Input::Button(button) => match button.button {
+                input::Button::Keyboard(_) => {}
+                input::Button::Mouse(mouse) => {
+                    if matches!(mouse, mouse::MouseButton::Left) {
+                        self.broadcaster
+                            .send(BroadcastMsg::MouseClick(self.mouse_position))?;
+                    }
+                }
+                _ => {}
+            },
+            Input::Move(motion) => {
+                if let Motion::MouseCursor(position) = motion {
+                    self.mouse_position = CanvasCoordinate {
+                        x: position[0] - CANVAS_TOP_LEFT.x,
+                        y: position[1] - CANVAS_TOP_LEFT.y,
+                    };
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
 }
+
+const CANVAS_TOP_LEFT: CanvasCoordinate = CanvasCoordinate { x: 20.0, y: 50.0 };
 
 fn draw_border(context: &mut Context, graphics: &mut G2d) {
     let rectangle = rectangle::Rectangle {
@@ -153,32 +186,48 @@ fn draw_border(context: &mut Context, graphics: &mut G2d) {
     };
     // Top
     rectangle.draw(
-        [0.0, 0.0, 520.0, 50.0],
+        [0.0, 0.0, WINDOW_SIZE.width, CANVAS_TOP_LEFT.y],
         &context.draw_state,
         context.transform,
         graphics,
     );
     // Bottom
     rectangle.draw(
-        [0.0, 410.0, 520.0, 480.0],
+        [
+            0.0,
+            CANVAS_TOP_LEFT.y + canvas_const::Y_MAX,
+            WINDOW_SIZE.width,
+            canvas_const::X_MAX,
+        ],
         &context.draw_state,
         context.transform,
         graphics,
     );
     // Left
     rectangle.draw(
-        [0.0, 50.0, 20.0, 410.0],
+        [
+            0.0,
+            CANVAS_TOP_LEFT.y,
+            CANVAS_TOP_LEFT.x,
+            CANVAS_TOP_LEFT.y + canvas_const::Y_MAX,
+        ],
         &context.draw_state,
         context.transform,
         graphics,
     );
     // Right
     rectangle.draw(
-        [500.0, 50.0, 480.0, 410.0],
+        [
+            CANVAS_TOP_LEFT.x + canvas_const::X_MAX,
+            CANVAS_TOP_LEFT.y,
+            WINDOW_SIZE.width,
+            CANVAS_TOP_LEFT.y + canvas_const::Y_MAX,
+        ],
         &context.draw_state,
         context.transform,
         graphics,
     );
+    // Inner border
     rectangle::Rectangle {
         color: [0.0, 0.0, 0.0, 0.0],
         shape: rectangle::Shape::Square,
@@ -188,7 +237,12 @@ fn draw_border(context: &mut Context, graphics: &mut G2d) {
         }),
     }
     .draw(
-        [20.0, 50.0, canvas_const::X_MAX, canvas_const::Y_MAX],
+        [
+            CANVAS_TOP_LEFT.x,
+            CANVAS_TOP_LEFT.y,
+            canvas_const::X_MAX,
+            canvas_const::Y_MAX,
+        ],
         &context.draw_state,
         context.transform,
         graphics,
