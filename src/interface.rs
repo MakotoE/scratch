@@ -2,21 +2,18 @@ use super::*;
 use crate::broadcaster::Broadcaster;
 use crate::coordinate::canvas_const;
 use crate::file::ScratchFile;
-use crate::vm::{DebugInfo, VM};
+use crate::vm::VM;
 use conrod_core::image::Id;
 use conrod_core::position::Relative;
 use conrod_core::widget::button::Flat;
-use conrod_core::widget::{id, Button};
+use conrod_core::widget::Button;
 use conrod_core::{Borderable, Color, Colorable, Labelable, UiCell};
 use conrod_core::{Positionable, Sizeable, Widget};
-use graphics::math::Matrix2d;
+use graphics::Context;
 use graphics::{rectangle, Transformed};
-use graphics::{Context, DrawState};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
-use tokio::sync::mpsc;
 
 pub struct Interface {
-    scratch_file: ScratchFile,
     ids: Ids,
     green_flag_image: Id,
     stop_image: Id,
@@ -48,9 +45,8 @@ impl Interface {
         stop_image: Id,
     ) -> Result<Self> {
         let broadcaster = Broadcaster::new();
-        let vm = VM::new(texture_context, scratch_file.clone(), broadcaster).await?;
+        let vm = VM::new(texture_context, scratch_file, broadcaster).await?;
         Ok(Self {
-            scratch_file,
             ids,
             green_flag_image,
             stop_image,

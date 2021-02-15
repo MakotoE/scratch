@@ -2,22 +2,17 @@ use super::*;
 use crate::file::ScratchFile;
 use crate::interface::Interface;
 use conrod_core::text::GlyphCache;
-use conrod_core::widget::{Canvas, FileNavigator};
-use conrod_core::{Borderable, Colorable, Positionable, Sizeable, Theme, Widget};
+use conrod_core::{Positionable, Theme};
 use gfx_graphics::GfxGraphics;
-use graphics::math::Matrix2d;
-use graphics::rectangle::Shape;
-use graphics::{Context, DrawState, Rectangle};
+use graphics::Context;
 use piston_window::texture::UpdateTexture;
 use piston_window::{
     Event, G2d, G2dTexture, G2dTextureContext, Loop, OpenGL, OpenGLWindow, PistonWindow,
-    RenderEvent, Size, Texture, TextureSettings, UpdateEvent, Window, WindowSettings,
+    RenderEvent, Size, Texture, TextureSettings, Window, WindowSettings,
 };
 use std::fs::File;
-use std::future::Future;
 use std::io::BufReader;
 use std::path::Path;
-use tokio::task::spawn_blocking;
 
 pub async fn app(file_path: &Path) -> Result<()> {
     const PAGE_SIZE: Size = Size {

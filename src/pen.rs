@@ -1,8 +1,7 @@
-use crate::blocks::value::HsvDisplay;
 use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::pen::PenStatus::PenUp;
 use graphics::{line, Context};
-use palette::{IntoColor, LinSrgb, Srgb};
+use palette::{IntoColor, LinSrgb};
 use piston_window::G2d;
 
 #[derive(Debug, Clone)]

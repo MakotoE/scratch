@@ -257,8 +257,6 @@ pub fn block_tree(
     Ok((id, result))
 }
 
-const MILLIS_PER_SECOND: f64 = 1000.0;
-
 #[derive(Debug)]
 pub struct EmptyInput {}
 

@@ -1,14 +1,13 @@
 use super::*;
 use crate::blocks::value::Value;
 use crate::broadcaster::Broadcaster;
-use crate::coordinate::{CanvasCoordinate, CanvasRectangle, Size, Transformation};
+use crate::coordinate::CanvasCoordinate;
 use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
 use crate::vm::ThreadID;
 use graphics::character::CharacterCache;
-use graphics::math::Matrix2d;
 use graphics::types::FontSize;
-use graphics::{rectangle, text, DrawState};
+use graphics::{rectangle, text};
 use graphics::{Context, Transformed};
 use piston_window::{G2d, Glyphs};
 

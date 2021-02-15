@@ -1,7 +1,5 @@
 use super::*;
-use crate::coordinate::{
-    CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle, Transformation,
-};
+use crate::coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle};
 use crate::coordinate::{CanvasRectangle, Scale};
 use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
@@ -9,12 +7,11 @@ use flo_curves::{bezier, BezierCurve, Coord2};
 use gfx_device_gl::Resources;
 use gfx_texture::{Texture, TextureSettings};
 use graphics::character::CharacterCache;
-use graphics::math::Matrix2d;
 use graphics::types::FontSize;
 use graphics::Transformed;
-use graphics::{line, CircleArc, Context, DrawState};
-use image::png::PngDecoder;
-use image::{DynamicImage, ImageBuffer, ImageDecoder, RgbaImage};
+use graphics::{line, CircleArc, Context};
+use image::codecs::png::PngDecoder;
+use image::{DynamicImage, ImageBuffer, ImageDecoder};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::f64::consts::TAU;
 use std::io::Cursor;
