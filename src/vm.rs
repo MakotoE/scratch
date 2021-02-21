@@ -48,18 +48,14 @@ impl VM {
         ));
 
         let vm_task = spawn({
-            let control_receiver = ControlReceiverCell::new(control_receiver);
+            let control_receiver = RwLock::new(control_receiver);
             let broadcaster = broadcaster.clone();
             let sprites_cell = sprites_cell.clone();
 
             async move {
                 loop {
-                    if let Err(e) = VM::run(
-                        sprites_cell.clone(),
-                        &control_receiver,
-                        &BroadcastCell::new(broadcaster.clone()),
-                    )
-                    .await
+                    if let Err(e) =
+                        VM::run(sprites_cell.clone(), &control_receiver, &broadcaster).await
                     {
                         log::error!("{}", e);
                         std::process::exit(1);
@@ -100,15 +96,19 @@ impl VM {
 
     async fn run(
         sprites: Arc<SpritesCell>,
-        control_chan: &ControlReceiverCell,
-        broadcaster: &BroadcastCell,
+        control_chan: &RwLock<mpsc::Receiver<Control>>,
+        broadcaster: &Broadcaster,
     ) -> Result<()> {
         let mut futures: FuturesUnordered<BoxFuture<Event>> = FuturesUnordered::new();
-        futures.push(Box::pin(control_chan.recv()));
-        futures.push(Box::pin(broadcaster.recv().map(|result| match result {
-            Ok(m) => Event::BroadcastMsg(m),
-            Err(e) => Event::Err(Error::msg(e)),
-        })));
+        futures.push(Box::pin(async {
+            Event::Control(control_chan.write().await.recv().await)
+        }));
+        futures.push(Box::pin(async {
+            match broadcaster.subscribe().recv().await {
+                Ok(m) => Event::BroadcastMsg(m),
+                Err(e) => Event::Err(Error::msg(e)),
+            }
+        }));
 
         let mut paused_threads: Vec<ThreadID> = Vec::new();
         for thread_id in sprites.all_thread_ids().await {
@@ -157,7 +157,9 @@ impl VM {
                             Control::Pause => {}
                         }
                     }
-                    futures.push(Box::pin(control_chan.recv()));
+                    futures.push(Box::pin(async {
+                        Event::Control(control_chan.write().await.recv().await)
+                    }));
                 }
                 Event::BroadcastMsg(msg) => {
                     log::info!("broadcast: {:?}", &msg);
@@ -222,10 +224,12 @@ impl VM {
                         }
                         _ => {}
                     }
-                    futures.push(Box::pin(broadcaster.recv().map(|result| match result {
-                        Ok(m) => Event::BroadcastMsg(m),
-                        Err(e) => Event::Err(Error::msg(e)),
-                    })));
+                    futures.push(Box::pin(async {
+                        match broadcaster.subscribe().recv().await {
+                            Ok(m) => Event::BroadcastMsg(m),
+                            Err(e) => Event::Err(Error::msg(e)),
+                        }
+                    }));
                 }
             };
         }
@@ -282,24 +286,6 @@ pub struct ThreadID {
     pub thread_id: usize,
 }
 
-/// Resolves a lifetime issue with Receiver and FuturesUnordered.
-#[derive(Debug)]
-struct ControlReceiverCell {
-    receiver: RwLock<mpsc::Receiver<Control>>,
-}
-
-impl ControlReceiverCell {
-    fn new(receiver: mpsc::Receiver<Control>) -> Self {
-        Self {
-            receiver: RwLock::new(receiver),
-        }
-    }
-
-    async fn recv(&self) -> Event {
-        Event::Control(self.receiver.write().await.recv().await)
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 pub struct DebugInfo {
     pub thread_id: ThreadID,
@@ -316,29 +302,6 @@ impl Display for DebugInfo {
             self.block_info.name,
             self.block_info.id
         )
-    }
-}
-
-#[derive(Debug)]
-pub struct BroadcastCell {
-    broadcaster: Broadcaster,
-    receiver: RwLock<broadcast::Receiver<BroadcastMsg>>,
-}
-
-impl BroadcastCell {
-    pub fn new(broadcaster: Broadcaster) -> Self {
-        Self {
-            receiver: RwLock::new(broadcaster.subscribe()),
-            broadcaster,
-        }
-    }
-
-    pub async fn recv(&self) -> Result<BroadcastMsg> {
-        Ok(self.receiver.write().await.recv().await?)
-    }
-
-    pub fn send(&self, msg: BroadcastMsg) -> Result<()> {
-        self.broadcaster.send(msg)
     }
 }
 

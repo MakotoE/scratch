@@ -2,7 +2,6 @@ use super::*;
 use crate::broadcaster::{BroadcastMsg, Broadcaster};
 use crate::coordinate::CanvasCoordinate;
 use crate::interface::CANVAS_TOP_LEFT;
-use crate::vm::BroadcastCell;
 use futures::future::BoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
@@ -114,10 +113,4 @@ impl EventSender {
         }
         Ok(())
     }
-}
-
-enum FutureType {
-    Broadcaster(BroadcastMsg),
-    Input(Input),
-    Err(Error),
 }
