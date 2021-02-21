@@ -11,6 +11,7 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use strum::EnumString;
+use tokio::select;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -47,73 +48,52 @@ impl EventSender {
         broadcaster: Broadcaster,
         mouse_position: Arc<RwLock<CanvasCoordinate>>,
     ) -> Result<()> {
-        let input_receiver_lock = RwLock::new(input_receiver);
-        let mut futures: FuturesUnordered<BoxFuture<FutureType>> = FuturesUnordered::new();
-        futures.push(Box::pin(async {
-            match broadcaster.subscribe().recv().await {
-                Ok(m) => FutureType::Broadcaster(m),
-                Err(e) => FutureType::Err(e.into()),
-            }
-        }));
-        futures.push(Box::pin(async {
-            match input_receiver_lock.write().await.recv().await {
-                Some(i) => FutureType::Input(i),
-                None => FutureType::Err(Error::msg("input_receiver closed")),
-            }
-        }));
+        let mut broadcaster_receiver = broadcaster.subscribe();
         let mut pressed_keys: HashSet<Key> = HashSet::new();
-
         loop {
-            match futures.next().await.unwrap() {
-                FutureType::Err(e) => return Err(e),
-                FutureType::Broadcaster(msg) => {
-                    match msg {
-                        BroadcastMsg::RequestMousePosition => {
-                            broadcaster
-                                .send(BroadcastMsg::MousePosition(*mouse_position.read().await))?;
-                        }
-                        BroadcastMsg::RequestPressedKeys => {
-                            broadcaster.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
-                        }
-                        _ => {}
-                    }
-                    futures.push(Box::pin(async {
-                        match broadcaster.subscribe().recv().await {
-                            Ok(m) => FutureType::Broadcaster(m),
-                            Err(e) => FutureType::Err(e.into()),
-                        }
-                    }));
-                }
-                FutureType::Input(input) => {
-                    match input {
-                        Input::Button(button) => match button.button {
-                            input::Button::Keyboard(key) => match button.state {
-                                ButtonState::Press => {
-                                    pressed_keys.insert(key);
-                                }
-                                ButtonState::Release => {
-                                    pressed_keys.remove(&key);
-                                }
-                            },
-                            input::Button::Mouse(mouse) => {
-                                if matches!(mouse, MouseButton::Left)
-                                    && matches!(button.state, ButtonState::Press)
-                                {
-                                    broadcaster.send(BroadcastMsg::MouseClick(
-                                        *mouse_position.read().await,
-                                    ))?;
-                                }
+            select! {
+                m = broadcaster_receiver.recv() => match m {
+                    Ok(msg) => {
+                        match msg {
+                            BroadcastMsg::RequestMousePosition => {
+                                broadcaster
+                                    .send(BroadcastMsg::MousePosition(*mouse_position.read().await))?;
+                            }
+                            BroadcastMsg::RequestPressedKeys => {
+                                broadcaster.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
                             }
                             _ => {}
-                        },
-                        _ => {}
-                    }
-                    futures.push(Box::pin(async {
-                        match input_receiver_lock.write().await.recv().await {
-                            Some(i) => FutureType::Input(i),
-                            None => FutureType::Err(Error::msg("input_receiver closed")),
                         }
-                    }));
+                    }
+                    Err(e) => return Err(e.into()),
+                },
+                i = input_receiver.recv() => match i {
+                    Some(input) => {
+                        match input {
+                            Input::Button(button) => match button.button {
+                                input::Button::Keyboard(key) => match button.state {
+                                    ButtonState::Press => {
+                                        pressed_keys.insert(key);
+                                    }
+                                    ButtonState::Release => {
+                                        pressed_keys.remove(&key);
+                                    }
+                                },
+                                input::Button::Mouse(mouse) => {
+                                    if matches!(mouse, MouseButton::Left)
+                                        && matches!(button.state, ButtonState::Press)
+                                    {
+                                        broadcaster.send(BroadcastMsg::MouseClick(
+                                            *mouse_position.read().await,
+                                        ))?;
+                                    }
+                                }
+                                _ => {}
+                            },
+                            _ => {}
+                        }
+                    }
+                    None => return Err(Error::msg("input_receiver closed")),
                 }
             }
         }
