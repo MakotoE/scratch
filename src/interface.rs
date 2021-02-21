@@ -2,6 +2,7 @@ use super::*;
 use crate::app::WINDOW_SIZE;
 use crate::broadcaster::{BroadcastMsg, Broadcaster};
 use crate::coordinate::{canvas_const, CanvasCoordinate};
+use crate::event_sender::EventSender;
 use crate::file::ScratchFile;
 use crate::vm::VM;
 use conrod_core::image::Id;
@@ -21,8 +22,7 @@ pub struct Interface {
     stop_image: Id,
     vm: VM,
     pause_state: PauseState,
-    broadcaster: Broadcaster,
-    mouse_position: CanvasCoordinate,
+    event_sender: EventSender,
 }
 
 widget_ids! {
@@ -56,8 +56,7 @@ impl Interface {
             stop_image,
             vm,
             pause_state: PauseState::Paused,
-            broadcaster,
-            mouse_position: CanvasCoordinate::default(),
+            event_sender: EventSender::new(broadcaster),
         })
     }
 
@@ -151,32 +150,11 @@ impl Interface {
     }
 
     pub async fn input(&mut self, input: Input) -> Result<()> {
-        match input {
-            Input::Button(button) => match button.button {
-                input::Button::Keyboard(_) => {}
-                input::Button::Mouse(mouse) => {
-                    if matches!(mouse, mouse::MouseButton::Left) {
-                        self.broadcaster
-                            .send(BroadcastMsg::MouseClick(self.mouse_position))?;
-                    }
-                }
-                _ => {}
-            },
-            Input::Move(motion) => {
-                if let Motion::MouseCursor(position) = motion {
-                    self.mouse_position = CanvasCoordinate {
-                        x: position[0] - CANVAS_TOP_LEFT.x,
-                        y: position[1] - CANVAS_TOP_LEFT.y,
-                    };
-                }
-            }
-            _ => {}
-        }
-        Ok(())
+        self.event_sender.input(input).await
     }
 }
 
-const CANVAS_TOP_LEFT: CanvasCoordinate = CanvasCoordinate { x: 20.0, y: 50.0 };
+pub const CANVAS_TOP_LEFT: CanvasCoordinate = CanvasCoordinate { x: 20.0, y: 50.0 };
 
 fn draw_border(context: &mut Context, graphics: &mut G2d) {
     let rectangle = rectangle::Rectangle {

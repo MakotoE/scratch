@@ -109,11 +109,13 @@ impl SpriteRuntime {
                     height: 0.0,
                 }
             };
-            let mut c = *context;
-            c.transform = c.transform.trans(
-                position.x - 8.0 + size.width / 4.0,
-                position.y - 44.0 - size.height / 2.0,
-            );
+            let mut c = Context {
+                transform: context.transform.trans(
+                    position.x - 8.0 + size.width / 4.0,
+                    position.y - 44.0 - size.height / 2.0,
+                ),
+                ..*context
+            };
             SpriteRuntime::draw_text_bubble(text, &mut c, graphics, character_cache)?;
         }
         Ok(())
@@ -331,16 +333,13 @@ impl SpriteRuntime {
             sprite_name: self.sprite_name.clone() + "-clone",
             is_a_clone: true,
             need_redraw: true,
-            position: self.position,
-            scale: self.scale,
             costumes: self.costumes.clone(),
-            costume_transparency: self.costume_transparency,
             text: Text {
                 id: BlockID::default(),
                 text: None,
             },
             pen: Pen::new(),
-            hide: self.hide,
+            ..*self
         }
     }
 }

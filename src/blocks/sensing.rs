@@ -1,9 +1,9 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
 use crate::coordinate::{canvas_const, CanvasCoordinate};
-use crate::event_sender::{KeyOption, KeyboardKey};
 use crate::sprite::SpriteID;
 use graphics::types::Rectangle;
+use input::Key;
 use ndarray::{Array2, Zip};
 use palette::{Alpha, Blend, Hsv, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
@@ -23,6 +23,29 @@ pub fn get_block(
         "touchingobjectmenu" => Box::new(TouchingObjectMenu::new(id)),
         _ => return Err(Error::msg(format!("{} does not exist", name))),
     })
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum KeyOption {
+    Any,
+    Key(Key),
+}
+
+impl FromStr for KeyOption {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(match s {
+            "any" => KeyOption::Any,
+            _ => KeyOption::Key(serde_json::from_str(s)?),
+        })
+    }
+}
+
+impl Display for KeyOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        unimplemented!()
+    }
 }
 
 #[derive(Debug)]
@@ -95,7 +118,7 @@ impl KeyOptions {
     pub fn new(id: BlockID, _runtime: Runtime) -> Self {
         Self {
             id,
-            key: KeyOption::Key(KeyboardKey::Space),
+            key: KeyOption::Key(Key::Space),
         }
     }
 }
@@ -112,7 +135,7 @@ impl Block for KeyOptions {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("KEY_OPTION", format!("{}", self.key))],
+            vec![("KEY_OPTION", format!("{:?}", self.key))],
             vec![],
             vec![],
         )

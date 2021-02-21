@@ -107,8 +107,10 @@ impl VM {
         broadcaster: &BroadcastCell,
     ) -> Result<Loop> {
         let mut futures: FuturesUnordered<BoxFuture<Event>> = FuturesUnordered::new();
-        futures.push(Box::pin(control_chan.recv()));
-        futures.push(Box::pin(broadcaster.recv()));
+        futures.push(Box::pin(broadcaster.recv().map(|result| match result {
+            Ok(m) => Event::BroadcastMsg(m),
+            Err(e) => Event::Err(Error::msg(e)),
+        })));
 
         let mut paused_threads: Vec<ThreadID> = Vec::new();
         for thread_id in sprites.all_thread_ids().await {
@@ -223,7 +225,10 @@ impl VM {
                         }
                         _ => {}
                     }
-                    futures.push(Box::pin(broadcaster.recv()));
+                    futures.push(Box::pin(broadcaster.recv().map(|result| match result {
+                        Ok(m) => Event::BroadcastMsg(m),
+                        Err(e) => Event::Err(Error::msg(e)),
+                    })));
                 }
             };
         }
@@ -325,27 +330,24 @@ impl Display for DebugInfo {
 }
 
 #[derive(Debug)]
-struct BroadcastCell {
+pub struct BroadcastCell {
     broadcaster: Broadcaster,
     receiver: RwLock<broadcast::Receiver<BroadcastMsg>>,
 }
 
 impl BroadcastCell {
-    fn new(broadcaster: Broadcaster) -> Self {
+    pub fn new(broadcaster: Broadcaster) -> Self {
         Self {
             receiver: RwLock::new(broadcaster.subscribe()),
             broadcaster,
         }
     }
 
-    async fn recv(&self) -> Event {
-        match self.receiver.write().await.recv().await {
-            Ok(msg) => Event::BroadcastMsg(msg),
-            Err(e) => Event::Err(Error::msg(e)),
-        }
+    pub async fn recv(&self) -> Result<BroadcastMsg> {
+        Ok(self.receiver.write().await.recv().await?)
     }
 
-    fn send(&self, msg: BroadcastMsg) -> Result<()> {
+    pub fn send(&self, msg: BroadcastMsg) -> Result<()> {
         self.broadcaster.send(msg)
     }
 }

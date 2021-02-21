@@ -178,7 +178,7 @@ pub enum Value {
     String(String),
     Color(Hsv),
     TouchingObjectOption(sensing::TouchingObjectOption),
-    KeyOption(event_sender::KeyOption),
+    KeyOption(sensing::KeyOption),
     StopOption(control::StopOption),
     GoToOption(motion::GoToOption),
 }
@@ -310,16 +310,16 @@ impl TryInto<Hsv> for Value {
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let o: &dyn Display = match self {
-            Self::Bool(b) => return f.serialize_bool(*b),
-            Self::Number(n) => return f.serialize_f64(*n),
-            Self::String(s) => return f.write_str(&s),
-            Self::Color(c) => return HsvDisplay(*c).fmt(f),
+            Self::Bool(b) => b,
+            Self::Number(n) => n,
+            Self::String(s) => s,
+            Self::Color(c) => return write!(f, "{}", HsvDisplay(*c)),
             Self::TouchingObjectOption(o) => o,
             Self::KeyOption(o) => o,
             Self::StopOption(o) => o,
             Self::GoToOption(o) => o,
         };
-        Display::fmt(o, f)
+        write!(f, "{}", o)
     }
 }
 
