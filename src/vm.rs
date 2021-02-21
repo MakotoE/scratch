@@ -54,18 +54,15 @@ impl VM {
 
             async move {
                 loop {
-                    match VM::run(
+                    if let Err(e) = VM::run(
                         sprites_cell.clone(),
                         &control_receiver,
                         &BroadcastCell::new(broadcaster.clone()),
                     )
                     .await
                     {
-                        Ok(l) => match l {
-                            Loop::Restart => continue,
-                            Loop::Break => break,
-                        },
-                        Err(e) => panic!("{:?}", e),
+                        log::error!("{}", e);
+                        std::process::exit(1);
                     }
                 }
             }
@@ -105,7 +102,7 @@ impl VM {
         sprites: Arc<SpritesCell>,
         control_chan: &ControlReceiverCell,
         broadcaster: &BroadcastCell,
-    ) -> Result<Loop> {
+    ) -> Result<()> {
         let mut futures: FuturesUnordered<BoxFuture<Event>> = FuturesUnordered::new();
         futures.push(Box::pin(control_chan.recv()));
         futures.push(Box::pin(broadcaster.recv().map(|result| match result {
@@ -143,7 +140,7 @@ impl VM {
                         );
                         current_state = Control::Pause;
                     }
-                    _ => unreachable!(),
+                    _ => unreachable!("{:?}", current_state),
                 },
                 Event::Err(e) => return Err(e),
                 Event::Control(control) => {
@@ -156,9 +153,7 @@ impl VM {
                                     futures.push(Box::pin(sprites.step(thread_id)));
                                 }
                             }
-                            Control::Stop => return Ok(Loop::Restart),
-                            // TODO why is this needed?
-                            Control::Drop => return Ok(Loop::Break),
+                            Control::Stop => return Ok(()),
                             Control::Pause => {}
                         }
                     }
@@ -264,19 +259,12 @@ impl VM {
     }
 }
 
-impl Drop for VM {
-    fn drop(&mut self) {
-        self.control_sender.try_send(Control::Drop).unwrap();
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 enum Control {
     Continue,
     Pause,
     Step,
     Stop,
-    Drop,
 }
 
 #[derive(Debug)]
@@ -572,10 +560,4 @@ impl DrawOrder {
     fn insert(&mut self, index: usize, id: SpriteID) {
         self.ids.insert(index, id)
     }
-}
-
-#[derive(Debug)]
-enum Loop {
-    Restart,
-    Break,
 }
