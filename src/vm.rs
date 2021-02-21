@@ -107,6 +107,7 @@ impl VM {
         broadcaster: &BroadcastCell,
     ) -> Result<Loop> {
         let mut futures: FuturesUnordered<BoxFuture<Event>> = FuturesUnordered::new();
+        futures.push(Box::pin(control_chan.recv()));
         futures.push(Box::pin(broadcaster.recv().map(|result| match result {
             Ok(m) => Event::BroadcastMsg(m),
             Err(e) => Event::Err(Error::msg(e)),
@@ -156,6 +157,7 @@ impl VM {
                                 }
                             }
                             Control::Stop => return Ok(Loop::Restart),
+                            // TODO why is this needed?
                             Control::Drop => return Ok(Loop::Break),
                             Control::Pause => {}
                         }

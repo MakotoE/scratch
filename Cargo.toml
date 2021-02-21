@@ -28,7 +28,7 @@ flo_curves = "0.4"
 usvg = "0.13"
 tiny-skia = "0.3"
 resvg = "0.13"
-image = "0.23"
+image = {version = "0.23", default-features = false, features = ["png"]}
 gfx_device_gl = "0.16.2"
 piston-gfx_texture = "0.41.0"
 anyhow = "1.0"
