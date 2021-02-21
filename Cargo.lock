@@ -2124,6 +2124,7 @@ dependencies = [
  "flo_curves",
  "futures",
  "getrandom 0.2.0",
+ "gfx_core",
  "gfx_device_gl",
  "hex",
  "image",

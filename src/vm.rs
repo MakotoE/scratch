@@ -15,6 +15,7 @@ use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::time::Duration;
+use tokio::select;
 use tokio::sync::{broadcast, mpsc};
 
 #[derive(Debug)]
@@ -48,14 +49,14 @@ impl VM {
         ));
 
         let vm_task = spawn({
-            let control_receiver = RwLock::new(control_receiver);
+            let mut control_receiver = control_receiver;
             let broadcaster = broadcaster.clone();
             let sprites_cell = sprites_cell.clone();
 
             async move {
                 loop {
                     if let Err(e) =
-                        VM::run(sprites_cell.clone(), &control_receiver, &broadcaster).await
+                        VM::run(sprites_cell.clone(), &mut control_receiver, &broadcaster).await
                     {
                         log::error!("{}", e);
                         std::process::exit(1);
@@ -96,19 +97,11 @@ impl VM {
 
     async fn run(
         sprites: Arc<SpritesCell>,
-        control_chan: &RwLock<mpsc::Receiver<Control>>,
+        control_receiver: &mut mpsc::Receiver<Control>,
         broadcaster: &Broadcaster,
     ) -> Result<()> {
-        let mut futures: FuturesUnordered<BoxFuture<Event>> = FuturesUnordered::new();
-        futures.push(Box::pin(async {
-            Event::Control(control_chan.write().await.recv().await)
-        }));
-        futures.push(Box::pin(async {
-            match broadcaster.subscribe().recv().await {
-                Ok(m) => Event::BroadcastMsg(m),
-                Err(e) => Event::Err(Error::msg(e)),
-            }
-        }));
+        let mut broadcast_receiver = broadcaster.subscribe();
+        let mut futures = FuturesUnordered::new();
 
         let mut paused_threads: Vec<ThreadID> = Vec::new();
         for thread_id in sprites.all_thread_ids().await {
@@ -125,113 +118,115 @@ impl VM {
         let mut current_state = Control::Pause;
 
         loop {
-            match futures.next().await.unwrap() {
-                Event::None => {}
-                Event::Thread(thread_id) => match current_state {
-                    Control::Continue => futures.push(Box::pin(sprites.step(thread_id))),
-                    Control::Step | Control::Pause => {
-                        paused_threads.push(thread_id);
-                        log::trace!(
-                            "{}",
-                            DebugInfo {
-                                thread_id,
-                                block_info: sprites.block_info(thread_id).await,
+            select! {
+                futures_result = futures.next() => if let Some(step_result) = futures_result {
+                    match step_result {
+                        Event::None => {}
+                        Event::Thread(thread_id) => match current_state {
+                            Control::Continue => futures.push(sprites.step(thread_id)),
+                            Control::Step | Control::Pause => {
+                                paused_threads.push(thread_id);
+                                log::trace!(
+                                    "{}",
+                                    DebugInfo {
+                                        thread_id,
+                                        block_info: sprites.block_info(thread_id).await,
+                                    }
+                                );
+                                current_state = Control::Pause;
                             }
-                        );
-                        current_state = Control::Pause;
+                            _ => unreachable!("{:?}", current_state),
+                        }
+                        Event::Err(e) => return Err(e),
                     }
-                    _ => unreachable!("{:?}", current_state),
                 },
-                Event::Err(e) => return Err(e),
-                Event::Control(control) => {
-                    if let Some(c) = control {
-                        log::info!("control: {:?}", &c);
-                        current_state = c;
-                        match c {
+                c = control_receiver.recv() => {
+                    if let Some(control) = c {
+                        log::info!("control: {:?}", &control);
+                        current_state = control;
+                        match control {
                             Control::Continue | Control::Step => {
                                 for thread_id in paused_threads.drain(..) {
-                                    futures.push(Box::pin(sprites.step(thread_id)));
+                                    futures.push(sprites.step(thread_id));
                                 }
                             }
                             Control::Stop => return Ok(()),
                             Control::Pause => {}
                         }
                     }
-                    futures.push(Box::pin(async {
-                        Event::Control(control_chan.write().await.recv().await)
-                    }));
-                }
-                Event::BroadcastMsg(msg) => {
-                    log::info!("broadcast: {:?}", &msg);
-                    match msg {
-                        BroadcastMsg::Clone(from_sprite) => {
-                            let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
-                            for thread_id in 0..sprites.number_of_threads(new_sprite_id).await {
-                                let id = ThreadID {
-                                    sprite_id: new_sprite_id,
-                                    thread_id,
-                                };
-                                match current_state {
-                                    Control::Continue | Control::Step => {
-                                        futures.push(Box::pin(sprites.step(id)))
+                },
+                recv_result = broadcast_receiver.recv() => {
+                    match recv_result {
+                        Ok(msg) => {
+                            log::info!("broadcast: {:?}", &msg);
+                            match msg {
+                                BroadcastMsg::Clone(from_sprite) => {
+                                    let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
+                                    for thread_id in 0..sprites.number_of_threads(new_sprite_id).await {
+                                        let id = ThreadID {
+                                            sprite_id: new_sprite_id,
+                                            thread_id,
+                                        };
+                                        match current_state {
+                                            Control::Continue | Control::Step => {
+                                                futures.push(sprites.step(id))
+                                            }
+                                            Control::Pause => paused_threads.push(id),
+                                            _ => unreachable!(),
+                                        }
                                     }
-                                    Control::Pause => paused_threads.push(id),
-                                    _ => unreachable!(),
                                 }
-                            }
-                        }
-                        BroadcastMsg::DeleteClone(sprite_id) => {
-                            sprites.remove(sprite_id).await;
-                            // sprites.force_redraw(canvas_context).await?;
-                            // last_redraw = performance.now();
-                        }
-                        BroadcastMsg::Stop(s) => match s {
-                            Stop::All => {
-                                for thread_id in sprites.all_thread_ids().await {
-                                    sprites.stop(thread_id).await;
+                                BroadcastMsg::DeleteClone(sprite_id) => {
+                                    sprites.remove(sprite_id).await;
+                                    // sprites.force_redraw(canvas_context).await?;
+                                    // last_redraw = performance.now();
                                 }
-                            }
-                            Stop::ThisThread(thread_id) => {
-                                sprites.stop(thread_id).await;
-                            }
-                            Stop::OtherThreads(thread_id) => {
-                                for id in sprites.all_thread_ids().await {
-                                    if id.sprite_id == thread_id.sprite_id
-                                        && id.thread_id != thread_id.thread_id
-                                    {
+                                BroadcastMsg::Stop(s) => match s {
+                                    Stop::All => {
+                                        for thread_id in sprites.all_thread_ids().await {
+                                            sprites.stop(thread_id).await;
+                                        }
+                                    }
+                                    Stop::ThisThread(thread_id) => {
                                         sprites.stop(thread_id).await;
                                     }
+                                    Stop::OtherThreads(thread_id) => {
+                                        for id in sprites.all_thread_ids().await {
+                                            if id.sprite_id == thread_id.sprite_id
+                                                && id.thread_id != thread_id.thread_id
+                                            {
+                                                sprites.stop(thread_id).await;
+                                            }
+                                        }
+                                    }
+                                },
+                                BroadcastMsg::ChangeLayer { sprite, action } => {
+                                    sprites.change_layer(sprite, action).await?;
                                 }
+                                BroadcastMsg::RequestSpriteRectangle(sprite_id) => {
+                                    let rectangle = sprites.sprite_rectangle(&sprite_id).await?;
+                                    broadcaster.send(BroadcastMsg::SpriteRectangle {
+                                        sprite: sprite_id,
+                                        rectangle,
+                                    })?;
+                                }
+                                BroadcastMsg::RequestCanvasImage(sprite_id) => {
+                                    // sprites
+                                    //     .draw_without_sprite(&hidden_context, &sprite_id)
+                                    //     .await?;
+                                    // broadcaster.send(BroadcastMsg::CanvasImage(CanvasImage {
+                                    //     image: hidden_context.get_image_data()?,
+                                    // }))?;
+                                }
+                                _ => {}
                             }
-                        },
-                        BroadcastMsg::ChangeLayer { sprite, action } => {
-                            sprites.change_layer(sprite, action).await?;
                         }
-                        BroadcastMsg::RequestSpriteRectangle(sprite_id) => {
-                            let rectangle = sprites.sprite_rectangle(&sprite_id).await?;
-                            broadcaster.send(BroadcastMsg::SpriteRectangle {
-                                sprite: sprite_id,
-                                rectangle,
-                            })?;
+                        Err(e) => {
+                            return Err(e.into());
                         }
-                        BroadcastMsg::RequestCanvasImage(sprite_id) => {
-                            // sprites
-                            //     .draw_without_sprite(&hidden_context, &sprite_id)
-                            //     .await?;
-                            // broadcaster.send(BroadcastMsg::CanvasImage(CanvasImage {
-                            //     image: hidden_context.get_image_data()?,
-                            // }))?;
-                        }
-                        _ => {}
                     }
-                    futures.push(Box::pin(async {
-                        match broadcaster.subscribe().recv().await {
-                            Ok(m) => Event::BroadcastMsg(m),
-                            Err(e) => Event::Err(Error::msg(e)),
-                        }
-                    }));
-                }
-            };
+                },
+            }
         }
     }
 
@@ -276,8 +271,6 @@ enum Event {
     None,
     Thread(ThreadID),
     Err(Error),
-    Control(Option<Control>),
-    BroadcastMsg(BroadcastMsg),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]

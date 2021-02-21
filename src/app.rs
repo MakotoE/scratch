@@ -3,6 +3,7 @@ use crate::file::ScratchFile;
 use crate::interface::Interface;
 use conrod_core::text::GlyphCache;
 use conrod_core::{Positionable, Theme};
+use gfx_core::Device;
 use gfx_graphics::GfxGraphics;
 use graphics::Context;
 use piston_window::texture::UpdateTexture;
@@ -147,6 +148,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
                     window.encoder.flush(device);
                     texture_context.encoder.flush(device);
                     character_cache.factory.encoder.flush(device);
+                    device.cleanup();
                 }
             }
         }
