@@ -47,13 +47,14 @@ impl EventSender {
         broadcaster: Broadcaster,
         mouse_position: Arc<RwLock<CanvasCoordinate>>,
     ) -> Result<()> {
-        let mut broadcast_cell = BroadcastCell::new(broadcaster);
         let input_receiver_lock = RwLock::new(input_receiver);
         let mut futures: FuturesUnordered<BoxFuture<FutureType>> = FuturesUnordered::new();
-        futures.push(Box::pin(broadcast_cell.recv().map(|result| match result {
-            Ok(m) => FutureType::Broadcaster(m),
-            Err(e) => FutureType::Err(e.into()),
-        })));
+        futures.push(Box::pin(async {
+            match broadcaster.subscribe().recv().await {
+                Ok(m) => FutureType::Broadcaster(m),
+                Err(e) => FutureType::Err(e.into()),
+            }
+        }));
         futures.push(Box::pin(async {
             match input_receiver_lock.write().await.recv().await {
                 Some(i) => FutureType::Input(i),
@@ -68,18 +69,20 @@ impl EventSender {
                 FutureType::Broadcaster(msg) => {
                     match msg {
                         BroadcastMsg::RequestMousePosition => {
-                            broadcast_cell
+                            broadcaster
                                 .send(BroadcastMsg::MousePosition(*mouse_position.read().await))?;
                         }
                         BroadcastMsg::RequestPressedKeys => {
-                            broadcast_cell.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
+                            broadcaster.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
                         }
                         _ => {}
                     }
-                    futures.push(Box::pin(broadcast_cell.recv().map(|result| match result {
-                        Ok(m) => FutureType::Broadcaster(m),
-                        Err(e) => FutureType::Err(e.into()),
-                    })));
+                    futures.push(Box::pin(async {
+                        match broadcaster.subscribe().recv().await {
+                            Ok(m) => FutureType::Broadcaster(m),
+                            Err(e) => FutureType::Err(e.into()),
+                        }
+                    }));
                 }
                 FutureType::Input(input) => {
                     match input {
@@ -96,7 +99,7 @@ impl EventSender {
                                 if matches!(mouse, MouseButton::Left)
                                     && matches!(button.state, ButtonState::Press)
                                 {
-                                    broadcast_cell.send(BroadcastMsg::MouseClick(
+                                    broadcaster.send(BroadcastMsg::MouseClick(
                                         *mouse_position.read().await,
                                     ))?;
                                 }
