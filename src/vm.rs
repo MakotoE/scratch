@@ -119,25 +119,26 @@ impl VM {
 
         loop {
             select! {
-                futures_result = futures.next() => if let Some(step_result) = futures_result {
-                    match step_result {
-                        Event::None => {}
-                        Event::Thread(thread_id) => match current_state {
-                            Control::Continue => futures.push(sprites.step(thread_id)),
-                            Control::Step | Control::Pause => {
-                                paused_threads.push(thread_id);
-                                log::trace!(
-                                    "{}",
-                                    DebugInfo {
-                                        thread_id,
-                                        block_info: sprites.block_info(thread_id).await,
-                                    }
-                                );
-                                current_state = Control::Pause;
+                futures_result = futures.next() => {
+                    if let Some(step_result) = futures_result {
+                        match step_result? {
+                            Some(thread_id) => match current_state {
+                                Control::Continue => futures.push(sprites.step(thread_id)),
+                                Control::Step | Control::Pause => {
+                                    paused_threads.push(thread_id);
+                                    log::trace!(
+                                        "{}",
+                                        DebugInfo {
+                                            thread_id,
+                                            block_info: sprites.block_info(thread_id).await,
+                                        }
+                                    );
+                                    current_state = Control::Pause;
+                                }
+                                _ => unreachable!("{:?}", current_state),
                             }
-                            _ => unreachable!("{:?}", current_state),
+                            None => {}
                         }
-                        Event::Err(e) => return Err(e),
                     }
                 },
                 c = control_receiver.recv() => {
@@ -178,8 +179,6 @@ impl VM {
                                 }
                                 BroadcastMsg::DeleteClone(sprite_id) => {
                                     sprites.remove(sprite_id).await;
-                                    // sprites.force_redraw(canvas_context).await?;
-                                    // last_redraw = performance.now();
                                 }
                                 BroadcastMsg::Stop(s) => match s {
                                     Stop::All => {
@@ -266,13 +265,6 @@ enum Control {
     Stop,
 }
 
-#[derive(Debug)]
-enum Event {
-    None,
-    Thread(ThreadID),
-    Err(Error),
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct ThreadID {
     pub sprite_id: SpriteID,
@@ -318,7 +310,7 @@ impl SpritesCell {
         }
     }
 
-    async fn step(&self, thread_id: ThreadID) -> Event {
+    async fn step(&self, thread_id: ThreadID) -> Result<Option<ThreadID>> {
         if self.stopped_threads.write().await.remove(&thread_id)
             || self
                 .removed_sprites
@@ -326,15 +318,15 @@ impl SpritesCell {
                 .await
                 .contains(&thread_id.sprite_id)
         {
-            return Event::None;
+            return Ok(None);
         }
 
         match self.sprites.read().await.get(&thread_id.sprite_id) {
-            Some(sprite) => match sprite.step(thread_id.thread_id).await {
-                Ok(_) => Event::Thread(thread_id),
-                Err(e) => Event::Err(e),
-            },
-            None => Event::None,
+            Some(sprite) => sprite
+                .step(thread_id.thread_id)
+                .await
+                .map(|_| Some(thread_id)),
+            None => Ok(None),
         }
     }
 

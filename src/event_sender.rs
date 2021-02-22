@@ -52,17 +52,15 @@ impl EventSender {
         loop {
             select! {
                 m = broadcaster_receiver.recv() => match m {
-                    Ok(msg) => {
-                        match msg {
-                            BroadcastMsg::RequestMousePosition => {
-                                broadcaster
-                                    .send(BroadcastMsg::MousePosition(*mouse_position.read().await))?;
-                            }
-                            BroadcastMsg::RequestPressedKeys => {
-                                broadcaster.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
-                            }
-                            _ => {}
+                    Ok(msg) => match msg {
+                        BroadcastMsg::RequestMousePosition => {
+                            broadcaster
+                                .send(BroadcastMsg::MousePosition(*mouse_position.read().await))?;
                         }
+                        BroadcastMsg::RequestPressedKeys => {
+                            broadcaster.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
+                        }
+                        _ => {}
                     }
                     Err(e) => return Err(e.into()),
                 },
@@ -92,7 +90,7 @@ impl EventSender {
                             _ => {}
                         }
                     }
-                    None => return Err(Error::msg("input_receiver closed")),
+                    None => return Ok(()),
                 }
             }
         }
