@@ -5,11 +5,12 @@ use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
 use flo_curves::{bezier, BezierCurve, Coord2};
 use gfx_device_gl::Resources;
+use gfx_graphics::ImageSize;
 use gfx_texture::{Texture, TextureSettings};
 use graphics::character::CharacterCache;
 use graphics::types::{FontSize, Rectangle};
-use graphics::Transformed;
 use graphics::{line, CircleArc, Context};
+use graphics::{Graphics, Transformed};
 use image::codecs::png::PngDecoder;
 use image::{DynamicImage, ImageBuffer, ImageDecoder};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
@@ -74,12 +75,16 @@ impl SpriteRuntime {
             .await
     }
 
-    pub fn redraw(
+    pub fn redraw<G, C>(
         &mut self,
         context: &mut Context,
-        graphics: &mut G2d<'_>,
-        character_cache: &mut Glyphs,
-    ) -> Result<()> {
+        graphics: &mut G,
+        character_cache: &mut C,
+    ) -> Result<()>
+    where
+        G: Graphics<Texture = <C as CharacterCache>::Texture>,
+        C: CharacterCache,
+    {
         self.need_redraw = false;
 
         if let HideStatus::Hide = self.hide {
@@ -121,14 +126,16 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    fn draw_costume(
+    fn draw_costume<G>(
         context: &mut Context,
-        graphics: &mut G2d,
+        graphics: &mut G,
         costume: &Costume,
         position: &CanvasCoordinate,
         scale: &Scale,
         alpha: f64,
-    ) {
+    ) where
+        G: Graphics,
+    {
         let mut rectangle: Rectangle = [
             position.x - costume.center.x * costume.scale * scale.x,
             position.y - costume.center.y * costume.scale * scale.y,
@@ -148,12 +155,16 @@ impl SpriteRuntime {
         );
     }
 
-    fn draw_text_bubble(
+    fn draw_text_bubble<G, C>(
         text: &str,
         context: &mut Context,
-        graphics: &mut G2d,
-        character_cache: &mut Glyphs,
-    ) -> Result<()> {
+        graphics: &mut G,
+        character_cache: &mut C,
+    ) -> Result<()>
+    where
+        G: Graphics<Texture = <C as CharacterCache>::Texture>,
+        C: CharacterCache,
+    {
         const COLOR: graphics::types::Color = [0.0, 0.0, 0.0, 0.3];
         const LINE_THICKNESS: f64 = 1.0;
         const FONT_SIZE: FontSize = 14;
@@ -166,7 +177,7 @@ impl SpriteRuntime {
         const PADDING: f64 = 10.0;
         const HEIGHT: f64 = RADIUS + PADDING * 2.0;
 
-        let arc = |start: f64, end: f64, x: f64, y: f64, graphics: &mut G2d| {
+        let arc = |start: f64, end: f64, x: f64, y: f64, graphics: &mut G| {
             CircleArc {
                 color: COLOR,
                 radius: LINE_THICKNESS,
@@ -182,7 +193,7 @@ impl SpriteRuntime {
             );
         };
 
-        let line = |start_x: f64, start_y: f64, end_x: f64, end_y: f64, graphics: &mut G2d| {
+        let line = |start_x: f64, start_y: f64, end_x: f64, end_y: f64, graphics: &mut G| {
             line::Line {
                 color: COLOR,
                 radius: LINE_THICKNESS,
@@ -196,7 +207,7 @@ impl SpriteRuntime {
             );
         };
 
-        let curve = |curve: bezier::Curve<Coord2>, graphics: &mut G2d| {
+        let curve = |curve: bezier::Curve<Coord2>, graphics: &mut G| {
             const SUBDIVISIONS: usize = 8;
             let Coord2(mut last_x, mut last_y) = curve.start_point();
             for pos in 0..=SUBDIVISIONS {

@@ -1,6 +1,6 @@
 use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::pen::PenStatus::PenUp;
-use graphics::{line, Context};
+use graphics::{line, Context, Graphics};
 use palette::{IntoColor, LinSrgb};
 use piston_window::G2d;
 
@@ -68,7 +68,10 @@ impl Pen {
             .push(Line::new(&palette::Hsv::new(0.0, 1.0, 1.0), 1.0));
     }
 
-    pub fn draw(&self, context: &mut Context, graphics: &mut G2d<'_>) {
+    pub fn draw<G>(&self, context: &mut Context, graphics: &mut G)
+    where
+        G: Graphics,
+    {
         for line in &self.lines {
             line.draw(context, graphics);
         }
@@ -127,7 +130,10 @@ impl Line {
         self.points.push(*position);
     }
 
-    fn draw(&self, context: &mut Context, graphics: &mut G2d<'_>) {
+    fn draw<G>(&self, context: &mut Context, graphics: &mut G)
+    where
+        G: Graphics,
+    {
         let rgb: LinSrgb = self.color.into_rgb();
         let line = line::Line {
             color: [rgb.red, rgb.green, rgb.blue, 1.0],

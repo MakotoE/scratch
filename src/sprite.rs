@@ -6,7 +6,10 @@ use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::SpriteRuntime;
 use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
-use graphics::Context;
+use gfx_device_gl::Resources;
+use gfx_graphics::{ImageSize, Texture};
+use graphics::character::CharacterCache;
+use graphics::{Context, Graphics};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
@@ -88,12 +91,16 @@ impl Sprite {
         self.runtime.sprite.read().await.need_redraw()
     }
 
-    pub async fn redraw(
+    pub async fn redraw<G, C>(
         &self,
         context: &mut Context,
-        graphics: &mut G2d<'_>,
-        character_cache: &mut Glyphs,
-    ) -> Result<()> {
+        graphics: &mut G,
+        character_cache: &mut C,
+    ) -> Result<()>
+    where
+        G: Graphics<Texture = <C as CharacterCache>::Texture>,
+        C: CharacterCache,
+    {
         self.runtime
             .sprite
             .write()

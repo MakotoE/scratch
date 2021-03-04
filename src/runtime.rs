@@ -116,7 +116,7 @@ impl Global {
         }
         .draw(
             variable_name,
-            character_cache,
+            &mut character_cache,
             &context.draw_state,
             context.transform.trans(7.0, 14.0),
             graphics,
@@ -142,7 +142,7 @@ impl Global {
         }
         .draw(
             variable_name,
-            character_cache,
+            &mut character_cache,
             &context.draw_state,
             orange_transform.trans((orange_rectangle_width - value_width) / 2.0, 11.5),
             graphics,

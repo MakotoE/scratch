@@ -1,6 +1,7 @@
 use super::*;
+use crate::app::WINDOW_SIZE;
 use crate::blocks::BlockInfo;
-use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
+use crate::broadcaster::{BroadcastMsg, Broadcaster, CanvasImage, LayerChange, Stop};
 use crate::coordinate::{canvas_const, SpriteRectangle};
 use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
@@ -10,8 +11,11 @@ use futures::future::BoxFuture;
 use futures::stream::FuturesUnordered;
 use futures::{FutureExt, StreamExt};
 use graphics::math::Matrix2d;
-use graphics::{rectangle, Context, DrawState};
-use piston_window::{G2d, G2dTextureContext, Glyphs};
+use graphics::{rectangle, Context, DrawState, Graphics};
+use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
+use piston_window::{
+    G2d, G2dTextureContext, Glyphs, OpenGL, PistonWindow, Viewport, WindowSettings,
+};
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -115,6 +119,10 @@ impl VM {
             );
         }
 
+        let mut render_buffer =
+            RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
+        let mut buffer_glyphs = buffer_glyphs_from_path("assets/Roboto-Regular.ttf").unwrap();
+
         let mut current_state = Control::Pause;
 
         loop {
@@ -210,9 +218,9 @@ impl VM {
                                     })?;
                                 }
                                 BroadcastMsg::RequestCanvasImage(sprite_id) => {
-                                    // sprites
-                                    //     .draw_without_sprite(&hidden_context, &sprite_id)
-                                    //     .await?;
+                                    sprites
+                                        .draw_to_buffer(&mut Context::new(), &mut render_buffer, &mut buffer_glyphs, &sprite_id)
+                                        .await?;
                                     // broadcaster.send(BroadcastMsg::CanvasImage(CanvasImage {
                                     //     image: hidden_context.get_image_data()?,
                                     // }))?;
@@ -381,24 +389,25 @@ impl SpritesCell {
         Ok(())
     }
 
-    // async fn draw_without_sprite(
-    //     &self,
-    //     context: &CanvasContext<'_>,
-    //     removed_sprite: &SpriteID,
-    // ) -> Result<()> {
-    //     context.clear();
-    //     let sprites = self.sprites.read().await;
-    //     let removed_sprites = self.removed_sprites.borrow();
-    //     for id in self.draw_order.borrow().iter() {
-    //         if !removed_sprites.contains(id) && id != removed_sprite {
-    //             match sprites.get(id) {
-    //                 Some(s) => s.redraw(context).await?,
-    //                 None => return Err(Error::msg(format!("id not found: {}", id))),
-    //             }
-    //         }
-    //     }
-    //     Ok(())
-    // }
+    async fn draw_to_buffer(
+        &self,
+        context: &mut Context,
+        graphics: &mut RenderBuffer,
+        character_cache: &mut BufferGlyphs<'_>,
+        removed_sprite: &SpriteID,
+    ) -> Result<()> {
+        let sprites = self.sprites.read().await;
+        let removed_sprites = self.removed_sprites.read().await;
+        for id in self.draw_order.read().await.iter() {
+            if !removed_sprites.contains(id) && id != removed_sprite {
+                match sprites.get(id) {
+                    Some(s) => s.redraw(context, graphics, character_cache).await?,
+                    None => return Err(Error::msg(format!("id not found: {}", id))),
+                }
+            }
+        }
+        Ok(())
+    }
 
     async fn all_thread_ids(&self) -> Vec<ThreadID> {
         let mut result: Vec<ThreadID> = Vec::new();
