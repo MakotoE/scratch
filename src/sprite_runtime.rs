@@ -5,14 +5,15 @@ use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
 use flo_curves::{bezier, BezierCurve, Coord2};
 use gfx_device_gl::Resources;
-use gfx_graphics::ImageSize;
+use gfx_graphics::{CreateTexture, Format, ImageSize};
 use gfx_texture::{Texture, TextureSettings};
 use graphics::character::CharacterCache;
 use graphics::types::{FontSize, Rectangle};
 use graphics::{line, CircleArc, Context};
 use graphics::{Graphics, Transformed};
+use graphics_buffer::{BufferGlyphs, RenderBuffer};
 use image::codecs::png::PngDecoder;
-use image::{DynamicImage, ImageBuffer, ImageDecoder};
+use image::{DynamicImage, ImageBuffer, ImageDecoder, RgbaImage};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::f64::consts::TAU;
 use std::io::Cursor;
@@ -82,7 +83,7 @@ impl SpriteRuntime {
         character_cache: &mut C,
     ) -> Result<()>
     where
-        G: Graphics<Texture = <C as CharacterCache>::Texture>,
+        G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
     {
         self.need_redraw = false;
@@ -126,7 +127,7 @@ impl SpriteRuntime {
         Ok(())
     }
 
-    fn draw_costume<G>(
+    fn draw_costume<G, C>(
         context: &mut Context,
         graphics: &mut G,
         costume: &Costume,
@@ -134,7 +135,8 @@ impl SpriteRuntime {
         scale: &Scale,
         alpha: f64,
     ) where
-        G: Graphics,
+        G: GraphicsCostumeTexture<C>,
+        C: CharacterCache,
     {
         let mut rectangle: Rectangle = [
             position.x - costume.center.x * costume.scale * scale.x,
@@ -148,7 +150,7 @@ impl SpriteRuntime {
             rectangle: Some(rectangle),
         }
         .draw(
-            &costume.texture,
+            G::get_costume_texture(costume),
             &context.draw_state,
             context.transform,
             graphics,
@@ -218,7 +220,12 @@ impl SpriteRuntime {
             }
         };
 
-        let width = f64::max(character_cache.width(FONT_SIZE, text)?, 50.0) + PADDING * 2.0;
+        let width = f64::max(
+            character_cache
+                .width(FONT_SIZE, text)
+                .map_err(|e| Error::msg("width calculation error"))?,
+            50.0,
+        ) + PADDING * 2.0;
 
         arc(
             RIGHT,
@@ -270,8 +277,8 @@ impl SpriteRuntime {
             &context.draw_state,
             context.transform.trans(PADDING, PADDING + 0.9 * 15.0),
             graphics,
-        )?;
-        Ok(())
+        )
+        .map_err(|e| Error::msg("text draw error"))
     }
 
     pub fn need_redraw(&self) -> bool {
@@ -355,13 +362,34 @@ impl SpriteRuntime {
     }
 }
 
+/// This is needed because G2d and RenderBuffer have different texture types.
+pub trait GraphicsCostumeTexture<C>: Graphics<Texture = <C as CharacterCache>::Texture>
+where
+    C: CharacterCache,
+{
+    fn get_costume_texture(costume: &Costume) -> &Self::Texture;
+}
+
+impl GraphicsCostumeTexture<Glyphs> for G2d<'_> {
+    fn get_costume_texture(costume: &Costume) -> &Self::Texture {
+        &costume.gfx_texture
+    }
+}
+
+impl GraphicsCostumeTexture<BufferGlyphs<'_>> for RenderBuffer {
+    fn get_costume_texture(costume: &Costume) -> &Self::Texture {
+        &costume.render_buffer_texture
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Costume {
     image_size: Size,
     scale: f64,
     name: String,
     center: SpriteCoordinate,
-    texture: Texture<Resources>,
+    gfx_texture: Texture<Resources>,
+    render_buffer_texture: RenderBuffer,
 }
 
 impl Costume {
@@ -370,41 +398,9 @@ impl Costume {
         costume: &file::Costume,
         image_file: &Image,
     ) -> Result<Self> {
-        let (texture, width, height) = match image_file {
-            Image::SVG(b) => {
-                let mut options = usvg::Options::default();
-                options.fontdb.load_system_fonts();
-
-                let tree = usvg::Tree::from_data(b, &options)?;
-                let size = tree.svg_node().size.to_screen_size();
-                let mut pixmap =
-                    tiny_skia::Pixmap::new(size.width() * 2, size.height() * 2).unwrap();
-
-                let width = pixmap.width();
-                let height = pixmap.height();
-
-                resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut())
-                    .ok_or(Error::msg("svg error"))?;
-                let image = ImageBuffer::from_raw(width, height, pixmap.take())
-                    .ok_or(Error::msg("svg error"))?;
-                (
-                    Texture::from_image(texture_context, &image, &TextureSettings::new())?,
-                    width,
-                    height,
-                )
-            }
-            Image::PNG(b) => {
-                let decoder = PngDecoder::new(Cursor::new(b))?;
-                let x = decoder.dimensions().0;
-                let y = decoder.dimensions().1;
-                let dynamic_image = DynamicImage::from_decoder(decoder)?;
-                let image = dynamic_image.as_rgba8().ok_or(Error::msg("png error"))?;
-                (
-                    Texture::from_image(texture_context, image, &TextureSettings::new())?,
-                    x * 2,
-                    y * 2,
-                )
-            }
+        let (gfx_texture, render_buffer_texture, width, height) = match image_file {
+            Image::SVG(b) => Costume::svg_texture(b, texture_context)?,
+            Image::PNG(b) => Costume::png_texture(b, texture_context)?,
         };
 
         Ok(Self {
@@ -423,8 +419,76 @@ impl Costume {
                 x: costume.rotation_center_x,
                 y: costume.rotation_center_y,
             },
-            texture,
+            gfx_texture,
+            render_buffer_texture,
         })
+    }
+
+    fn svg_texture(
+        data: &[u8],
+        texture_context: &mut G2dTextureContext,
+    ) -> Result<(Texture<Resources>, RenderBuffer, u32, u32)> {
+        let mut options = usvg::Options::default();
+        options.fontdb.load_system_fonts();
+
+        let tree = usvg::Tree::from_data(data, &options)?;
+        let size = tree.svg_node().size.to_screen_size();
+        let mut pixmap = tiny_skia::Pixmap::new(size.width() * 2, size.height() * 2).unwrap();
+
+        let width = pixmap.width();
+        let height = pixmap.height();
+
+        resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut())
+            .ok_or(Error::msg("svg error"))?;
+        let image: RgbaImage =
+            ImageBuffer::from_raw(width, height, pixmap.take()).ok_or(Error::msg("svg error"))?;
+        Ok((
+            CreateTexture::create(
+                texture_context,
+                Format::Rgba8,
+                &image,
+                [width, height],
+                &TextureSettings::new(),
+            )?,
+            CreateTexture::create(
+                &mut (),
+                Format::Rgba8,
+                &image,
+                [width, height],
+                &TextureSettings::new(),
+            )?,
+            width,
+            height,
+        ))
+    }
+
+    fn png_texture(
+        data: &[u8],
+        texture_context: &mut G2dTextureContext,
+    ) -> Result<(Texture<Resources>, RenderBuffer, u32, u32)> {
+        let decoder = PngDecoder::new(Cursor::new(data))?;
+        let x = decoder.dimensions().0;
+        let y = decoder.dimensions().1;
+        let dynamic_image = DynamicImage::from_decoder(decoder)?;
+        let image = dynamic_image.as_rgba8().ok_or(Error::msg("png error"))?;
+        Ok((
+            CreateTexture::create(
+                texture_context,
+                Format::Rgba8,
+                &image,
+                [image.width(), image.height()],
+                &TextureSettings::new(),
+            )?,
+            CreateTexture::create(
+                &mut (),
+                Format::Rgba8,
+                &image,
+                [image.width(), image.height()],
+                &TextureSettings::new(),
+            )?,
+            x * 2,
+            y * 2,
+        ))
     }
 
     pub fn new_blank(costume: &file::Costume) -> Result<Self> {
@@ -439,7 +503,8 @@ impl Costume {
                 y: costume.rotation_center_y,
             },
             scale: 1.0,
-            texture: todo!(),
+            gfx_texture: todo!(),
+            render_buffer_texture: todo!(),
         })
     }
 }

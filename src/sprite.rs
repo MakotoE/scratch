@@ -3,7 +3,7 @@ use crate::blocks::*;
 use crate::coordinate::SpriteRectangle;
 use crate::file::{BlockID, Image, Target};
 use crate::runtime::{Global, Runtime};
-use crate::sprite_runtime::SpriteRuntime;
+use crate::sprite_runtime::{GraphicsCostumeTexture, SpriteRuntime};
 use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
 use gfx_device_gl::Resources;
@@ -98,7 +98,7 @@ impl Sprite {
         character_cache: &mut C,
     ) -> Result<()>
     where
-        G: Graphics<Texture = <C as CharacterCache>::Texture>,
+        G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
     {
         self.runtime
