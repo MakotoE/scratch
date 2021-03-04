@@ -78,7 +78,7 @@ impl SpriteRuntime {
 
     pub fn redraw<G, C>(
         &mut self,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G,
         character_cache: &mut C,
     ) -> Result<()>
@@ -128,7 +128,7 @@ impl SpriteRuntime {
     }
 
     fn draw_costume<G, C>(
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G,
         costume: &Costume,
         position: &CanvasCoordinate,
@@ -159,7 +159,7 @@ impl SpriteRuntime {
 
     fn draw_text_bubble<G, C>(
         text: &str,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G,
         character_cache: &mut C,
     ) -> Result<()>

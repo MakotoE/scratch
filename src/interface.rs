@@ -124,7 +124,7 @@ impl Interface {
 
     pub async fn draw_2d(
         &mut self,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
@@ -140,11 +140,10 @@ impl Interface {
             graphics,
         );
 
-        let original_transform = context.transform;
-        context.transform = context.transform.trans(20.0, 50.0);
-        self.vm.redraw(context, graphics, character_cache).await?;
+        self.vm
+            .redraw(&context.trans(20.0, 50.0), graphics, character_cache)
+            .await?;
 
-        context.transform = original_transform;
         draw_border(context, graphics);
         Ok(())
     }
@@ -156,7 +155,7 @@ impl Interface {
 
 pub const CANVAS_TOP_LEFT: CanvasCoordinate = CanvasCoordinate { x: 20.0, y: 50.0 };
 
-fn draw_border(context: &mut Context, graphics: &mut G2d) {
+fn draw_border(context: &Context, graphics: &mut G2d) {
     let rectangle = rectangle::Rectangle {
         color: [1.0, 1.0, 1.0, 1.0],
         shape: rectangle::Shape::Square,

@@ -93,7 +93,7 @@ impl Sprite {
 
     pub async fn redraw<G, C>(
         &self,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G,
         character_cache: &mut C,
     ) -> Result<()>

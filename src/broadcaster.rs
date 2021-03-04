@@ -2,6 +2,7 @@ use super::*;
 use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
+use graphics_buffer::RenderBuffer;
 use input::Key;
 use std::collections::HashSet;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
@@ -28,10 +29,7 @@ impl Broadcaster {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct CanvasImage;
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum BroadcastMsg {
     Start(String),
     Finished(String),
@@ -54,7 +52,7 @@ pub enum BroadcastMsg {
     },
     /// Requests image but with sprite removed
     RequestCanvasImage(SpriteID),
-    CanvasImage(CanvasImage),
+    CanvasImage(RenderBuffer),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

@@ -59,17 +59,14 @@ impl Global {
 
     pub async fn redraw(
         &self,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
         for variable in self.variables.variables.read().await.values() {
             if variable.monitored {
-                context.transform = context
-                    .transform
-                    .trans(variable.position.x, variable.position.y);
                 Global::draw_monitor(
-                    context,
+                    &context.trans(variable.position.x, variable.position.y),
                     graphics,
                     character_cache,
                     &variable.name,

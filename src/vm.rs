@@ -1,7 +1,7 @@
 use super::*;
 use crate::app::WINDOW_SIZE;
 use crate::blocks::BlockInfo;
-use crate::broadcaster::{BroadcastMsg, Broadcaster, CanvasImage, LayerChange, Stop};
+use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
 use crate::coordinate::{canvas_const, SpriteRectangle};
 use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
@@ -119,9 +119,7 @@ impl VM {
             );
         }
 
-        let mut render_buffer =
-            RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
-        let mut buffer_glyphs = buffer_glyphs_from_path("assets/Roboto-Regular.ttf").unwrap();
+        let mut buffer_glyphs = buffer_glyphs_from_path("assets/Roboto-Regular.ttf")?;
 
         let mut current_state = Control::Pause;
 
@@ -218,12 +216,12 @@ impl VM {
                                     })?;
                                 }
                                 BroadcastMsg::RequestCanvasImage(sprite_id) => {
+                                    let mut render_buffer =
+                                        RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
                                     sprites
                                         .draw_to_buffer(&mut Context::new(), &mut render_buffer, &mut buffer_glyphs, &sprite_id)
                                         .await?;
-                                    // broadcaster.send(BroadcastMsg::CanvasImage(CanvasImage {
-                                    //     image: hidden_context.get_image_data()?,
-                                    // }))?;
+                                    broadcaster.send(BroadcastMsg::CanvasImage(render_buffer))?;
                                 }
                                 _ => {}
                             }
@@ -255,7 +253,7 @@ impl VM {
 
     pub async fn redraw(
         &mut self,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
@@ -344,7 +342,7 @@ impl SpritesCell {
 
     async fn redraw(
         &self,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
@@ -369,7 +367,7 @@ impl SpritesCell {
 
     async fn force_redraw(
         &self,
-        context: &mut Context,
+        context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {

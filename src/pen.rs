@@ -70,7 +70,7 @@ impl Pen {
             .push(Line::new(&palette::Hsv::new(0.0, 1.0, 1.0), 1.0));
     }
 
-    pub fn draw<G, C>(&self, context: &mut Context, graphics: &mut G)
+    pub fn draw<G, C>(&self, context: &Context, graphics: &mut G)
     where
         G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
@@ -133,7 +133,7 @@ impl Line {
         self.points.push(*position);
     }
 
-    fn draw<G, C>(&self, context: &mut Context, graphics: &mut G)
+    fn draw<G, C>(&self, context: &Context, graphics: &mut G)
     where
         G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
