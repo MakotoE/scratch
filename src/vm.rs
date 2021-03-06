@@ -13,11 +13,13 @@ use futures::{FutureExt, StreamExt};
 use graphics::math::Matrix2d;
 use graphics::{rectangle, Context, DrawState, Graphics};
 use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
+use palette::Hsv;
 use piston_window::{
     G2d, G2dTextureContext, Glyphs, OpenGL, PistonWindow, Viewport, WindowSettings,
 };
 use std::borrow::Borrow;
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::time::Duration;
 use tokio::select;
 use tokio::sync::{broadcast, mpsc};
@@ -165,7 +167,7 @@ impl VM {
                 recv_result = broadcast_receiver.recv() => {
                     match recv_result {
                         Ok(msg) => {
-                            log::info!("broadcast: {:?}", &msg);
+                            log::info!("broadcast: {:?}", BroadcastMsgDebug(&msg));
                             match msg {
                                 BroadcastMsg::Clone(from_sprite) => {
                                     let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
@@ -221,7 +223,8 @@ impl VM {
                                     sprites
                                         .draw_to_buffer(&mut Context::new(), &mut render_buffer, &mut buffer_glyphs, &sprite_id)
                                         .await?;
-                                    broadcaster.send(BroadcastMsg::CanvasImage(render_buffer))?;
+                                    render_buffer.save("image.png")?;
+                                    broadcaster.send(BroadcastMsg::CanvasImage(render_buffer.into_image()))?;
                                 }
                                 _ => {}
                             }
@@ -514,5 +517,16 @@ impl DrawOrder {
 
     fn insert(&mut self, index: usize, id: SpriteID) {
         self.ids.insert(index, id)
+    }
+}
+
+struct BroadcastMsgDebug<'a>(&'a BroadcastMsg);
+
+impl Debug for BroadcastMsgDebug<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            BroadcastMsg::CanvasImage(_) => write!(f, "CanvasImage (RgbaImage)"),
+            _ => write!(f, "{:?}", self.0),
+        }
     }
 }

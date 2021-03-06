@@ -5,9 +5,11 @@ use crate::sprite::SpriteID;
 use graphics::types::Rectangle;
 use graphics::Context;
 use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
+use image::{Pixel, Rgba, RgbaImage};
 use input::Key;
+use itertools::{any, zip, zip_eq};
 use ndarray::{Array2, Zip};
-use palette::{Alpha, Blend, Hsv, LinSrgba, Srgb, Srgba};
+use palette::{Alpha, Blend, Hsv, IntoColor, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -271,16 +273,18 @@ impl TouchingColor {
     }
 
     fn touching_color(
-        canvas_image: &Array2<Srgba<u8>>,
-        sprite_image: &Array2<Srgba<u8>>,
-        color: &LinSrgba,
+        canvas_image: &RgbaImage,
+        sprite_image: &RgbaImage,
+        color: &Rgba<u8>,
     ) -> bool {
-        !Zip::from(canvas_image)
-            .and(sprite_image)
-            .all(|canvas_pixel, sprite_pixel| {
-                let apparent_color = blend_with_white(canvas_pixel);
-                !(sprite_pixel.alpha > 0 && &apparent_color == color)
-            })
+        any(
+            zip_eq(canvas_image.pixels(), sprite_image.pixels()),
+            |(canvas_pixel, sprite_pixel)| {
+                let mut apparent_color = *canvas_pixel;
+                apparent_color.blend(&Rgba::from_channels(1, 1, 1, 1));
+                sprite_pixel.channels()[0] > 0 && apparent_color == *color
+            },
+        )
     }
 }
 
@@ -321,7 +325,16 @@ impl Block for TouchingColor {
             render_buffer
         };
 
-        let match_color = hsv_to_linsrgba(self.color.value().await?.try_into()?);
+        let match_color: Rgba<u8> = {
+            let hsv: Hsv = self.color.value().await?.try_into()?;
+            let rgb: Srgb = hsv.into();
+            Rgba::from_channels(
+                (rgb.red * 255.0) as u8,
+                (rgb.green * 255.0) as u8,
+                (rgb.blue * 255.0) as u8,
+                1,
+            )
+        };
 
         let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
@@ -332,7 +345,7 @@ impl Block for TouchingColor {
         loop {
             if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
                 let result =
-                    TouchingColor::touching_color(&canvas_image.image, &sprite_image, &match_color);
+                    TouchingColor::touching_color(&canvas_image, &sprite_image, &match_color);
                 return Ok(result.into());
             }
         }

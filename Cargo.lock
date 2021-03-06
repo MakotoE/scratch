@@ -576,7 +576,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07df87e958766617953907cc71dc73c6faa0d67bc5c788fc65509d0a5b4d6a15"
 dependencies = [
- "itertools",
+ "itertools 0.9.0",
  "roots",
  "smallvec 1.6.1",
 ]
@@ -919,8 +919,6 @@ dependencies = [
 [[package]]
 name = "graphics_buffer"
 version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a7d9fb1fa0082edf3664426c427e3933ca497d75394604e772cf64cf32660d2"
 dependencies = [
  "bit-vec",
  "image",
@@ -1015,6 +1013,15 @@ name = "itertools"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
 dependencies = [
  "either",
 ]
@@ -2149,6 +2156,7 @@ dependencies = [
  "graphics_buffer",
  "hex",
  "image",
+ "itertools 0.10.0",
  "lazy_static",
  "log",
  "ndarray",
