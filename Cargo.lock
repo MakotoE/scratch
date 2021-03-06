@@ -919,6 +919,8 @@ dependencies = [
 [[package]]
 name = "graphics_buffer"
 version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a7d9fb1fa0082edf3664426c427e3933ca497d75394604e772cf64cf32660d2"
 dependencies = [
  "bit-vec",
  "image",

@@ -55,7 +55,7 @@ pub enum BroadcastMsg {
     },
     /// Requests image but with sprite removed
     RequestCanvasImage(SpriteID),
-    CanvasImage(RgbaImage),
+    CanvasImage(RenderBuffer),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

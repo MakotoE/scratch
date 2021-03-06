@@ -273,15 +273,11 @@ impl TouchingColor {
     }
 
     fn touching_color(canvas_image: &RgbaImage, sprite_image: &RgbaImage, color: &Rgb<u8>) -> bool {
-        dbg!(color);
         any(
             zip_eq(canvas_image.pixels(), sprite_image.pixels()),
             |(canvas_pixel, sprite_pixel)| {
                 let mut canvas_pixel_blended = *canvas_pixel;
                 canvas_pixel_blended.blend(&Rgba::from_channels(1, 1, 1, 1));
-                if sprite_pixel.channels4().3 > 0 && canvas_pixel_blended.channels4().3 == 255 {
-                    dbg!(canvas_pixel_blended);
-                }
                 let canvas_channels = canvas_pixel_blended.channels4();
                 let color_channels = color.channels4();
 

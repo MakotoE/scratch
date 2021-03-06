@@ -223,7 +223,7 @@ impl VM {
                                     sprites
                                         .draw_to_buffer(&mut Context::new(), &mut render_buffer, &mut buffer_glyphs, &sprite_id)
                                         .await?;
-                                    broadcaster.send(BroadcastMsg::CanvasImage(render_buffer.into_image()))?;
+                                    broadcaster.send(BroadcastMsg::CanvasImage(render_buffer))?;
                                 }
                                 _ => {}
                             }
