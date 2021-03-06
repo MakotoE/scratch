@@ -19,7 +19,6 @@ hex = "0.4"
 rand = { version = "0.8", features = ["small_rng"] }
 getrandom = "0.2"
 strum = { version = "0.20", features = ["derive"] }
-ndarray = "0.14"
 conrod_core = "0.71"
 piston2d-graphics = "0.37"
 conrod_piston = "0.71"

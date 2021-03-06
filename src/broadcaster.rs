@@ -5,7 +5,6 @@ use crate::vm::ThreadID;
 use graphics_buffer::RenderBuffer;
 use image::RgbaImage;
 use input::Key;
-use ndarray::Array2;
 use palette::Hsv;
 use std::collections::HashSet;
 use tokio::sync::broadcast::{channel, Receiver, Sender};

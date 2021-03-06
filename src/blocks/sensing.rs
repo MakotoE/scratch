@@ -5,10 +5,9 @@ use crate::sprite::SpriteID;
 use graphics::types::Rectangle;
 use graphics::Context;
 use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
-use image::{Pixel, Rgb, Rgba, RgbaImage};
+use image::{Pixel, Rgba, RgbaImage};
 use input::Key;
 use itertools::{any, zip, zip_eq};
-use ndarray::{Array2, Zip};
 use palette::{Alpha, Blend, Hsv, IntoColor, LinSrgba, Srgb, Srgba};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -178,17 +177,20 @@ impl ColorIsTouchingColor {
     }
 
     fn sprite_color_touching_canvas_color(
-        sprite_image: &Array2<Srgba<u8>>,
-        sprite_color: &Srgba<u8>,
-        canvas_image: &Array2<Srgba<u8>>,
-        canvas_color: &LinSrgba,
+        sprite_image: &RgbaImage,
+        sprite_color: &Rgba<u8>,
+        canvas_image: &RgbaImage,
+        canvas_color: &Rgba<u8>,
     ) -> bool {
-        !Zip::from(canvas_image)
-            .and(sprite_image)
-            .all(|canvas_pixel, sprite_pixel| {
-                let apparent_color = blend_with_white(canvas_pixel);
-                !(sprite_pixel == sprite_color && &apparent_color == canvas_color)
-            })
+        any(
+            zip_eq(canvas_image.pixels(), sprite_image.pixels()),
+            |(canvas_pixel, sprite_pixel)| {
+                let mut canvas_pixel_blended = *canvas_pixel;
+                canvas_pixel_blended.blend(&Rgba::from_channels(1, 1, 1, 1));
+                colors_approximate_equal(sprite_pixel, sprite_color)
+                    && colors_approximate_equal(&canvas_pixel_blended, canvas_color)
+            },
+        )
     }
 }
 
@@ -222,37 +224,38 @@ impl Block for ColorIsTouchingColor {
     }
 
     async fn value(&self) -> Result<Value> {
-        todo!()
-        // let sprite_color = hsv_to_srgb(self.sprite_color.value().await?.try_into()?);
-        // let canvas_color = hsv_to_linsrgba(self.canvas_color.value().await?.try_into()?);
-        //
-        // let sprite_image = {
-        //     let canvas_context = CanvasContext::new(&self.buffer_canvas);
-        //     self.runtime
-        //         .sprite
-        //         .write()
-        //         .await
-        //         .redraw(&canvas_context)?;
-        //     canvas_context.get_image_data()?
-        // };
-        //
-        // let sprite_id = self.runtime.thread_id().sprite_id;
-        // self.runtime
-        //     .global
-        //     .broadcaster
-        //     .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
-        // let mut channel = self.runtime.global.broadcaster.subscribe();
-        // loop {
-        //     if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
-        //         let result = ColorIsTouchingColor::sprite_color_touching_canvas_color(
-        //             &sprite_image,
-        //             &sprite_color,
-        //             &canvas_image.image,
-        //             &canvas_color,
-        //         );
-        //         return Ok(result.into());
-        //     }
-        // }
+        let sprite_color = hsv_to_rgba(self.sprite_color.value().await?.try_into()?);
+        let canvas_color = hsv_to_rgba(self.canvas_color.value().await?.try_into()?);
+
+        let sprite_image = {
+            let mut render_buffer =
+                RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
+            let mut buffer_glyphs = buffer_glyphs_from_path("assets/Roboto-Regular.ttf")?; // TODO instantiate once
+            self.runtime.sprite.write().await.redraw(
+                &Context::new(),
+                &mut render_buffer,
+                &mut buffer_glyphs,
+            )?;
+            render_buffer
+        };
+
+        let sprite_id = self.runtime.thread_id().sprite_id;
+        self.runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::RequestCanvasImage(sprite_id))?;
+        let mut channel = self.runtime.global.broadcaster.subscribe();
+        loop {
+            if let BroadcastMsg::CanvasImage(canvas_image) = channel.recv().await? {
+                let result = ColorIsTouchingColor::sprite_color_touching_canvas_color(
+                    &sprite_image,
+                    &sprite_color,
+                    &canvas_image,
+                    &canvas_color,
+                );
+                return Ok(result.into());
+            }
+        }
     }
 }
 
@@ -272,32 +275,20 @@ impl TouchingColor {
         }
     }
 
-    fn touching_color(canvas_image: &RgbaImage, sprite_image: &RgbaImage, color: &Rgb<u8>) -> bool {
+    fn touching_color(
+        canvas_image: &RgbaImage,
+        sprite_image: &RgbaImage,
+        color: &Rgba<u8>,
+    ) -> bool {
         any(
             zip_eq(canvas_image.pixels(), sprite_image.pixels()),
             |(canvas_pixel, sprite_pixel)| {
                 let mut canvas_pixel_blended = *canvas_pixel;
                 canvas_pixel_blended.blend(&Rgba::from_channels(1, 1, 1, 1));
-                let canvas_channels = canvas_pixel_blended.channels4();
-                let color_channels = color.channels4();
 
                 sprite_pixel.channels4().3 > 0
                     // Check if canvas color is approximately equal
-                    && if canvas_channels.0 > color_channels.0 {
-                        (canvas_channels.0 - color_channels.0) < 2
-                    } else {
-                        (color_channels.0 - canvas_channels.0) < 2
-                    }
-                    && if canvas_channels.1 > color_channels.1 {
-                        (canvas_channels.1 - color_channels.1) < 2
-                    } else {
-                        (color_channels.1 - canvas_channels.1) < 2
-                    }
-                    && if canvas_channels.2 > color_channels.2 {
-                        (canvas_channels.2 - color_channels.2) < 2
-                    } else {
-                        (color_channels.2 - canvas_channels.2) < 2
-                    }
+                    && colors_approximate_equal(&canvas_pixel_blended, color)
             },
         )
     }
@@ -340,16 +331,7 @@ impl Block for TouchingColor {
             render_buffer
         };
 
-        let match_color: Rgb<u8> = {
-            let hsv: Hsv = self.color.value().await?.try_into()?;
-            let rgb: Srgb = hsv.into();
-            Rgb::from_channels(
-                (rgb.red * 255.0) as u8,
-                (rgb.green * 255.0) as u8,
-                (rgb.blue * 255.0) as u8,
-                255,
-            )
-        };
+        let match_color = hsv_to_rgba(self.color.value().await?.try_into()?);
 
         let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
@@ -367,36 +349,37 @@ impl Block for TouchingColor {
     }
 }
 
-fn hsv_to_srgb(hsv: Hsv) -> Srgba<u8> {
-    let rgb: Srgb = hsv.into();
-    Alpha {
-        color: Srgb::new(
-            (rgb.red * 255.0).round() as u8,
-            (rgb.green * 255.0).round() as u8,
-            (rgb.blue * 255.0).round() as u8,
-        ),
-        alpha: 255,
-    }
+fn hsv_to_rgba(color: Hsv) -> Rgba<u8> {
+    let rgb: Srgb = color.into();
+    Rgba::from_channels(
+        (rgb.red * 255.0) as u8,
+        (rgb.green * 255.0) as u8,
+        (rgb.blue * 255.0) as u8,
+        255,
+    )
 }
 
-fn hsv_to_linsrgba(hsv: Hsv) -> LinSrgba {
-    let rgb: Srgb = hsv.into();
-    Alpha {
-        color: rgb.into_linear(),
-        alpha: 1.0,
-    }
-}
+fn colors_approximate_equal(a: &Rgba<u8>, b: &Rgba<u8>) -> bool {
+    let a_channels = a.channels4();
+    let b_channels = b.channels4();
 
-fn blend_with_white(color: &Srgba<u8>) -> LinSrgba {
-    let color_f = Srgba::new(
-        color.red as f32,
-        color.green as f32,
-        color.blue as f32,
-        color.alpha as f32,
-    );
-    color_f
-        .into_linear()
-        .over(LinSrgba::<f32>::new(1.0, 1.0, 1.0, 1.0))
+    (if a_channels.0 > b_channels.0 {
+        (a_channels.0 - b_channels.0) < 2
+    } else {
+        (b_channels.0 - a_channels.0) < 2
+    }) && if a_channels.1 > b_channels.1 {
+        (a_channels.1 - b_channels.1) < 2
+    } else {
+        (b_channels.1 - a_channels.1) < 2
+    } && if a_channels.2 > b_channels.2 {
+        (a_channels.2 - b_channels.2) < 2
+    } else {
+        (b_channels.2 - a_channels.2) < 2
+    } && if a_channels.3 > b_channels.3 {
+        (a_channels.3 - b_channels.3) < 3
+    } else {
+        (b_channels.3 - a_channels.3) < 3
+    }
 }
 
 #[derive(Debug)]
