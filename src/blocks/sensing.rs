@@ -5,7 +5,7 @@ use crate::sprite::SpriteID;
 use graphics::types::Rectangle;
 use graphics::Context;
 use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
-use image::{Pixel, Rgba, RgbaImage};
+use image::{Pixel, Rgb, Rgba, RgbaImage};
 use input::Key;
 use itertools::{any, zip, zip_eq};
 use ndarray::{Array2, Zip};
@@ -272,17 +272,36 @@ impl TouchingColor {
         }
     }
 
-    fn touching_color(
-        canvas_image: &RgbaImage,
-        sprite_image: &RgbaImage,
-        color: &Rgba<u8>,
-    ) -> bool {
+    fn touching_color(canvas_image: &RgbaImage, sprite_image: &RgbaImage, color: &Rgb<u8>) -> bool {
+        dbg!(color);
         any(
             zip_eq(canvas_image.pixels(), sprite_image.pixels()),
             |(canvas_pixel, sprite_pixel)| {
-                let mut apparent_color = *canvas_pixel;
-                apparent_color.blend(&Rgba::from_channels(1, 1, 1, 1));
-                sprite_pixel.channels()[0] > 0 && apparent_color == *color
+                let mut canvas_pixel_blended = *canvas_pixel;
+                canvas_pixel_blended.blend(&Rgba::from_channels(1, 1, 1, 1));
+                if sprite_pixel.channels4().3 > 0 && canvas_pixel_blended.channels4().3 == 255 {
+                    dbg!(canvas_pixel_blended);
+                }
+                let canvas_channels = canvas_pixel_blended.channels4();
+                let color_channels = color.channels4();
+
+                sprite_pixel.channels4().3 > 0
+                    // Check if canvas color is approximately equal
+                    && if canvas_channels.0 > color_channels.0 {
+                        (canvas_channels.0 - color_channels.0) < 2
+                    } else {
+                        (color_channels.0 - canvas_channels.0) < 2
+                    }
+                    && if canvas_channels.1 > color_channels.1 {
+                        (canvas_channels.1 - color_channels.1) < 2
+                    } else {
+                        (color_channels.1 - canvas_channels.1) < 2
+                    }
+                    && if canvas_channels.2 > color_channels.2 {
+                        (canvas_channels.2 - color_channels.2) < 2
+                    } else {
+                        (color_channels.2 - canvas_channels.2) < 2
+                    }
             },
         )
     }
@@ -325,14 +344,14 @@ impl Block for TouchingColor {
             render_buffer
         };
 
-        let match_color: Rgba<u8> = {
+        let match_color: Rgb<u8> = {
             let hsv: Hsv = self.color.value().await?.try_into()?;
             let rgb: Srgb = hsv.into();
-            Rgba::from_channels(
+            Rgb::from_channels(
                 (rgb.red * 255.0) as u8,
                 (rgb.green * 255.0) as u8,
                 (rgb.blue * 255.0) as u8,
-                1,
+                255,
             )
         };
 
