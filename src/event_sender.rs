@@ -2,16 +2,9 @@ use super::*;
 use crate::broadcaster::{BroadcastMsg, Broadcaster};
 use crate::coordinate::CanvasCoordinate;
 use crate::interface::CANVAS_TOP_LEFT;
-use futures::future::BoxFuture;
-use futures::stream::FuturesUnordered;
-use futures::{FutureExt, StreamExt};
 use input::{ButtonState, Input, Key, Motion, MouseButton};
 use std::collections::HashSet;
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
-use strum::EnumString;
 use tokio::select;
-use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 #[derive(Debug)]
@@ -66,8 +59,8 @@ impl EventSender {
                 },
                 i = input_receiver.recv() => match i {
                     Some(input) => {
-                        match input {
-                            Input::Button(button) => match button.button {
+                        if let Input::Button(button) = input {
+                            match button.button {
                                 input::Button::Keyboard(key) => match button.state {
                                     ButtonState::Press => {
                                         pressed_keys.insert(key);
@@ -86,8 +79,7 @@ impl EventSender {
                                     }
                                 }
                                 _ => {}
-                            },
-                            _ => {}
+                            }
                         }
                     }
                     None => return Ok(()),

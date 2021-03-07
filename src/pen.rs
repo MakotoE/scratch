@@ -2,9 +2,8 @@ use crate::coordinate::{CanvasCoordinate, SpriteCoordinate};
 use crate::pen::PenStatus::PenUp;
 use crate::sprite_runtime::GraphicsCostumeTexture;
 use graphics::character::CharacterCache;
-use graphics::{line, Context, Graphics};
+use graphics::{line, Context};
 use palette::{IntoColor, LinSrgb};
-use piston_window::G2d;
 
 #[derive(Debug, Clone)]
 pub struct Pen {
@@ -170,7 +169,6 @@ impl Line {
                 }
             }
         } else {
-            return;
         };
     }
 }

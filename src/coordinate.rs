@@ -35,22 +35,6 @@ pub struct CanvasCoordinate {
     pub y: f64,
 }
 
-impl CanvasCoordinate {
-    pub fn add(&self, other: &Self) -> Self {
-        Self {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-
-    pub fn scale(&self, scale: &Scale) -> Self {
-        Self {
-            x: self.x * scale.x,
-            y: self.y * scale.y,
-        }
-    }
-}
-
 impl Default for CanvasCoordinate {
     fn default() -> Self {
         Self { x: 0.0, y: 0.0 }
@@ -92,15 +76,6 @@ impl Size {
 pub struct Scale {
     pub x: f64,
     pub y: f64,
-}
-
-impl Scale {
-    pub fn multiply(&self, scale: &Scale) -> Self {
-        Self {
-            x: self.x * scale.x,
-            y: self.y * scale.y,
-        }
-    }
 }
 
 impl Default for Scale {

@@ -4,11 +4,11 @@ use crate::coordinate::{canvas_const, CanvasCoordinate};
 use crate::sprite::SpriteID;
 use graphics::types::Rectangle;
 use graphics::Context;
-use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
+use graphics_buffer::{buffer_glyphs_from_path, RenderBuffer};
 use image::{Pixel, Rgba, RgbaImage};
 use input::Key;
-use itertools::{any, zip, zip_eq};
-use palette::{Alpha, Blend, Hsv, IntoColor, LinSrgba, Srgb, Srgba};
+use itertools::{any, zip_eq};
+use palette::{Hsv, Srgb};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -47,7 +47,16 @@ impl FromStr for KeyOption {
 
 impl Display for KeyOption {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        unimplemented!()
+        match self {
+            KeyOption::Any => write!(f, "any"),
+            KeyOption::Key(k) => match serde_json::to_string(k) {
+                Ok(s) => write!(f, "{}", &s),
+                Err(e) => {
+                    log::error!("{}", e);
+                    Err(std::fmt::Error {})
+                }
+            },
+        }
     }
 }
 
@@ -477,7 +486,7 @@ impl Block for TouchingObject {
                 }
             }
         };
-        return Ok(result.into());
+        Ok(result.into())
     }
 }
 

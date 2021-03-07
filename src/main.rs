@@ -22,10 +22,8 @@ mod vm;
 
 use anyhow::{Error, Result};
 use error::*;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
 use std::sync::Arc;
 use tokio::spawn;
 use tokio::sync::RwLock;

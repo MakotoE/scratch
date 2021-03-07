@@ -1,6 +1,6 @@
 use super::*;
 use crate::app::WINDOW_SIZE;
-use crate::broadcaster::{BroadcastMsg, Broadcaster};
+use crate::broadcaster::Broadcaster;
 use crate::coordinate::{canvas_const, CanvasCoordinate};
 use crate::event_sender::EventSender;
 use crate::file::ScratchFile;
@@ -13,7 +13,6 @@ use conrod_core::{Borderable, Color, Colorable, Labelable, UiCell};
 use conrod_core::{Positionable, Sizeable, Widget};
 use graphics::Context;
 use graphics::{rectangle, Transformed};
-use input::{mouse, Motion};
 use piston_window::{G2d, G2dTextureContext, Glyphs, Input};
 
 pub struct Interface {

@@ -1,5 +1,4 @@
 use super::*;
-use crate::app::WINDOW_SIZE;
 use crate::blocks::BlockInfo;
 use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
 use crate::coordinate::{canvas_const, SpriteRectangle};
@@ -7,22 +6,15 @@ use crate::file::{ScratchFile, Target};
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
 use crate::sprite_runtime::SpriteRuntime;
-use futures::future::BoxFuture;
 use futures::stream::FuturesUnordered;
-use futures::{FutureExt, StreamExt};
-use graphics::math::Matrix2d;
-use graphics::{rectangle, Context, DrawState, Graphics};
+use futures::StreamExt;
+use graphics::Context;
 use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
-use palette::Hsv;
-use piston_window::{
-    G2d, G2dTextureContext, Glyphs, OpenGL, PistonWindow, Viewport, WindowSettings,
-};
-use std::borrow::Borrow;
+use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::collections::HashSet;
 use std::fmt::Debug;
-use std::time::Duration;
 use tokio::select;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::mpsc;
 
 #[derive(Debug)]
 pub struct VM {
@@ -98,7 +90,7 @@ impl VM {
                 .await?;
             sprites.insert(id, sprite);
         }
-        return Ok(sprites);
+        Ok(sprites)
     }
 
     async fn run(
@@ -129,8 +121,8 @@ impl VM {
             select! {
                 futures_result = futures.next() => {
                     if let Some(step_result) = futures_result {
-                        match step_result? {
-                            Some(thread_id) => match current_state {
+                        if let Some(thread_id) = step_result? {
+                            match current_state {
                                 Control::Continue => futures.push(sprites.step(thread_id)),
                                 Control::Step | Control::Pause => {
                                     paused_threads.push(thread_id);
@@ -145,7 +137,6 @@ impl VM {
                                 }
                                 _ => unreachable!("{:?}", current_state),
                             }
-                            None => {}
                         }
                     }
                 },

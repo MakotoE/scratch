@@ -1,6 +1,5 @@
 use super::*;
 use palette::{Hsv, IntoColor};
-use serde::Serializer;
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::repeat;

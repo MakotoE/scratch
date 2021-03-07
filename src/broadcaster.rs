@@ -3,9 +3,7 @@ use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
 use graphics_buffer::RenderBuffer;
-use image::RgbaImage;
 use input::Key;
-use palette::Hsv;
 use std::collections::HashSet;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 

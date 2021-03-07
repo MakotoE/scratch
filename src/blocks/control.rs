@@ -2,8 +2,6 @@ use super::*;
 use crate::broadcaster;
 use crate::broadcaster::BroadcastMsg;
 use crate::vm::ThreadID;
-use futures::StreamExt;
-
 use std::str::FromStr;
 use strum::EnumString;
 use tokio::time::interval;

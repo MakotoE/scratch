@@ -5,7 +5,7 @@ use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
 use flo_curves::{bezier, BezierCurve, Coord2};
 use gfx_device_gl::Resources;
-use gfx_graphics::{CreateTexture, Format, ImageSize};
+use gfx_graphics::{CreateTexture, Format};
 use gfx_texture::{Texture, TextureSettings};
 use graphics::character::CharacterCache;
 use graphics::types::{FontSize, Rectangle};
@@ -115,14 +115,14 @@ impl SpriteRuntime {
                     height: 0.0,
                 }
             };
-            let mut c = Context {
+            let c = Context {
                 transform: context.transform.trans(
                     position.x - 8.0 + size.width / 4.0,
                     position.y - 44.0 - size.height / 2.0,
                 ),
                 ..*context
             };
-            SpriteRuntime::draw_text_bubble(text, &mut c, graphics, character_cache)?;
+            SpriteRuntime::draw_text_bubble(text, &c, graphics, character_cache)?;
         }
         Ok(())
     }
@@ -133,12 +133,12 @@ impl SpriteRuntime {
         costume: &Costume,
         position: &CanvasCoordinate,
         scale: &Scale,
-        alpha: f64,
+        _alpha: f64, // TODO
     ) where
         G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
     {
-        let mut rectangle: Rectangle = [
+        let rectangle: Rectangle = [
             position.x - costume.center.x * costume.scale * scale.x,
             position.y - costume.center.y * costume.scale * scale.y,
             costume.image_size.width * scale.x,
@@ -223,7 +223,7 @@ impl SpriteRuntime {
         let width = f64::max(
             character_cache
                 .width(FONT_SIZE, text)
-                .map_err(|e| Error::msg("width calculation error"))?,
+                .map_err(|_e| Error::msg("width calculation error"))?,
             50.0,
         ) + PADDING * 2.0;
 
@@ -278,7 +278,7 @@ impl SpriteRuntime {
             context.transform.trans(PADDING, PADDING + 0.9 * 15.0),
             graphics,
         )
-        .map_err(|e| Error::msg("text draw error"))
+        .map_err(|_| Error::msg("text draw error"))
     }
 
     pub fn need_redraw(&self) -> bool {
@@ -439,9 +439,9 @@ impl Costume {
         let height = pixmap.height();
 
         resvg::render(&tree, usvg::FitTo::Zoom(2.0), pixmap.as_mut())
-            .ok_or(Error::msg("svg error"))?;
-        let image: RgbaImage =
-            ImageBuffer::from_raw(width, height, pixmap.take()).ok_or(Error::msg("svg error"))?;
+            .ok_or_else(|| Error::msg("svg error"))?;
+        let image: RgbaImage = ImageBuffer::from_raw(width, height, pixmap.take())
+            .ok_or_else(|| Error::msg("svg error"))?;
         Ok((
             CreateTexture::create(
                 texture_context,
@@ -470,7 +470,9 @@ impl Costume {
         let x = decoder.dimensions().0;
         let y = decoder.dimensions().1;
         let dynamic_image = DynamicImage::from_decoder(decoder)?;
-        let image = dynamic_image.as_rgba8().ok_or(Error::msg("png error"))?;
+        let image = dynamic_image
+            .as_rgba8()
+            .ok_or_else(|| Error::msg("png error"))?;
         Ok((
             CreateTexture::create(
                 texture_context,

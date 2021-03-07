@@ -24,10 +24,12 @@ fn get_block(
     runtime: Runtime,
     info: &file::Block,
 ) -> Result<Box<dyn Block + Send + Sync>> {
-    let (category, name) = info.opcode.split_once('_').ok_or(Error::msg(format!(
-        "block \"{}\": opcode {} does not exist",
-        id, info.opcode
-    )))?;
+    let (category, name) = info.opcode.split_once('_').ok_or_else(|| {
+        Error::msg(format!(
+            "block \"{}\": opcode {} does not exist",
+            id, info.opcode
+        ))
+    })?;
 
     let id_clone = id;
     match category {

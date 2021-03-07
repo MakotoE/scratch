@@ -2,7 +2,7 @@ use super::*;
 use crate::file::ScratchFile;
 use crate::interface::Interface;
 use conrod_core::text::GlyphCache;
-use conrod_core::{Positionable, Theme};
+use conrod_core::Theme;
 use gfx_core::Device;
 use gfx_graphics::GfxGraphics;
 use graphics::Context;
@@ -107,7 +107,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
                         &window.output_stencil,
                         &mut window.g2d,
                     );
-                    let mut context = Context::new_viewport(args.viewport());
+                    let context = Context::new_viewport(args.viewport());
 
                     let cache_queued_glyphs =
                         |_: &mut G2d,
@@ -129,7 +129,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
                         };
 
                     interface
-                        .draw_2d(&mut context, &mut graphics, &mut character_cache)
+                        .draw_2d(&context, &mut graphics, &mut character_cache)
                         .await
                         .unwrap();
 

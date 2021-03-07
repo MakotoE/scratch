@@ -6,11 +6,9 @@ use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::{GraphicsCostumeTexture, SpriteRuntime};
 use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
-use gfx_device_gl::Resources;
-use gfx_graphics::{ImageSize, Texture};
 use graphics::character::CharacterCache;
-use graphics::{Context, Graphics};
-use piston_window::{G2d, G2dTextureContext, Glyphs};
+use graphics::Context;
+use piston_window::G2dTextureContext;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -51,7 +49,7 @@ impl Sprite {
             threads,
             runtime: Runtime::new(
                 sprite_runtime_ref,
-                global.clone(),
+                global,
                 ThreadID {
                     sprite_id,
                     thread_id: 0,
