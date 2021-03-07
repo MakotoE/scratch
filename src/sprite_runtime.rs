@@ -76,7 +76,7 @@ impl SpriteRuntime {
             .await
     }
 
-    pub fn redraw<G, C>(
+    pub fn redraw_frame<G, C>(
         &mut self,
         context: &Context,
         graphics: &mut G,
@@ -87,7 +87,19 @@ impl SpriteRuntime {
         C: CharacterCache,
     {
         self.need_redraw = false;
+        self.draw(context, graphics, character_cache)
+    }
 
+    pub fn draw<G, C>(
+        &self,
+        context: &Context,
+        graphics: &mut G,
+        character_cache: &mut C,
+    ) -> Result<()>
+    where
+        G: GraphicsCostumeTexture<C>,
+        C: CharacterCache,
+    {
         if let HideStatus::Hide = self.hide {
             return Ok(());
         }

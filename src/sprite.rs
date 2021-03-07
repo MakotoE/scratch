@@ -103,7 +103,7 @@ impl Sprite {
             .sprite
             .write()
             .await
-            .redraw(context, graphics, character_cache)
+            .redraw_frame(context, graphics, character_cache)
     }
 
     pub async fn block_inputs(&self) -> Vec<BlockInputs> {

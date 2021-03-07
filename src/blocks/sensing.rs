@@ -245,7 +245,7 @@ impl Block for ColorIsTouchingColor {
         let sprite_image = {
             let mut render_buffer =
                 RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
-            self.runtime.sprite.write().await.redraw(
+            self.runtime.sprite.write().await.draw(
                 &Context::new(),
                 &mut render_buffer,
                 BUFFER_GLYPHS.write().await.deref_mut(),
@@ -336,7 +336,7 @@ impl Block for TouchingColor {
         let sprite_image = {
             let mut render_buffer =
                 RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
-            self.runtime.sprite.write().await.redraw(
+            self.runtime.sprite.write().await.draw(
                 &Context::new(),
                 &mut render_buffer,
                 BUFFER_GLYPHS.write().await.deref_mut(),
