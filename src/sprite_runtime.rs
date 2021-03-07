@@ -16,7 +16,8 @@ use image::codecs::png::PngDecoder;
 use image::{DynamicImage, ImageBuffer, ImageDecoder, RgbaImage};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::f64::consts::TAU;
-use std::io::Cursor;
+use std::fs::File;
+use std::io::{Cursor, Read};
 
 #[derive(Debug)]
 pub struct SpriteRuntime {
@@ -484,7 +485,7 @@ impl Costume {
         let dynamic_image = DynamicImage::from_decoder(decoder)?;
         let image = dynamic_image
             .as_rgba8()
-            .ok_or_else(|| Error::msg("png error"))?;
+            .ok_or_else(|| Error::msg("not in RGBA color space"))?;
         Ok((
             CreateTexture::create(
                 texture_context,
@@ -505,11 +506,19 @@ impl Costume {
         ))
     }
 
-    pub fn new_blank(costume: &file::Costume) -> Result<Self> {
+    pub fn new_blank(
+        texture_context: &mut G2dTextureContext,
+        costume: &file::Costume,
+    ) -> Result<Self> {
+        let mut file = File::open("assets/blank_backdrop.png")?;
+        let mut buffer: Vec<u8> = Vec::new();
+        file.read_to_end(&mut buffer)?;
+        let (gfx_texture, render_buffer_texture, width, height) =
+            Costume::png_texture(&buffer, texture_context)?;
         Ok(Self {
             image_size: Size {
-                width: 1.0,
-                height: 1.0,
+                width: width as f64,
+                height: height as f64,
             },
             name: costume.name.clone(),
             center: SpriteCoordinate {
@@ -517,8 +526,8 @@ impl Costume {
                 y: costume.rotation_center_y,
             },
             scale: 1.0,
-            gfx_texture: todo!(),
-            render_buffer_texture: todo!(),
+            gfx_texture,
+            render_buffer_texture,
         })
     }
 }
@@ -544,7 +553,9 @@ impl Costumes {
                     None => return Err(Error::msg(format!("image not found: {}", md5ext))),
                 }
             } else {
-                Costume::new_blank(&costume)?
+                // Pre-made Scratch backdrops are not included in the .sb3 file. A blank image is
+                // used as a placeholder.
+                Costume::new_blank(texture_context, &costume)?
             };
             self.costumes.push(costume);
         }
