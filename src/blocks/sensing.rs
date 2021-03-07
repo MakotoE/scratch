@@ -202,8 +202,8 @@ impl ColorIsTouchingColor {
             |(canvas_pixel, sprite_pixel)| {
                 let mut canvas_pixel_blended = *canvas_pixel;
                 canvas_pixel_blended.blend(&Rgba::from_channels(1, 1, 1, 1));
-                colors_approximate_equal(sprite_pixel, sprite_color)
-                    && colors_approximate_equal(&canvas_pixel_blended, canvas_color)
+                colors_approximately_equal(sprite_pixel, sprite_color)
+                    && colors_approximately_equal(&canvas_pixel_blended, canvas_color)
             },
         )
     }
@@ -245,10 +245,11 @@ impl Block for ColorIsTouchingColor {
         let sprite_image = {
             let mut render_buffer =
                 RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
+            let mut cache = BUFFER_GLYPHS.write().await;
             self.runtime.sprite.write().await.draw(
                 &Context::new(),
                 &mut render_buffer,
-                BUFFER_GLYPHS.write().await.deref_mut(),
+                cache.deref_mut(),
             )?;
             render_buffer
         };
@@ -302,7 +303,7 @@ impl TouchingColor {
 
                 sprite_pixel.channels4().3 > 0
                     // Check if canvas color is approximately equal
-                    && colors_approximate_equal(&canvas_pixel_blended, color)
+                    && colors_approximately_equal(&canvas_pixel_blended, color)
             },
         )
     }
@@ -336,11 +337,12 @@ impl Block for TouchingColor {
         let sprite_image = {
             let mut render_buffer =
                 RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
+            let mut cache = BUFFER_GLYPHS.write().await;
             self.runtime.sprite.write().await.draw(
                 &Context::new(),
                 &mut render_buffer,
-                BUFFER_GLYPHS.write().await.deref_mut(),
-            )?; // TODO this sets need_redraw to false
+                cache.deref_mut(),
+            )?;
             render_buffer
         };
 
@@ -372,7 +374,7 @@ fn hsv_to_rgba(color: Hsv) -> Rgba<u8> {
     )
 }
 
-fn colors_approximate_equal(a: &Rgba<u8>, b: &Rgba<u8>) -> bool {
+fn colors_approximately_equal(a: &Rgba<u8>, b: &Rgba<u8>) -> bool {
     let a_channels = a.channels4();
     let b_channels = b.channels4();
 
@@ -389,9 +391,9 @@ fn colors_approximate_equal(a: &Rgba<u8>, b: &Rgba<u8>) -> bool {
     } else {
         (b_channels.2 - a_channels.2) < 2
     } && if a_channels.3 > b_channels.3 {
-        (a_channels.3 - b_channels.3) < 3
+        (a_channels.3 - b_channels.3) < 2
     } else {
-        (b_channels.3 - a_channels.3) < 3
+        (b_channels.3 - a_channels.3) < 2
     }
 }
 
