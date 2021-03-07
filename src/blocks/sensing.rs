@@ -4,12 +4,13 @@ use crate::coordinate::{canvas_const, CanvasCoordinate};
 use crate::sprite::SpriteID;
 use graphics::types::Rectangle;
 use graphics::Context;
-use graphics_buffer::{buffer_glyphs_from_path, RenderBuffer};
+use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
 use image::{Pixel, Rgba, RgbaImage};
 use input::Key;
 use itertools::{any, zip_eq};
 use palette::{Hsv, Srgb};
 use std::fmt::{Display, Formatter};
+use std::ops::DerefMut;
 use std::str::FromStr;
 
 pub fn get_block(
@@ -167,6 +168,11 @@ impl Block for KeyOptions {
 
 impl_try_from_value!(KeyOption);
 
+lazy_static::lazy_static! {
+    static ref BUFFER_GLYPHS: RwLock<BufferGlyphs<'static>>
+        = RwLock::new(buffer_glyphs_from_path("assets/Roboto-Regular.ttf").unwrap());
+}
+
 #[derive(Debug)]
 pub struct ColorIsTouchingColor {
     id: BlockID,
@@ -239,11 +245,10 @@ impl Block for ColorIsTouchingColor {
         let sprite_image = {
             let mut render_buffer =
                 RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
-            let mut buffer_glyphs = buffer_glyphs_from_path("assets/Roboto-Regular.ttf")?; // TODO instantiate once
             self.runtime.sprite.write().await.redraw(
                 &Context::new(),
                 &mut render_buffer,
-                &mut buffer_glyphs,
+                BUFFER_GLYPHS.write().await.deref_mut(),
             )?;
             render_buffer
         };
@@ -331,11 +336,10 @@ impl Block for TouchingColor {
         let sprite_image = {
             let mut render_buffer =
                 RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
-            let mut buffer_glyphs = buffer_glyphs_from_path("assets/Roboto-Regular.ttf")?; // TODO instantiate once
             self.runtime.sprite.write().await.redraw(
                 &Context::new(),
                 &mut render_buffer,
-                &mut buffer_glyphs,
+                BUFFER_GLYPHS.write().await.deref_mut(),
             )?; // TODO this sets need_redraw to false
             render_buffer
         };

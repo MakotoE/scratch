@@ -515,7 +515,7 @@ struct BroadcastMsgDebug<'a>(&'a BroadcastMsg);
 impl Debug for BroadcastMsgDebug<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.0 {
-            BroadcastMsg::CanvasImage(_) => write!(f, "CanvasImage (RgbaImage)"),
+            BroadcastMsg::CanvasImage(_) => write!(f, "CanvasImage(RgbaImage)"),
             _ => write!(f, "{:?}", self.0),
         }
     }
