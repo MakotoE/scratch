@@ -41,7 +41,14 @@ impl FromStr for KeyOption {
     fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
             "any" => KeyOption::Any,
-            _ => KeyOption::Key(serde_json::from_str(s)?),
+            _ => KeyOption::Key(match s {
+                "space" => Key::Space,
+                "left arrow" => Key::Left,
+                "right arrow" => Key::Right,
+                "up arrow" => Key::Up,
+                "down arrow" => Key::Down,
+                _ => unimplemented!(),
+            }),
         })
     }
 }
