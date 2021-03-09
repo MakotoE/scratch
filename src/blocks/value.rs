@@ -1,5 +1,5 @@
 use super::*;
-use palette::{Hsv, IntoColor};
+use palette::Hsv;
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::repeat;
@@ -159,7 +159,7 @@ impl Block for ValueColor {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("color", format!("{}", HsvDisplay(self.color)))],
+            vec![("color", format!("{}", format!("{:?}", &self.color)))],
             vec![],
             vec![],
         )
@@ -279,21 +279,6 @@ fn str_to_color(s: &str) -> Result<Hsv> {
     Ok(Hsv::from(rgb))
 }
 
-pub struct HsvDisplay(pub Hsv);
-
-impl Display for HsvDisplay {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let rgb = palette::Srgb::from_linear(self.0.into_rgb());
-        write!(
-            f,
-            "#{:02x}{:02x}{:02x}",
-            (rgb.red * 255.0).round() as u8,
-            (rgb.green * 255.0).round() as u8,
-            (rgb.blue * 255.0).round() as u8
-        )
-    }
-}
-
 impl TryInto<Hsv> for Value {
     type Error = Error;
 
@@ -312,7 +297,7 @@ impl Display for Value {
             Self::Bool(b) => b,
             Self::Number(n) => n,
             Self::String(s) => s,
-            Self::Color(c) => return write!(f, "{}", HsvDisplay(*c)),
+            Self::Color(c) => return write!(f, "{:?}", c),
             Self::TouchingObjectOption(o) => o,
             Self::KeyOption(o) => o,
             Self::StopOption(o) => o,
@@ -360,12 +345,6 @@ mod tests {
         if !expect_err {
             assert_eq!(result.unwrap(), expected);
         }
-    }
-
-    #[test]
-    fn test_fmt_hsv() {
-        let result = format!("{}", HsvDisplay(Hsv::new(0.0, 1.0, 1.0)));
-        assert_eq!(result, "#ff0000")
     }
 
     #[rstest(
