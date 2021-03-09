@@ -500,7 +500,6 @@ impl DrawOrder {
         match change {
             LayerChange::Front => self.ids.push(id),
             LayerChange::Back => self.ids.insert(0, id),
-            LayerChange::ChangeBy(_) => unimplemented!(),
         }
         Ok(())
     }

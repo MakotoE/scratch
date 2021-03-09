@@ -66,5 +66,4 @@ pub enum Stop {
 pub enum LayerChange {
     Front,
     Back,
-    ChangeBy(i64),
 }
