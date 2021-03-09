@@ -8,7 +8,7 @@ use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
 use image::{Pixel, Rgba, RgbaImage};
 use input::Key;
 use itertools::{any, zip_eq};
-use palette::{Hsv, Srgb};
+use palette::Srgb;
 use std::fmt::{Display, Formatter};
 use std::ops::DerefMut;
 use std::str::FromStr;
@@ -246,8 +246,8 @@ impl Block for ColorIsTouchingColor {
     }
 
     async fn value(&self) -> Result<Value> {
-        let sprite_color = hsv_to_rgba(self.sprite_color.value().await?.try_into()?);
-        let canvas_color = hsv_to_rgba(self.canvas_color.value().await?.try_into()?);
+        let sprite_color = srgb_to_rgba(self.sprite_color.value().await?.try_into()?);
+        let canvas_color = srgb_to_rgba(self.canvas_color.value().await?.try_into()?);
 
         let sprite_image = {
             let mut render_buffer =
@@ -353,7 +353,7 @@ impl Block for TouchingColor {
             render_buffer
         };
 
-        let match_color = hsv_to_rgba(self.color.value().await?.try_into()?);
+        let match_color = srgb_to_rgba(self.color.value().await?.try_into()?);
 
         let sprite_id = self.runtime.thread_id().sprite_id;
         self.runtime
@@ -371,14 +371,8 @@ impl Block for TouchingColor {
     }
 }
 
-fn hsv_to_rgba(color: Hsv) -> Rgba<u8> {
-    let rgb: Srgb = color.into();
-    Rgba::from_channels(
-        (rgb.red * 255.0) as u8,
-        (rgb.green * 255.0) as u8,
-        (rgb.blue * 255.0) as u8,
-        255,
-    )
+fn srgb_to_rgba(color: Srgb<u8>) -> Rgba<u8> {
+    Rgba::from_channels(color.red, color.green, color.blue, 255)
 }
 
 fn colors_approximately_equal(a: &Rgba<u8>, b: &Rgba<u8>) -> bool {

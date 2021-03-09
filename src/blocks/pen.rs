@@ -1,6 +1,6 @@
 use super::*;
-use palette::Mix;
 use palette::{Hsv, IntoColor};
+use palette::{Mix, Srgb};
 
 pub fn get_block(
     name: &str,
@@ -165,8 +165,8 @@ impl Block for SetPenColorToColor {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        let color: Hsv = self.color.value().await?.try_into()?;
-        self.runtime.sprite.write().await.pen().set_color(&color);
+        let color: Srgb<u8> = self.color.value().await?.try_into()?;
+        self.runtime.sprite.write().await.pen().set_color(color);
         Next::continue_(self.next)
     }
 }
@@ -348,11 +348,30 @@ impl Block for SetPenShadeToNumber {
     async fn execute(&mut self) -> Result<Next> {
         let shade: f64 = self.shade.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
-        let color = runtime.pen().color().into_hsv();
-        let new_color = SetPenShadeToNumber::set_shade(&color, shade as f32);
-        runtime.pen().set_color(&new_color);
+        let color = runtime.pen().color();
+        let hsv = rgb_to_hsv(color);
+        let new_color = SetPenShadeToNumber::set_shade(&hsv, shade as f32);
+        runtime.pen().set_color(hsv_to_rgb(&new_color));
         Next::continue_(self.next)
     }
+}
+
+fn rgb_to_hsv(rgb: &Srgb<u8>) -> Hsv {
+    Srgb::<f32>::new(
+        rgb.red as f32 / 255.0,
+        rgb.green as f32 / 255.0,
+        rgb.blue as f32 / 255.0,
+    )
+    .into_hsv()
+}
+
+fn hsv_to_rgb(hsv: &Hsv) -> Srgb<u8> {
+    let rgb_float: Srgb = hsv.into_rgb().into_encoding();
+    Srgb::new(
+        (rgb_float.red * 255.0) as u8,
+        (rgb_float.green * 255.0) as u8,
+        (rgb_float.blue * 255.0) as u8,
+    )
 }
 
 #[derive(Debug)]
@@ -416,8 +435,8 @@ impl Block for SetPenHueToNumber {
     async fn execute(&mut self) -> Result<Next> {
         let hue: f64 = self.hue.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
-        let new_color = SetPenHueToNumber::set_hue(runtime.pen().color(), hue as f32);
-        runtime.pen().set_color(&new_color);
+        let new_color = SetPenHueToNumber::set_hue(&rgb_to_hsv(&runtime.pen().color()), hue as f32);
+        runtime.pen().set_color(hsv_to_rgb(&new_color));
         Next::continue_(self.next)
     }
 }

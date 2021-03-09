@@ -3,7 +3,7 @@ use crate::pen::PenStatus::PenUp;
 use crate::sprite_runtime::GraphicsCostumeTexture;
 use graphics::character::CharacterCache;
 use graphics::{line, Context};
-use palette::{IntoColor, LinSrgb};
+use palette::Srgb;
 
 #[derive(Debug, Clone)]
 pub struct Pen {
@@ -27,11 +27,11 @@ impl Pen {
         result
     }
 
-    pub fn color(&self) -> &palette::Hsv {
+    pub fn color(&self) -> &Srgb<u8> {
         self.lines.last().unwrap().color()
     }
 
-    pub fn set_color(&mut self, color: &palette::Hsv) {
+    pub fn set_color(&mut self, color: Srgb<u8>) {
         self.new_line();
         self.lines.last_mut().unwrap().set_color(color);
     }
@@ -65,8 +65,7 @@ impl Pen {
 
     pub fn clear(&mut self) {
         self.lines.clear();
-        self.lines
-            .push(Line::new(&palette::Hsv::new(0.0, 1.0, 1.0), 1.0));
+        self.lines.push(Line::new(Srgb::new(255, 0, 0), 1.0));
     }
 
     pub fn draw<G, C>(&self, context: &Context, graphics: &mut G)
@@ -82,7 +81,7 @@ impl Pen {
     fn new_line(&mut self) {
         let last_point = self.lines.last().unwrap().last_point();
         if let Some(point) = last_point {
-            let mut line = Line::new(self.color(), self.size());
+            let mut line = Line::new(*self.color(), self.size());
             match self.pen_status {
                 PenStatus::PenDown => line.add_point(point),
                 PenStatus::PenUp => {}
@@ -95,25 +94,25 @@ impl Pen {
 #[derive(Debug, Clone, PartialEq)]
 struct Line {
     points: Vec<SpriteCoordinate>,
-    color: palette::Hsv,
+    color: Srgb<u8>,
     size: f64,
 }
 
 impl Line {
-    fn new(color: &palette::Hsv, size: f64) -> Self {
+    fn new(color: Srgb<u8>, size: f64) -> Self {
         Self {
             points: Vec::new(),
-            color: *color,
+            color,
             size,
         }
     }
 
-    fn color(&self) -> &palette::Hsv {
+    fn color(&self) -> &Srgb<u8> {
         &self.color
     }
 
-    fn set_color(&mut self, color: &palette::Hsv) {
-        self.color = *color;
+    fn set_color(&mut self, color: Srgb<u8>) {
+        self.color = color;
     }
 
     fn size(&self) -> f64 {
@@ -137,9 +136,13 @@ impl Line {
         G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
     {
-        let rgb: LinSrgb = self.color.into_rgb();
         let line = line::Line {
-            color: [rgb.red, rgb.green, rgb.blue, 1.0],
+            color: [
+                self.color.red as f32 / 255.0,
+                self.color.green as f32 / 255.0,
+                self.color.blue as f32 / 255.0,
+                1.0,
+            ],
             radius: self.size / 2.0,
             shape: line::Shape::Round,
         };

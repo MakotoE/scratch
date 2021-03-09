@@ -1,5 +1,5 @@
 use super::*;
-use palette::Hsv;
+use palette::Srgb;
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::repeat;
@@ -136,7 +136,7 @@ impl Block for ValueString {
 
 #[derive(Debug)]
 pub struct ValueColor {
-    color: Hsv,
+    color: Srgb<u8>,
 }
 
 impl ValueColor {
@@ -175,7 +175,7 @@ pub enum Value {
     Bool(bool),
     Number(f64),
     String(String),
-    Color(Hsv),
+    Color(Srgb<u8>),
     TouchingObjectOption(sensing::TouchingObjectOption),
     KeyOption(sensing::KeyOption),
     StopOption(control::StopOption),
@@ -217,8 +217,8 @@ impl From<&str> for Value {
     }
 }
 
-impl From<Hsv> for Value {
-    fn from(c: Hsv) -> Self {
+impl From<Srgb<u8>> for Value {
+    fn from(c: Srgb<u8>) -> Self {
         Self::Color(c)
     }
 }
@@ -266,23 +266,22 @@ impl TryInto<f64> for &Value {
     }
 }
 
-fn str_to_color(s: &str) -> Result<Hsv> {
+fn str_to_color(s: &str) -> Result<Srgb<u8>> {
     if s.len() != 7 || s.bytes().next() != Some(b'#') {
         return Err(Error::msg(format!("string is invalid: {}", s)));
     }
 
-    let rgb = palette::Srgb::new(
-        u8::from_str_radix(&s[1..3], 16)? as f32 / 255.0,
-        u8::from_str_radix(&s[3..5], 16)? as f32 / 255.0,
-        u8::from_str_radix(&s[5..7], 16)? as f32 / 255.0,
-    );
-    Ok(Hsv::from(rgb))
+    Ok(Srgb::new(
+        u8::from_str_radix(&s[1..3], 16)?,
+        u8::from_str_radix(&s[3..5], 16)?,
+        u8::from_str_radix(&s[5..7], 16)?,
+    ))
 }
 
-impl TryInto<Hsv> for Value {
+impl TryInto<Srgb<u8>> for Value {
     type Error = Error;
 
-    fn try_into(self) -> Result<Hsv> {
+    fn try_into(self) -> Result<Srgb<u8>> {
         Ok(match self {
             Self::String(s) => str_to_color(&s)?,
             Self::Color(c) => c,
@@ -333,13 +332,13 @@ mod tests {
         s,
         expected,
         expect_err,
-        case("", Hsv::new(0.0, 0.0, 0.0), true),
-        case("#", Hsv::new(0.0, 0.0, 0.0), true),
-        case("#000000", Hsv::new(0.0, 0.0, 0.0), false),
-        case("#ffffff", Hsv::new(0.0, 0.0, 1.0), false),
-        case("#ffffffa", Hsv::new(0.0, 0.0, 0.0), true)
+        case("", Srgb::new(0, 0, 0), true),
+        case("#", Srgb::new(0, 0, 0), true),
+        case("#000000", Srgb::new(0, 0, 0), false),
+        case("#ffffff", Srgb::new(255, 255, 255), false),
+        case("#ffffffa", Srgb::new(0, 0, 0), true)
     )]
-    fn test_str_to_color(s: &'static str, expected: Hsv, expect_err: bool) {
+    fn test_str_to_color(s: &'static str, expected: Srgb<u8>, expect_err: bool) {
         let result = str_to_color(s);
         assert_eq!(result.is_err(), expect_err);
         if !expect_err {
