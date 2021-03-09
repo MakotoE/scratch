@@ -146,7 +146,7 @@ impl SpriteRuntime {
         costume: &Costume,
         position: &CanvasCoordinate,
         scale: &Scale,
-        _alpha: f64, // TODO
+        alpha: f64,
     ) where
         G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
@@ -158,7 +158,7 @@ impl SpriteRuntime {
             costume.image_size.height * scale.y,
         ];
         graphics::Image {
-            color: Some([1.0, 1.0, 1.0, 1.0]),
+            color: Some([1.0, 1.0, 1.0, alpha as f32]),
             source_rectangle: None,
             rectangle: Some(rectangle),
         }
