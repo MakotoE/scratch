@@ -244,15 +244,13 @@ impl VM {
         self.control_sender.send(Control::Stop).await.unwrap();
     }
 
-    pub async fn redraw(
+    pub async fn draw(
         &mut self,
         context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
-        self.sprites
-            .redraw(context, graphics, character_cache)
-            .await
+        self.sprites.draw(context, graphics, character_cache).await
     }
 }
 

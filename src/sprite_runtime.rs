@@ -23,7 +23,6 @@ use std::io::{Cursor, Read};
 pub struct SpriteRuntime {
     sprite_name: String,
     is_a_clone: bool,
-    need_redraw: bool,
     position: SpriteCoordinate,
     scale: Scale,
     costumes: Costumes,
@@ -44,7 +43,6 @@ impl SpriteRuntime {
         };
         Self {
             sprite_name: target.name.clone(),
-            need_redraw: true,
             position: SpriteCoordinate {
                 x: target.x,
                 y: target.y,
@@ -75,20 +73,6 @@ impl SpriteRuntime {
         self.costumes
             .add_costumes(texture_context, costumes, images)
             .await
-    }
-
-    pub fn redraw_frame<G, C>(
-        &mut self,
-        context: &Context,
-        graphics: &mut G,
-        character_cache: &mut C,
-    ) -> Result<()>
-    where
-        G: GraphicsCostumeTexture<C>,
-        C: CharacterCache,
-    {
-        self.need_redraw = false;
-        self.draw(context, graphics, character_cache)
     }
 
     pub fn draw<G, C>(
@@ -294,21 +278,15 @@ impl SpriteRuntime {
         .map_err(|_| Error::msg("text draw error"))
     }
 
-    pub fn need_redraw(&self) -> bool {
-        self.need_redraw
-    }
-
     pub fn costumes(&mut self) -> &mut Costumes {
         &mut self.costumes
     }
 
     pub fn say(&mut self, text: Text) {
-        self.need_redraw = true;
         self.text.replace(text);
     }
 
     pub fn pen(&mut self) -> &mut Pen {
-        self.need_redraw = true;
         &mut self.pen
     }
 
@@ -336,13 +314,11 @@ impl SpriteRuntime {
     }
 
     pub fn set_center(&mut self, center: SpriteCoordinate) {
-        self.need_redraw = true;
         self.position = center;
         self.pen().set_position(&center);
     }
 
     pub fn set_scale(&mut self, scale: Scale) {
-        self.need_redraw = true;
         self.scale = scale;
     }
 
@@ -363,7 +339,6 @@ impl SpriteRuntime {
         SpriteRuntime {
             sprite_name: self.sprite_name.clone() + "-clone",
             is_a_clone: true,
-            need_redraw: true,
             costumes: self.costumes.clone(),
             text: Text {
                 id: BlockID::default(),

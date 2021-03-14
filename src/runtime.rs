@@ -53,11 +53,7 @@ impl Global {
         }
     }
 
-    pub fn need_redraw(&self) -> bool {
-        true
-    }
-
-    pub async fn redraw(
+    pub async fn draw(
         &self,
         context: &Context,
         graphics: &mut G2d<'_>,

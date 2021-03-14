@@ -92,11 +92,7 @@ impl Sprite {
         self.threads[thread_id].write().await.step().await
     }
 
-    pub async fn need_redraw(&self) -> bool {
-        self.runtime.sprite.read().await.need_redraw()
-    }
-
-    pub async fn redraw<G, C>(
+    pub async fn draw<G, C>(
         &self,
         context: &Context,
         graphics: &mut G,
@@ -110,7 +106,7 @@ impl Sprite {
             .sprite
             .write()
             .await
-            .redraw_frame(context, graphics, character_cache)
+            .draw(context, graphics, character_cache)
     }
 
     pub async fn block_inputs(&self) -> Vec<BlockInputs> {

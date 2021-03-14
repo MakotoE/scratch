@@ -72,42 +72,13 @@ impl SpriteMap {
         self.removed_sprites.write().await.insert(sprite_id);
     }
 
-    pub async fn redraw(
+    pub async fn draw(
         &self,
         context: &Context,
         graphics: &mut G2d<'_>,
         character_cache: &mut Glyphs,
     ) -> Result<()> {
-        let mut need_redraw = false;
-        if self.global.need_redraw() {
-            need_redraw = true;
-        } else {
-            for group in &self.sprite_groups {
-                for sprite in group.try_read().unwrap().values() {
-                    if sprite.need_redraw().await {
-                        need_redraw = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if !need_redraw {
-            return Ok(());
-        }
-
-        self.force_redraw(context, graphics, character_cache).await
-    }
-
-    pub async fn force_redraw(
-        &self,
-        context: &Context,
-        graphics: &mut G2d<'_>,
-        character_cache: &mut Glyphs,
-    ) -> Result<()> {
-        self.global
-            .redraw(context, graphics, character_cache)
-            .await?;
+        self.global.draw(context, graphics, character_cache).await?;
 
         let removed_sprites = self.removed_sprites.read().await;
         for id in self.draw_order.read().await.iter() {
@@ -115,7 +86,7 @@ impl SpriteMap {
                 let mut found = false;
                 for group in &self.sprite_groups {
                     if let Some(sprite) = group.try_read().unwrap().get(id) {
-                        sprite.redraw(context, graphics, character_cache).await?;
+                        sprite.draw(context, graphics, character_cache).await?;
                         found = true;
                         break;
                     }
@@ -139,7 +110,7 @@ impl SpriteMap {
                 let mut found = false;
                 for group in &self.sprite_groups {
                     if let Some(sprite) = group.try_read().unwrap().get(id) {
-                        sprite.redraw(context, graphics, character_cache).await?;
+                        sprite.draw(context, graphics, character_cache).await?;
                         found = true;
                         break;
                     }

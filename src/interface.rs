@@ -140,7 +140,7 @@ impl Interface {
         );
 
         self.vm
-            .redraw(&context.trans(20.0, 50.0), graphics, character_cache)
+            .draw(&context.trans(20.0, 50.0), graphics, character_cache)
             .await?;
 
         draw_border(context, graphics);
