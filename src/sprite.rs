@@ -77,8 +77,12 @@ impl Sprite {
         self.threads.len()
     }
 
-    pub async fn block_info(&self, thread_id: usize) -> BlockInfo {
-        self.threads[thread_id].read().await.block_info()
+    pub async fn block_info(&self, thread_id: usize) -> Result<BlockInfo> {
+        if let Some(thread) = self.threads.get(thread_id) {
+            Ok(thread.read().await.block_info())
+        } else {
+            Error::msg(format!("thread_id does not exist: {}", thread_id))
+        }
     }
 
     pub async fn step(&self, thread_id: usize) -> Result<()> {

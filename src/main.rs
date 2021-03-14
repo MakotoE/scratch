@@ -1,5 +1,6 @@
 #![feature(async_closure)]
 #![feature(str_split_once)]
+#![feature(maybe_uninit_uninit_array)]
 
 #[macro_use]
 extern crate conrod_core;
@@ -16,13 +17,14 @@ mod interface;
 mod pen;
 mod runtime;
 mod sprite;
+mod sprite_map;
 mod sprite_runtime;
 mod thread;
 mod vm;
 
 use anyhow::{Error, Result};
 use error::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use tokio::spawn;
