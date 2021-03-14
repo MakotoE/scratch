@@ -81,7 +81,10 @@ impl Sprite {
         if let Some(thread) = self.threads.get(thread_id) {
             Ok(thread.read().await.block_info())
         } else {
-            Error::msg(format!("thread_id does not exist: {}", thread_id))
+            Err(Error::msg(format!(
+                "thread_id does not exist: {}",
+                thread_id
+            )))
         }
     }
 

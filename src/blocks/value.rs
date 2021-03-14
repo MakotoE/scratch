@@ -159,7 +159,7 @@ impl Block for ValueColor {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("color", format!("{}", format!("{:?}", &self.color)))],
+            vec![("color", format!("{:?}", &self.color))],
             vec![],
             vec![],
         )

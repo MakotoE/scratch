@@ -12,6 +12,7 @@ use piston_window::{G2d, Glyphs};
 use std::mem::MaybeUninit;
 
 /// I needed a map that can to add cloned sprites while other sprites are still running.
+#[derive(Debug)]
 pub struct SpriteMap {
     sprite_groups: [RwLock<HashMap<SpriteID, Sprite>>; 64],
     draw_order: RwLock<DrawOrder>,
@@ -71,7 +72,7 @@ impl SpriteMap {
         self.removed_sprites.write().await.insert(sprite_id);
     }
 
-    async fn redraw(
+    pub async fn redraw(
         &self,
         context: &Context,
         graphics: &mut G2d<'_>,
@@ -98,7 +99,7 @@ impl SpriteMap {
         self.force_redraw(context, graphics, character_cache).await
     }
 
-    async fn force_redraw(
+    pub async fn force_redraw(
         &self,
         context: &Context,
         graphics: &mut G2d<'_>,
@@ -111,12 +112,15 @@ impl SpriteMap {
         let removed_sprites = self.removed_sprites.read().await;
         for id in self.draw_order.read().await.iter() {
             if !removed_sprites.contains(id) {
+                let mut found = false;
                 for group in &self.sprite_groups {
                     if let Some(sprite) = group.try_read().unwrap().get(id) {
                         sprite.redraw(context, graphics, character_cache).await?;
+                        found = true;
+                        break;
                     }
                 }
-                panic!("id not found: {}", id);
+                assert!(found);
             }
         }
         Ok(())
@@ -132,12 +136,15 @@ impl SpriteMap {
         let removed_sprites = self.removed_sprites.read().await;
         for id in self.draw_order.read().await.iter() {
             if !removed_sprites.contains(id) && id != removed_sprite {
+                let mut found = false;
                 for group in &self.sprite_groups {
                     if let Some(sprite) = group.try_read().unwrap().get(id) {
                         sprite.redraw(context, graphics, character_cache).await?;
+                        found = true;
+                        break;
                     }
                 }
-                panic!("id not found: {}", id);
+                assert!(found);
             }
         }
         Ok(())
@@ -158,7 +165,7 @@ impl SpriteMap {
         result
     }
 
-    async fn block_info(&self, thread_id: ThreadID) -> Result<BlockInfo> {
+    pub async fn block_info(&self, thread_id: ThreadID) -> Result<BlockInfo> {
         for group in &self.sprite_groups {
             if let Some(sprite) = group.try_read().unwrap().get(&thread_id.sprite_id) {
                 return sprite.block_info(thread_id.thread_id).await;
@@ -171,7 +178,7 @@ impl SpriteMap {
     pub async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
         let new_sprite_id = SpriteID::from_sprite_name(&(format!("{}", sprite_id) + "clone"));
         let cloned_sprite = self.get_cloned_sprite(sprite_id).await?;
-        self.insert_sprite(new_sprite_id, cloned_sprite);
+        self.insert_sprite(new_sprite_id, cloned_sprite).await?;
 
         let mut draw_order = self.draw_order.write().await;
         let index = draw_order.iter().position(|s| s == &sprite_id).unwrap();
@@ -179,7 +186,7 @@ impl SpriteMap {
         Ok(new_sprite_id)
     }
 
-    async fn get_cloned_sprite(&self, sprite_id: SpriteID) -> Result<Sprite> {
+    pub async fn get_cloned_sprite(&self, sprite_id: SpriteID) -> Result<Sprite> {
         let new_sprite_id = SpriteID::from_sprite_name(&(format!("{}", sprite_id) + "clone"));
         for group in &self.sprite_groups {
             if let Some(sprite) = group.try_read().unwrap().get(&sprite_id) {
@@ -189,7 +196,7 @@ impl SpriteMap {
         Err(Error::msg("sprite_id is invalid"))
     }
 
-    async fn insert_sprite(&self, new_sprite_id: SpriteID, sprite: Sprite) -> Result<()> {
+    pub async fn insert_sprite(&self, new_sprite_id: SpriteID, sprite: Sprite) -> Result<()> {
         for group_cell in &self.sprite_groups {
             if let Ok(mut group) = group_cell.try_write() {
                 group

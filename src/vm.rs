@@ -1,17 +1,17 @@
 use super::*;
 use crate::blocks::BlockInfo;
-use crate::broadcaster::{BroadcastMsg, Broadcaster, LayerChange, Stop};
-use crate::coordinate::{canvas_const, SpriteRectangle};
-use crate::file::{ScratchFile, Target};
+use crate::broadcaster::{BroadcastMsg, Broadcaster, Stop};
+use crate::coordinate::canvas_const;
+use crate::file::ScratchFile;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
+use crate::sprite_map::SpriteMap;
 use crate::sprite_runtime::SpriteRuntime;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use graphics::Context;
-use graphics_buffer::{buffer_glyphs_from_path, BufferGlyphs, RenderBuffer};
+use graphics_buffer::{buffer_glyphs_from_path, RenderBuffer};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
-use std::collections::HashSet;
 use std::fmt::Debug;
 use tokio::select;
 use tokio::sync::mpsc;
@@ -21,7 +21,7 @@ pub struct VM {
     control_sender: mpsc::Sender<Control>,
     broadcaster: Broadcaster,
     vm_task: JoinHandle<()>,
-    sprites: Arc<SpritesCell>,
+    sprites: Arc<SpriteMap>,
 }
 
 impl VM {
@@ -40,7 +40,7 @@ impl VM {
 
         let sprites = VM::sprites(texture_context, &scratch_file, global.clone()).await?;
 
-        let sprites_cell = Arc::new(SpritesCell::new(
+        let sprite_map = Arc::new(SpriteMap::new(
             sprites,
             &scratch_file.project.targets,
             global.clone(),
@@ -49,12 +49,12 @@ impl VM {
         let vm_task = spawn({
             let mut control_receiver = control_receiver;
             let broadcaster = broadcaster.clone();
-            let sprites_cell = sprites_cell.clone();
+            let sprite_map = sprite_map.clone();
 
             async move {
                 loop {
                     if let Err(e) =
-                        VM::run(sprites_cell.clone(), &mut control_receiver, &broadcaster).await
+                        VM::run(sprite_map.clone(), &mut control_receiver, &broadcaster).await
                     {
                         log::error!("{}", e);
                         std::process::exit(1);
@@ -67,7 +67,7 @@ impl VM {
             control_sender,
             broadcaster,
             vm_task,
-            sprites: sprites_cell,
+            sprites: sprite_map,
         })
     }
 
@@ -94,7 +94,7 @@ impl VM {
     }
 
     async fn run(
-        sprites: Arc<SpritesCell>,
+        sprites: Arc<SpriteMap>,
         control_receiver: &mut mpsc::Receiver<Control>,
         broadcaster: &Broadcaster,
     ) -> Result<()> {
@@ -108,7 +108,7 @@ impl VM {
                 "{}",
                 DebugInfo {
                     thread_id,
-                    block_info: sprites.block_info(thread_id).await,
+                    block_info: sprites.block_info(thread_id).await?,
                 }
             );
         }
@@ -130,7 +130,7 @@ impl VM {
                                         "{}",
                                         DebugInfo {
                                             thread_id,
-                                            block_info: sprites.block_info(thread_id).await,
+                                            block_info: sprites.block_info(thread_id).await?,
                                         }
                                     );
                                     current_state = Control::Pause;
@@ -162,7 +162,7 @@ impl VM {
                             match msg {
                                 BroadcastMsg::Clone(from_sprite) => {
                                     let new_sprite_id = sprites.clone_sprite(from_sprite).await?;
-                                    for thread_id in 0..sprites.number_of_threads(new_sprite_id).await {
+                                    for thread_id in 0..sprites.number_of_threads(&new_sprite_id).await? {
                                         let id = ThreadID {
                                             sprite_id: new_sprite_id,
                                             thread_id,
