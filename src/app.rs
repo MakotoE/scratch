@@ -8,7 +8,7 @@ use gfx_graphics::GfxGraphics;
 use graphics::Context;
 use piston_window::texture::UpdateTexture;
 use piston_window::{
-    Event, G2d, G2dTexture, G2dTextureContext, Loop, OpenGL, OpenGLWindow, PistonWindow,
+    Event, G2d, G2dTexture, G2dTextureContext, Input, Loop, OpenGL, OpenGLWindow, PistonWindow,
     RenderEvent, Size, Texture, TextureSettings, Window, WindowSettings,
 };
 use std::fs::File;
@@ -94,7 +94,11 @@ pub async fn app(file_path: &Path) -> Result<()> {
                 interface.widgets(&mut ui_cell).await;
             }
             Event::Input(input, _) => {
-                interface.input(input).await?;
+                if matches!(input, Input::Close(_)) {
+                    return Ok(());
+                }
+
+                interface.input(input).await?
             }
             event => {
                 if let Some(args) = event.render_args() {

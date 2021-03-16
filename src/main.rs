@@ -45,8 +45,7 @@ enum Command {
     Viewer,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     use clap::Clap;
 
     env_logger::init();
@@ -54,12 +53,22 @@ async fn main() {
     let options = Options::parse();
     let path = std::path::Path::new(&options.file_path);
 
-    match options.command {
-        Command::Vm => app::app(path).await,
-        Command::Viewer => fileviewer::fileviewer(path).await,
-    }
-    .unwrap_or_else(|e| {
-        log::error!("fatal: {:?}", e);
-        std::process::exit(1);
-    });
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let result = match options.command {
+                Command::Vm => app::app(path).await,
+                Command::Viewer => fileviewer::fileviewer(path).await,
+            };
+            let exit_code = match result {
+                Ok(_) => 0,
+                Err(e) => {
+                    log::error!("error: {:?}", e);
+                    1
+                }
+            };
+            std::process::exit(exit_code);
+        });
 }
