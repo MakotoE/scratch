@@ -119,27 +119,7 @@ impl VM {
 
         loop {
             select! {
-                futures_result = futures.next() => {
-                    if let Some(step_result) = futures_result {
-                        if let Some(thread_id) = step_result? {
-                            match current_state {
-                                Control::Continue => futures.push(sprites.step(thread_id)),
-                                Control::Step | Control::Pause => {
-                                    paused_threads.push(thread_id);
-                                    log::trace!(
-                                        "{}",
-                                        DebugInfo {
-                                            thread_id,
-                                            block_info: sprites.block_info(thread_id).await?,
-                                        }
-                                    );
-                                    current_state = Control::Pause;
-                                }
-                                _ => unreachable!("{:?}", current_state),
-                            }
-                        }
-                    }
-                },
+                biased;
                 c = control_receiver.recv() => {
                     if let Some(control) = c {
                         log::info!("control: {:?}", &control);
@@ -221,6 +201,27 @@ impl VM {
                         }
                         Err(e) => {
                             return Err(e.into());
+                        }
+                    }
+                },
+                futures_result = futures.next() => {
+                    if let Some(step_result) = futures_result {
+                        if let Some(thread_id) = step_result? {
+                            match current_state {
+                                Control::Continue => futures.push(sprites.step(thread_id)),
+                                Control::Step | Control::Pause => {
+                                    paused_threads.push(thread_id);
+                                    log::trace!(
+                                        "{}",
+                                        DebugInfo {
+                                            thread_id,
+                                            block_info: sprites.block_info(thread_id).await?,
+                                        }
+                                    );
+                                    current_state = Control::Pause;
+                                }
+                                _ => unreachable!("{:?}", current_state),
+                            }
                         }
                     }
                 },

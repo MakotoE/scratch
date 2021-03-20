@@ -10,6 +10,7 @@ use graphics::Context;
 use graphics_buffer::{BufferGlyphs, RenderBuffer};
 use piston_window::{G2d, Glyphs};
 use std::mem::MaybeUninit;
+use tokio::time::{sleep, Duration};
 
 /// I needed a map that can to add cloned sprites while other sprites are still running.
 #[derive(Debug)]
@@ -32,6 +33,7 @@ impl SpriteMap {
         let mut sprite_groups: [MaybeUninit<RwLock<HashMap<SpriteID, Sprite>>>; 64] =
             MaybeUninit::uninit_array();
 
+        // There could be a performance benefit by spreading out the sprites evenly across all groups
         sprite_groups[0] = MaybeUninit::new(RwLock::new(sprites));
 
         for group in &mut sprite_groups[1..] {
@@ -61,10 +63,14 @@ impl SpriteMap {
 
         for group in &self.sprite_groups {
             if let Some(sprite) = group.read().await.get(&thread_id.sprite_id) {
-                return sprite
+                let result = sprite
                     .step(thread_id.thread_id)
                     .await
                     .map(|_| Some(thread_id));
+                // Hacky fix for unresponsive menu screen in Pixel Snake
+                // yield_now() did not work
+                sleep(Duration::from_millis(0)).await;
+                return result;
             }
         }
         Err(Error::msg("thread_id is invalid"))
