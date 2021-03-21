@@ -183,6 +183,41 @@ impl Block for ValueColor {
     }
 }
 
+#[derive(Debug)]
+pub struct ValueBool {
+    value: bool,
+}
+
+impl ValueBool {
+    #[allow(dead_code)] // Used in tests
+    pub fn new(value: bool) -> Self {
+        Self { value }
+    }
+}
+
+#[async_trait]
+impl Block for ValueBool {
+    fn block_info(&self) -> BlockInfo {
+        BlockInfo {
+            name: "Bool",
+            id: BlockID::pseudo_id(),
+        }
+    }
+
+    fn block_inputs(&self) -> BlockInputsPartial {
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![("value", self.value.to_string())],
+            vec![],
+            vec![],
+        )
+    }
+
+    async fn value(&self) -> Result<Value> {
+        Ok(Value::Bool(self.value))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Bool(bool),
@@ -341,17 +376,17 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
-    #[rstest(
-        s,
-        expected,
-        expect_err,
-        case("", Srgb::new(0, 0, 0), true),
-        case("#", Srgb::new(0, 0, 0), true),
-        case("#000000", Srgb::new(0, 0, 0), false),
-        case("#ffffff", Srgb::new(255, 255, 255), false),
-        case("#ffffffa", Srgb::new(0, 0, 0), true)
-    )]
-    fn test_str_to_color(s: &'static str, expected: Srgb<u8>, expect_err: bool) {
+    #[rstest]
+    #[case("", Srgb::new(0, 0, 0), true)]
+    #[case("#", Srgb::new(0, 0, 0), true)]
+    #[case("#000000", Srgb::new(0, 0, 0), false)]
+    #[case("#ffffff", Srgb::new(255, 255, 255), false)]
+    #[case("#ffffffa", Srgb::new(0, 0, 0), true)]
+    fn test_str_to_color(
+        #[case] s: &'static str,
+        #[case] expected: Srgb<u8>,
+        #[case] expect_err: bool,
+    ) {
         let result = str_to_color(s);
         assert_eq!(result.is_err(), expect_err);
         if !expect_err {
@@ -359,15 +394,12 @@ mod tests {
         }
     }
 
-    #[rstest(
-        value,
-        expected,
-        case (Value::String("a".into()), "a"),
-        case (Value::Number(1.0), "1"),
-        case (Value::Number(1.1), "1.1"),
-        case (Value::Bool(false), "false"),
-    )]
-    fn test_to_string(value: Value, expected: &'static str) {
+    #[rstest]
+    #[case(Value::String("a".into()), "a")]
+    #[case(Value::Number(1.0), "1")]
+    #[case(Value::Number(1.1), "1.1")]
+    #[case(Value::Bool(false), "false")]
+    fn test_to_string(#[case] value: Value, #[case] expected: &'static str) {
         assert_eq!(value.to_string(), expected);
     }
 }

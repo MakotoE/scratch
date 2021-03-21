@@ -445,32 +445,24 @@ impl Block for SetPenHueToNumber {
 mod tests {
     use super::*;
 
-    #[rstest(
-        color,
-        shade,
-        expected,
-        case(Hsv::new(0.0, 0.0, 0.0), 0.0, Hsv::new(0.0, 0.16666667, 0.16666667),),
-        case(Hsv::new(0.0, 0.0, 1.0), 0.0, Hsv::new(0.0, 0.16666667, 0.16666667),),
-        case(Hsv::new(0.0, 0.0, 0.0), 100.0, Hsv::new(0.0, 0.16666669, 1.0),),
-        case(Hsv::new(0.0, 0.0, 1.0), 100.0, Hsv::new(0.0, 0.16666669, 1.0),),
-        case(Hsv::new(0.0, 0.0, 0.0), 50.0, Hsv::new(0.0, 1.0, 1.0),),
-        case(Hsv::new(240.0, 1.0, 1.0), 50.0, Hsv::new(240.0, 1.0, 1.0),)
-    )]
-    fn test_set_shade(color: Hsv, shade: f32, expected: Hsv) {
+    #[rstest]
+    #[case(Hsv::new(0.0, 0.0, 0.0), 0.0, Hsv::new(0.0, 0.16666667, 0.16666667))]
+    #[case(Hsv::new(0.0, 0.0, 1.0), 0.0, Hsv::new(0.0, 0.16666667, 0.16666667))]
+    #[case(Hsv::new(0.0, 0.0, 0.0), 100.0, Hsv::new(0.0, 0.16666669, 1.0))]
+    #[case(Hsv::new(0.0, 0.0, 1.0), 100.0, Hsv::new(0.0, 0.16666669, 1.0))]
+    #[case(Hsv::new(0.0, 0.0, 0.0), 50.0, Hsv::new(0.0, 1.0, 1.0))]
+    #[case(Hsv::new(240.0, 1.0, 1.0), 50.0, Hsv::new(240.0, 1.0, 1.0))]
+    fn test_set_shade(#[case] color: Hsv, #[case] shade: f32, #[case] expected: Hsv) {
         assert_eq!(SetPenShadeToNumber::set_shade(&color, shade), expected);
     }
 
-    #[rstest(
-        color,
-        hue,
-        expected,
-        case(Hsv::new(0.0, 0.0, 0.0), 0.0, Hsv::new(0.0, 0.0, 0.0),),
-        case(Hsv::new(0.0, 1.0, 1.0), 0.0, Hsv::new(0.0, 1.0, 1.0),),
-        case(Hsv::new(0.0, 0.0, 0.0), 50.0, Hsv::new(90.0, 0.0, 0.0),),
-        case(Hsv::new(0.0, 0.0, 0.0), 100.0, Hsv::new(180.0, 0.0, 0.0),),
-        case(Hsv::new(0.0, 0.0, 0.0), 200.0, Hsv::new(360.0, 0.0, 0.0),)
-    )]
-    fn test_set_hue(color: Hsv, hue: f32, expected: Hsv) {
+    #[rstest]
+    #[case(Hsv::new(0.0, 0.0, 0.0), 0.0, Hsv::new(0.0, 0.0, 0.0))]
+    #[case(Hsv::new(0.0, 1.0, 1.0), 0.0, Hsv::new(0.0, 1.0, 1.0))]
+    #[case(Hsv::new(0.0, 0.0, 0.0), 50.0, Hsv::new(90.0, 0.0, 0.0))]
+    #[case(Hsv::new(0.0, 0.0, 0.0), 100.0, Hsv::new(180.0, 0.0, 0.0))]
+    #[case(Hsv::new(0.0, 0.0, 0.0), 200.0, Hsv::new(360.0, 0.0, 0.0))]
+    fn test_set_hue(#[case] color: Hsv, #[case] hue: f32, #[case] expected: Hsv) {
         assert_eq!(SetPenHueToNumber::set_hue(&color, hue), expected);
     }
 }

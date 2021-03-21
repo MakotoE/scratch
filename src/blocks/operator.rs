@@ -323,7 +323,7 @@ impl Block for And {
 
     async fn value(&self) -> Result<Value> {
         let left: bool = self.operand1.value().await?.try_into()?;
-        let right = self.operand2.value().await?.try_into()?;
+        let right: bool = self.operand2.value().await?.try_into()?;
         Ok((left && right).into())
     }
 }
@@ -589,16 +589,123 @@ impl Block for Join {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::blocks::value::ValueNumber;
+    use crate::blocks::value::{ValueBool, ValueNumber};
 
-    #[rstest(a, b, expected, case(0.0, 0.0, true), case(0.0, 1.0, false))]
+    #[rstest]
+    #[case(0.0, 0.0, true)]
+    #[case(0.0, 1.0, false)]
     #[tokio::test]
-    async fn equals(a: f64, b: f64, expected: bool) {
+    async fn equals(#[case] a: f64, #[case] b: f64, #[case] expected: bool) {
         let operand1 = Box::new(ValueNumber::new(a));
         let operand2 = Box::new(ValueNumber::new(b));
         let mut equals = Equals::new(BlockID::default());
         equals.set_input("OPERAND1", operand1);
         equals.set_input("OPERAND2", operand2);
         assert_eq!(equals.value().await.unwrap(), Value::Bool(expected));
+    }
+
+    #[tokio::test]
+    async fn add() {
+        let num1 = Box::new(ValueNumber::new(1.0));
+        let num2 = Box::new(ValueNumber::new(2.0));
+        let mut add = Add::new(BlockID::default());
+        add.set_input("NUM1", num1);
+        add.set_input("NUM2", num2);
+        assert_eq!(add.value().await.unwrap(), Value::Number(3.0));
+    }
+
+    #[tokio::test]
+    async fn subtract() {
+        let num1 = Box::new(ValueNumber::new(3.0));
+        let num2 = Box::new(ValueNumber::new(1.0));
+        let mut subtract = Subtract::new(BlockID::default());
+        subtract.set_input("NUM1", num1);
+        subtract.set_input("NUM2", num2);
+        assert_eq!(subtract.value().await.unwrap(), Value::Number(2.0));
+    }
+
+    #[tokio::test]
+    async fn multiply() {
+        let num1 = Box::new(ValueNumber::new(2.0));
+        let num2 = Box::new(ValueNumber::new(3.0));
+        let mut multiply = Multiply::new(BlockID::default());
+        multiply.set_input("NUM1", num1);
+        multiply.set_input("NUM2", num2);
+        assert_eq!(multiply.value().await.unwrap(), Value::Number(6.0));
+    }
+
+    #[tokio::test]
+    async fn divide() {
+        let num1 = Box::new(ValueNumber::new(6.0));
+        let num2 = Box::new(ValueNumber::new(3.0));
+        let mut divide = Divide::new(BlockID::default());
+        divide.set_input("NUM1", num1);
+        divide.set_input("NUM2", num2);
+        assert_eq!(divide.value().await.unwrap(), Value::Number(2.0));
+    }
+
+    #[rstest]
+    #[case(false, false, false)]
+    #[case(false, true, false)]
+    #[case(true, true, true)]
+    #[tokio::test]
+    async fn and(#[case] a: bool, #[case] b: bool, #[case] expected: bool) {
+        let operand1 = Box::new(ValueBool::new(a));
+        let operand2 = Box::new(ValueBool::new(b));
+        let mut and = And::new(BlockID::default());
+        and.set_input("OPERAND1", operand1);
+        and.set_input("OPERAND2", operand2);
+        assert_eq!(and.value().await.unwrap(), Value::Bool(expected));
+    }
+
+    #[rstest]
+    #[case(false, false, false)]
+    #[case(false, true, true)]
+    #[case(true, true, true)]
+    #[tokio::test]
+    async fn or(#[case] a: bool, #[case] b: bool, #[case] expected: bool) {
+        let operand1 = Box::new(ValueBool::new(a));
+        let operand2 = Box::new(ValueBool::new(b));
+        let mut or = Or::new(BlockID::default());
+        or.set_input("OPERAND1", operand1);
+        or.set_input("OPERAND2", operand2);
+        assert_eq!(or.value().await.unwrap(), Value::Bool(expected));
+    }
+
+    #[rstest]
+    #[case(false, true)]
+    #[case(true, false)]
+    #[tokio::test]
+    async fn not(#[case] a: bool, #[case] expected: bool) {
+        let operand = Box::new(ValueBool::new(a));
+        let mut or = Not::new(BlockID::default());
+        or.set_input("OPERAND", operand);
+        assert_eq!(or.value().await.unwrap(), Value::Bool(expected));
+    }
+
+    #[rstest]
+    #[case(0.0, 0.0, false)]
+    #[case(0.0, 1.0, true)]
+    #[tokio::test]
+    async fn less_than(#[case] a: f64, #[case] b: f64, #[case] expected: bool) {
+        let operand1 = Box::new(ValueNumber::new(a));
+        let operand2 = Box::new(ValueNumber::new(b));
+        let mut less_than = LessThan::new(BlockID::default());
+        less_than.set_input("OPERAND1", operand1);
+        less_than.set_input("OPERAND2", operand2);
+        assert_eq!(less_than.value().await.unwrap(), Value::Bool(expected));
+    }
+
+    #[rstest]
+    #[case(0.0, 0.0, false)]
+    #[case(1.0, 0.0, true)]
+    #[tokio::test]
+    async fn greater_than(#[case] a: f64, #[case] b: f64, #[case] expected: bool) {
+        let operand1 = Box::new(ValueNumber::new(a));
+        let operand2 = Box::new(ValueNumber::new(b));
+        let mut greater_than = GreaterThan::new(BlockID::default());
+        greater_than.set_input("OPERAND1", operand1);
+        greater_than.set_input("OPERAND2", operand2);
+        assert_eq!(greater_than.value().await.unwrap(), Value::Bool(expected));
     }
 }
