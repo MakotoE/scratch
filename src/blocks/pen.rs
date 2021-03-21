@@ -444,7 +444,6 @@ impl Block for SetPenHueToNumber {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::rstest;
 
     #[rstest(
         color,

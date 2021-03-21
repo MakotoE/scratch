@@ -585,3 +585,20 @@ impl Block for Join {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::blocks::value::ValueNumber;
+
+    #[rstest(a, b, expected, case(0.0, 0.0, true), case(0.0, 1.0, false))]
+    #[tokio::test]
+    async fn equals(a: f64, b: f64, expected: bool) {
+        let operand1 = Box::new(ValueNumber::new(a));
+        let operand2 = Box::new(ValueNumber::new(b));
+        let mut equals = Equals::new(BlockID::default());
+        equals.set_input("OPERAND1", operand1);
+        equals.set_input("OPERAND2", operand2);
+        assert_eq!(equals.value().await.unwrap(), Value::Bool(expected));
+    }
+}

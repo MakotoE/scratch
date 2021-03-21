@@ -64,16 +64,17 @@ pub fn value_block_from_input_arr(
             } else {
                 f64::from_str(value.as_str().unwrap())?
             };
-            Box::new(ValueNumber { number })
+            Box::new(ValueNumber::new(number))
         }
         9 => Box::new(ValueColor::new(value.as_str().unwrap())?),
-        10 | 11 => Box::new(ValueString {
-            string: if let serde_json::Value::String(s) = value {
+        10 | 11 => {
+            let string = if let serde_json::Value::String(s) = value {
                 s.clone()
             } else {
                 value.to_string()
-            },
-        }),
+            };
+            Box::new(ValueString::new(string))
+        }
         _ => return Err(Error::msg(format!("unknown value_type: {}", value_type))),
     })
 }
@@ -81,6 +82,12 @@ pub fn value_block_from_input_arr(
 #[derive(Debug)]
 pub struct ValueNumber {
     number: f64,
+}
+
+impl ValueNumber {
+    pub fn new(number: f64) -> Self {
+        Self { number }
+    }
 }
 
 #[async_trait]
@@ -109,6 +116,12 @@ impl Block for ValueNumber {
 #[derive(Debug)]
 pub struct ValueString {
     string: String,
+}
+
+impl ValueString {
+    pub fn new(string: String) -> Self {
+        Self { string }
+    }
 }
 
 #[async_trait]
@@ -140,7 +153,7 @@ pub struct ValueColor {
 }
 
 impl ValueColor {
-    fn new(value: &str) -> Result<Self> {
+    pub fn new(value: &str) -> Result<Self> {
         Ok(Self {
             color: str_to_color(value)?,
         })

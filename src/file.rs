@@ -270,10 +270,14 @@ pub struct BlockID {
     id: [u8; 20],
 }
 
+lazy_static! {
+    static ref PSEUDO_ID: BlockID = BlockID::try_from("                    ").unwrap();
+}
+
 impl BlockID {
-    /// Indicates block that did not come from the .sb3 file.
+    /// Indicates that the block that did not come from the .sb3 file, such as ValueNumber.
     pub fn pseudo_id() -> BlockID {
-        BlockID::try_from("                    ").unwrap()
+        *PSEUDO_ID
     }
 }
 
