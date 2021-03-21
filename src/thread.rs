@@ -1,7 +1,6 @@
 use super::*;
-use crate::blocks::{block_tree, Block, BlockInfo, BlockInputsPartial, Next};
+use crate::blocks::{Block, BlockInfo, BlockInputsPartial, Next};
 use crate::file::BlockID;
-use crate::runtime::Runtime;
 
 #[derive(Debug)]
 pub struct Thread {
@@ -15,11 +14,10 @@ pub struct Thread {
 impl Thread {
     pub fn new(
         hat: BlockID,
-        runtime: Runtime,
-        file_blocks: &HashMap<BlockID, file::Block>,
+        blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>>,
     ) -> Result<Self> {
         Ok(Thread {
-            blocks: block_tree(hat, runtime, file_blocks)?,
+            blocks,
             curr_block: hat,
             loop_stack: Vec::new(),
             done: false,

@@ -40,8 +40,8 @@ impl Sprite {
                 },
             );
 
-            let thread = Thread::new(hat_id, runtime, &block_infos)?;
-            threads.push(RwLock::new(thread));
+            let blocks = block_tree(hat_id, runtime, &block_infos)?;
+            threads.push(RwLock::new(Thread::new(hat_id, blocks)?));
         }
 
         Ok(Self {
