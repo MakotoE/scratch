@@ -165,7 +165,7 @@ pub fn block_tree(
     top_block_id: BlockID,
     runtime: Runtime,
     infos: &HashMap<BlockID, file::Block>,
-) -> Result<(BlockID, HashMap<BlockID, Box<dyn Block + Send + Sync>>)> {
+) -> Result<HashMap<BlockID, Box<dyn Block + Send + Sync>>> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,
         None => {
@@ -176,13 +176,13 @@ pub fn block_tree(
         }
     };
 
-    let mut result: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+    let mut block_map: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
     let mut block = get_block(top_block_id, runtime.clone(), &info)?;
 
-    if let Some(next_id) = &info.next {
-        let (id, input_blocks) = block_tree(*next_id, runtime.clone(), infos)?;
-        block.set_substack("next", id);
-        result.extend(input_blocks);
+    if let Some(next_id) = info.next {
+        let input_blocks = block_tree(next_id, runtime.clone(), infos)?;
+        block.set_substack("next", next_id);
+        block_map.extend(input_blocks);
     }
 
     for (k, input) in &info.inputs {
@@ -198,16 +198,17 @@ pub fn block_tree(
 
         let input_arr = input.as_array().ok_or_else(input_err)?;
         match input_arr.get(1).ok_or_else(input_err)? {
-            serde_json::Value::String(block_id) => {
-                let (id, mut blocks) = block_tree(
-                    block_id.as_str().try_into().map_err(wrap_err)?,
+            serde_json::Value::String(str_id) => {
+                let block_id = str_id.as_str().try_into().map_err(wrap_err)?;
+                let mut blocks = block_tree(
+                    str_id.as_str().try_into().map_err(wrap_err)?,
                     runtime.clone(),
                     infos,
                 )?;
 
                 if k.starts_with("SUBSTACK") {
-                    block.set_substack(k, id);
-                    result.extend(blocks);
+                    block.set_substack(k, block_id);
+                    block_map.extend(blocks);
                 } else if let Some(b) = blocks.drain().next() {
                     block.set_input(k, b.1);
                 }
@@ -254,9 +255,8 @@ pub fn block_tree(
         }
     }
 
-    let id = block.block_info().id;
-    result.insert(id, block);
-    Ok((id, result))
+    block_map.insert(top_block_id, block);
+    Ok(block_map)
 }
 
 #[derive(Debug)]

@@ -77,7 +77,7 @@ impl Hash for Target {
 
 impl PartialEq for Target {
     fn eq(&self, other: &Self) -> bool {
-        compare(&self, other)
+        equal_hash(&self, other)
     }
 }
 
@@ -100,11 +100,11 @@ impl Hash for Variable {
 
 impl PartialEq for Variable {
     fn eq(&self, other: &Self) -> bool {
-        compare(&self, other)
+        equal_hash(&self, other)
     }
 }
 
-fn compare<A, B>(a: A, b: B) -> bool
+fn equal_hash<A, B>(a: A, b: B) -> bool
 where
     A: Hash,
     B: Hash,
@@ -144,7 +144,7 @@ impl Hash for Block {
 
 impl PartialEq for Block {
     fn eq(&self, other: &Self) -> bool {
-        compare(&self, other)
+        equal_hash(&self, other)
     }
 }
 
@@ -200,7 +200,7 @@ impl Hash for Costume {
 
 impl PartialEq for Costume {
     fn eq(&self, other: &Self) -> bool {
-        compare(&self, other)
+        equal_hash(&self, other)
     }
 }
 

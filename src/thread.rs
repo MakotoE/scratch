@@ -5,6 +5,7 @@ use crate::runtime::Runtime;
 
 #[derive(Debug)]
 pub struct Thread {
+    // TODO use efficient HashMap implementation
     blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>>,
     curr_block: BlockID,
     loop_stack: Vec<BlockID>,
@@ -12,14 +13,13 @@ pub struct Thread {
 }
 
 impl Thread {
-    pub fn start(
+    pub fn new(
         hat: BlockID,
         runtime: Runtime,
         file_blocks: &HashMap<BlockID, file::Block>,
     ) -> Result<Self> {
-        let (_, blocks) = block_tree(hat, runtime, file_blocks)?;
         Ok(Thread {
-            blocks,
+            blocks: block_tree(hat, runtime, file_blocks)?,
             curr_block: hat,
             loop_stack: Vec::new(),
             done: false,
