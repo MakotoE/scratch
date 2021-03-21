@@ -1,7 +1,7 @@
 use super::*;
 use crate::blocks::*;
 use crate::coordinate::SpriteRectangle;
-use crate::file::{BlockID, Target};
+use crate::file::BlockID;
 use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::{Costumes, GraphicsCostumeTexture, SpriteRuntime};
 use crate::thread::{BlockInputs, Thread};
@@ -16,7 +16,7 @@ use std::hash::{Hash, Hasher};
 pub struct Sprite {
     threads: Vec<RwLock<Thread>>,
     runtime: Runtime,
-    target: Target,
+    block_infos: HashMap<BlockID, file::Block>,
 }
 
 impl Sprite {
@@ -24,13 +24,13 @@ impl Sprite {
         sprite_id: SpriteID,
         sprite_runtime: SpriteRuntime,
         global: Arc<Global>,
-        target: Target,
+        block_infos: HashMap<BlockID, file::Block>,
     ) -> Result<Self> {
         let mut threads: Vec<RwLock<Thread>> = Vec::new();
 
         let sprite_runtime_ref = Arc::new(RwLock::new(sprite_runtime));
 
-        for hat_id in find_hats(&target.blocks) {
+        for hat_id in find_hats(&block_infos) {
             let runtime = Runtime::new(
                 sprite_runtime_ref.clone(),
                 global.clone(),
@@ -40,7 +40,7 @@ impl Sprite {
                 },
             );
 
-            let thread = Thread::start(hat_id, runtime, &target.blocks)?;
+            let thread = Thread::start(hat_id, runtime, &block_infos)?;
             threads.push(RwLock::new(thread));
         }
 
@@ -54,7 +54,7 @@ impl Sprite {
                     thread_id: 0,
                 },
             ),
-            target,
+            block_infos,
         })
     }
 
@@ -112,7 +112,7 @@ impl Sprite {
             new_sprite_id,
             sprite_runtime,
             self.runtime.global.clone(),
-            self.target.clone(),
+            self.block_infos.clone(),
         )
         .await
     }

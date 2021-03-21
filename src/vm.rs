@@ -84,7 +84,7 @@ impl VM {
             let sprite_runtime = SpriteRuntime::new(&target);
             let id = SpriteID::from_sprite_name(&target.name);
             let mut sprite =
-                Sprite::new(id, sprite_runtime, global.clone(), target.clone()).await?;
+                Sprite::new(id, sprite_runtime, global.clone(), target.blocks.clone()).await?;
             let costumes = Costumes::new(texture_context, &target.costumes, &images).await?;
             sprite.set_costumes(costumes).await;
             sprites.insert(id, sprite);

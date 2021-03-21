@@ -41,7 +41,13 @@ async fn block_inputs(targets: &[file::Target]) -> Result<Vec<SpriteBlocks>> {
     for target in targets {
         let sprite_runtime = SpriteRuntime::new(&target);
         let sprite_id = SpriteID::from_sprite_name(&target.name);
-        let sprite = Sprite::new(sprite_id, sprite_runtime, global.clone(), target.clone()).await?;
+        let sprite = Sprite::new(
+            sprite_id,
+            sprite_runtime,
+            global.clone(),
+            target.blocks.clone(),
+        )
+        .await?;
         block_inputs.push(SpriteBlocks {
             name: target.name.clone(),
             id: sprite_id,
