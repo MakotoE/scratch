@@ -15,7 +15,8 @@ use std::hash::{Hash, Hasher};
 #[derive(Debug)]
 pub struct Sprite {
     threads: Vec<RwLock<Thread>>,
-    runtime: Runtime,
+    global_runtime: Arc<Global>,
+    sprite_runtime: Arc<RwLock<SpriteRuntime>>,
     block_infos: HashMap<BlockID, file::Block>,
 }
 
@@ -26,40 +27,36 @@ impl Sprite {
         global: Arc<Global>,
         block_infos: HashMap<BlockID, file::Block>,
     ) -> Result<Self> {
-        let mut threads: Vec<RwLock<Thread>> = Vec::new();
-
         let sprite_runtime_ref = Arc::new(RwLock::new(sprite_runtime));
 
-        for hat_id in find_hats(&block_infos) {
-            let runtime = Runtime::new(
-                sprite_runtime_ref.clone(),
-                global.clone(),
-                ThreadID {
-                    sprite_id,
-                    thread_id: threads.len(),
-                },
-            );
+        let threads: Result<Vec<RwLock<Thread>>> = find_hats(&block_infos)
+            .drain(..)
+            .enumerate()
+            .map(|(thread_id, hat_id)| -> Result<RwLock<Thread>> {
+                let runtime = Runtime::new(
+                    sprite_runtime_ref.clone(),
+                    global.clone(),
+                    ThreadID {
+                        sprite_id,
+                        thread_id,
+                    },
+                );
 
-            let blocks = block_tree(hat_id, runtime, &block_infos)?;
-            threads.push(RwLock::new(Thread::new(hat_id, blocks)?));
-        }
+                let blocks = block_tree(hat_id, runtime, &block_infos)?;
+                Ok(RwLock::new(Thread::new(hat_id, blocks)?))
+            })
+            .collect();
 
         Ok(Self {
-            threads,
-            runtime: Runtime::new(
-                sprite_runtime_ref,
-                global,
-                ThreadID {
-                    sprite_id,
-                    thread_id: 0,
-                },
-            ),
+            threads: threads?,
+            global_runtime: global,
+            sprite_runtime: sprite_runtime_ref,
             block_infos,
         })
     }
 
     pub async fn set_costumes(&mut self, costumes: Costumes) {
-        self.runtime.sprite.write().await.set_costumes(costumes);
+        self.sprite_runtime.write().await.set_costumes(costumes);
     }
 
     pub fn number_of_threads(&self) -> usize {
@@ -91,8 +88,7 @@ impl Sprite {
         G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
     {
-        self.runtime
-            .sprite
+        self.sprite_runtime
             .write()
             .await
             .draw(context, graphics, character_cache)
@@ -107,18 +103,18 @@ impl Sprite {
     }
 
     pub async fn clone_sprite(&self, new_sprite_id: SpriteID) -> Result<Sprite> {
-        let sprite_runtime = self.runtime.sprite.read().await.clone_sprite_runtime();
+        let sprite_runtime = self.sprite_runtime.read().await.clone_sprite_runtime();
         Sprite::new(
             new_sprite_id,
             sprite_runtime,
-            self.runtime.global.clone(),
+            self.global_runtime.clone(),
             self.block_infos.clone(),
         )
         .await
     }
 
     pub async fn rectangle(&self) -> SpriteRectangle {
-        self.runtime.sprite.read().await.rectangle()
+        self.sprite_runtime.read().await.rectangle()
     }
 }
 
