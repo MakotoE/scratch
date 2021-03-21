@@ -1,14 +1,13 @@
 use super::*;
 use crate::blocks::*;
 use crate::coordinate::SpriteRectangle;
-use crate::file::{BlockID, Image, Target};
+use crate::file::{BlockID, Target};
 use crate::runtime::{Global, Runtime};
-use crate::sprite_runtime::{GraphicsCostumeTexture, SpriteRuntime};
+use crate::sprite_runtime::{Costumes, GraphicsCostumeTexture, SpriteRuntime};
 use crate::thread::{BlockInputs, Thread};
 use crate::vm::ThreadID;
 use graphics::character::CharacterCache;
 use graphics::Context;
-use piston_window::G2dTextureContext;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -59,18 +58,8 @@ impl Sprite {
         })
     }
 
-    pub async fn add_costumes(
-        &mut self,
-        texture_context: &mut G2dTextureContext,
-        costumes: &[file::Costume],
-        images: &HashMap<String, Image>,
-    ) -> Result<()> {
-        self.runtime
-            .sprite
-            .write()
-            .await
-            .add_costumes(texture_context, costumes, images)
-            .await
+    pub async fn set_costumes(&mut self, costumes: Costumes) {
+        self.runtime.sprite.write().await.set_costumes(costumes);
     }
 
     pub fn number_of_threads(&self) -> usize {

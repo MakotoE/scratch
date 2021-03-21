@@ -6,7 +6,7 @@ use crate::file::ScratchFile;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
 use crate::sprite_map::SpriteMap;
-use crate::sprite_runtime::SpriteRuntime;
+use crate::sprite_runtime::{Costumes, SpriteRuntime};
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use graphics::Context;
@@ -85,9 +85,8 @@ impl VM {
             let id = SpriteID::from_sprite_name(&target.name);
             let mut sprite =
                 Sprite::new(id, sprite_runtime, global.clone(), target.clone()).await?;
-            sprite
-                .add_costumes(texture_context, &target.costumes, &images)
-                .await?;
+            let costumes = Costumes::new(texture_context, &target.costumes, &images).await?;
+            sprite.set_costumes(costumes).await;
             sprites.insert(id, sprite);
         }
         Ok(sprites)

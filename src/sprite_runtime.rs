@@ -64,15 +64,8 @@ impl SpriteRuntime {
         }
     }
 
-    pub async fn add_costumes(
-        &mut self,
-        texture_context: &mut G2dTextureContext,
-        costumes: &[file::Costume],
-        images: &HashMap<String, Image>,
-    ) -> Result<()> {
-        self.costumes
-            .add_costumes(texture_context, costumes, images)
-            .await
+    pub fn set_costumes(&mut self, costumes: Costumes) {
+        self.costumes = costumes;
     }
 
     pub fn draw<G, C>(
@@ -514,13 +507,13 @@ pub struct Costumes {
 }
 
 impl Costumes {
-    async fn add_costumes(
-        &mut self,
+    pub async fn new(
         texture_context: &mut G2dTextureContext,
         costume_data: &[file::Costume],
         images: &HashMap<String, Image>,
-    ) -> Result<()> {
-        self.costumes.reserve(costume_data.len());
+    ) -> Result<Self> {
+        let mut costumes: Vec<Costume> = Vec::with_capacity(costume_data.len());
+
         for costume in costume_data {
             let costume = if let Some(md5ext) = &costume.md5ext {
                 match images.get(md5ext) {
@@ -532,9 +525,12 @@ impl Costumes {
                 // used as a placeholder.
                 Costume::new_blank(texture_context, &costume)?
             };
-            self.costumes.push(costume);
+            costumes.push(costume);
         }
-        Ok(())
+        Ok(Self {
+            costumes,
+            current_costume: 0,
+        })
     }
 
     fn current_costume(&self) -> Option<&Costume> {
