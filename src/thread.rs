@@ -12,16 +12,13 @@ pub struct Thread {
 }
 
 impl Thread {
-    pub fn new(
-        hat: BlockID,
-        blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>>,
-    ) -> Result<Self> {
-        Ok(Thread {
+    pub fn new(hat: BlockID, blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>>) -> Self {
+        Thread {
             blocks,
             curr_block: hat,
             loop_stack: Vec::new(),
             done: false,
-        })
+        }
     }
 
     pub async fn step(&mut self) -> Result<()> {
@@ -35,6 +32,7 @@ impl Thread {
             name: block.block_info().name,
             error,
         })?;
+
         match execute_result {
             Next::None => match self.loop_stack.pop() {
                 None => {

@@ -126,6 +126,7 @@ impl VM {
                         match control {
                             Control::Continue | Control::Step => {
                                 for thread_id in paused_threads.drain(..) {
+                                    // TODO this will keep looping even if a thread is done
                                     futures.push(sprites.step(thread_id));
                                 }
                             }
@@ -262,7 +263,7 @@ enum Control {
     Stop,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct ThreadID {
     pub sprite_id: SpriteID,
     pub thread_id: usize,

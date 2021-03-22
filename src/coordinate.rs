@@ -3,7 +3,7 @@ use graphics::types::Rectangle;
 /// Center = 0, 0
 /// Left = -240, right = +240
 /// Top = +180, bottom = -180
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct SpriteCoordinate {
     pub x: f64,
     pub y: f64,
@@ -29,16 +29,10 @@ impl From<CanvasCoordinate> for SpriteCoordinate {
 
 /// Left = 0, right = +480
 /// Top = 0, bottom +360
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct CanvasCoordinate {
     pub x: f64,
     pub y: f64,
-}
-
-impl Default for CanvasCoordinate {
-    fn default() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
 }
 
 impl From<SpriteCoordinate> for CanvasCoordinate {
@@ -122,14 +116,6 @@ impl SpriteRectangle {
             || self_bottom_right.x < other_top_left.x
             || self_top_left.y < other_bottom_right.y
             || self_bottom_right.y > other_top_left.y)
-    }
-
-    #[allow(dead_code)]
-    pub fn translate(&self, coordinate: &SpriteCoordinate) -> SpriteRectangle {
-        SpriteRectangle {
-            center: self.center.add(coordinate),
-            size: self.size,
-        }
     }
 }
 

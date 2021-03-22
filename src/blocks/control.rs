@@ -706,3 +706,53 @@ impl Block for CreateCloneOfMenu {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::blocks::test::{BlockStub, BlockStubMsg};
+    use crate::blocks::value::ValueBool;
+    use crate::file::BlockIDGenerator;
+    use crate::thread::Thread;
+
+    #[tokio::test]
+    async fn if_block() {
+        let mut gen = BlockIDGenerator::new();
+
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let branch_id = gen.get_id();
+        let branch = BlockStub::new(branch_id, runtime.clone());
+
+        let next_id = gen.get_id();
+        let next = BlockStub::new(next_id, runtime.clone());
+
+        let if_id = gen.get_id();
+        let mut if_block = If::new(if_id);
+
+        let condition = Box::new(ValueBool::new(false));
+
+        if_block.set_substack("SUBSTACK", branch_id);
+        if_block.set_substack("next", next_id);
+        if_block.set_input("CONDITION", condition);
+
+        let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+        blocks.insert(branch_id, Box::new(branch));
+        blocks.insert(next_id, Box::new(next));
+        blocks.insert(if_id, Box::new(if_block));
+
+        let mut thread = Thread::new(if_id, blocks);
+        thread.step().await.unwrap();
+        thread.step().await.unwrap();
+
+        // TODO implement PartialEq for RenderBuffer and BroadcastMsg
+        if let BroadcastMsg::BlockStub(id, msg) = receiver.try_recv().unwrap() {
+            assert_eq!(id, next_id);
+            assert_eq!(msg, BlockStubMsg::Executed);
+        } else {
+            assert!(false);
+        }
+        assert!(receiver.try_recv().is_err());
+    }
+}

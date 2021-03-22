@@ -11,7 +11,7 @@ use graphics::{rectangle, text};
 use graphics::{Context, Transformed};
 use piston_window::{G2d, Glyphs};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Runtime {
     pub sprite: Arc<RwLock<SpriteRuntime>>,
     pub global: Arc<Global>,
@@ -30,12 +30,13 @@ impl Runtime {
             thread_id,
         }
     }
+
     pub fn thread_id(&self) -> ThreadID {
         self.thread_id
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Global {
     pub variables: Variables,
     pub broadcaster: Broadcaster,
@@ -144,7 +145,7 @@ impl Global {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Variables {
     variables: RwLock<HashMap<String, Variable>>,
 }

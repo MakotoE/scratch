@@ -189,7 +189,7 @@ pub struct ValueBool {
 }
 
 impl ValueBool {
-    #[allow(dead_code)] // Used in tests
+    #[cfg(test)]
     pub fn new(value: bool) -> Self {
         Self { value }
     }

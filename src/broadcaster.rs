@@ -1,5 +1,7 @@
 use super::*;
+use crate::blocks::test::BlockStubMsg;
 use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
+use crate::file::BlockID;
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
 use graphics_buffer::RenderBuffer;
@@ -13,12 +15,6 @@ pub struct Broadcaster {
 }
 
 impl Broadcaster {
-    pub fn new() -> Self {
-        Self {
-            sender: channel(32).0,
-        }
-    }
-
     pub fn send(&self, m: BroadcastMsg) -> Result<()> {
         self.sender.send(m)?;
         Ok(())
@@ -26,6 +22,14 @@ impl Broadcaster {
 
     pub fn subscribe(&self) -> Receiver<BroadcastMsg> {
         self.sender.subscribe()
+    }
+}
+
+impl Default for Broadcaster {
+    fn default() -> Self {
+        Self {
+            sender: channel(32).0,
+        }
     }
 }
 
@@ -53,6 +57,7 @@ pub enum BroadcastMsg {
     /// Requests image but with sprite removed
     RequestCanvasImage(SpriteID),
     CanvasImage(RenderBuffer),
+    BlockStub(BlockID, BlockStubMsg),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

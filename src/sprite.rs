@@ -43,7 +43,7 @@ impl Sprite {
                 );
 
                 let blocks = block_tree(hat_id, runtime, &block_infos)?;
-                Ok(RwLock::new(Thread::new(hat_id, blocks)?))
+                Ok(RwLock::new(Thread::new(hat_id, blocks)))
             })
             .collect();
 
@@ -133,7 +133,7 @@ pub fn find_hats(block_infos: &HashMap<BlockID, file::Block>) -> Vec<BlockID> {
     hats
 }
 
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Default)]
 pub struct SpriteID {
     hash: u64,
 }

@@ -47,7 +47,7 @@ impl Interface {
         green_flag_image: Id,
         stop_image: Id,
     ) -> Result<Self> {
-        let broadcaster = Broadcaster::new();
+        let broadcaster = Broadcaster::default();
         let vm = VM::new(texture_context, scratch_file, broadcaster.clone()).await?;
         Ok(Self {
             ids,

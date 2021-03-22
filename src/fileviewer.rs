@@ -1,5 +1,4 @@
 use super::*;
-use crate::broadcaster::Broadcaster;
 use crate::file::ScratchFile;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
@@ -30,11 +29,7 @@ struct SpriteBlocks {
 }
 
 async fn block_inputs(targets: &[file::Target]) -> Result<Vec<SpriteBlocks>> {
-    let global = Arc::new(Global::new(
-        &HashMap::new(),
-        &Vec::new(),
-        Broadcaster::new(),
-    ));
+    let global = Arc::new(Global::default());
 
     let mut block_inputs: Vec<SpriteBlocks> = Vec::with_capacity(targets.len());
 

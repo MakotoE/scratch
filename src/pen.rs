@@ -18,15 +18,6 @@ enum PenStatus {
 }
 
 impl Pen {
-    pub fn new() -> Self {
-        let mut result = Self {
-            lines: Vec::new(),
-            pen_status: PenUp,
-        };
-        result.clear();
-        result
-    }
-
     pub fn color(&self) -> &Srgb<u8> {
         self.lines.last().unwrap().color()
     }
@@ -88,6 +79,17 @@ impl Pen {
             }
             self.lines.push(line);
         }
+    }
+}
+
+impl Default for Pen {
+    fn default() -> Self {
+        let mut pen = Self {
+            lines: Vec::new(),
+            pen_status: PenUp,
+        };
+        pen.clear();
+        pen
     }
 }
 

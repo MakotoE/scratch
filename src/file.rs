@@ -16,6 +16,41 @@ pub struct ScratchFile {
     pub images: HashMap<String, Image>,
 }
 
+impl ScratchFile {
+    pub fn parse<R>(file: R) -> Result<ScratchFile>
+    where
+        R: std::io::Read + std::io::Seek,
+    {
+        use std::io::Read;
+
+        let mut archive = zip::ZipArchive::new(file)?;
+        let project: Project = serde_json::from_reader(archive.by_name("project.json")?)?;
+
+        let mut image_names: Vec<String> = Vec::new();
+        for name in archive.file_names() {
+            if name.ends_with(".svg") | name.ends_with(".png") {
+                image_names.push(name.to_string());
+            }
+        }
+
+        let mut images: HashMap<String, Image> = HashMap::new();
+        for name in &image_names {
+            let mut b: Vec<u8> = Vec::new();
+            archive.by_name(name).unwrap().read_to_end(&mut b)?;
+            let image = if name.ends_with(".svg") {
+                Image::SVG(b)
+            } else if name.ends_with(".png") {
+                Image::PNG(b)
+            } else {
+                return Err(Error::msg("unrecognized file extension"));
+            };
+            images.insert(name.clone(), image);
+        }
+
+        Ok(Self { project, images })
+    }
+}
+
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Project {
@@ -348,38 +383,31 @@ impl<'de> Deserialize<'de> for BlockID {
     }
 }
 
-impl ScratchFile {
-    pub fn parse<R>(file: R) -> Result<ScratchFile>
-    where
-        R: std::io::Read + std::io::Seek,
-    {
-        use std::io::Read;
+#[derive(Debug, Copy, Clone)]
+pub struct BlockIDGenerator {
+    index: usize,
+}
 
-        let mut archive = zip::ZipArchive::new(file)?;
-        let project: Project = serde_json::from_reader(archive.by_name("project.json")?)?;
+#[cfg(test)]
+impl BlockIDGenerator {
+    pub fn new() -> Self {
+        Self { index: 0 }
+    }
 
-        let mut image_names: Vec<String> = Vec::new();
-        for name in archive.file_names() {
-            if name.ends_with(".svg") | name.ends_with(".png") {
-                image_names.push(name.to_string());
-            }
-        }
+    pub fn get_id(&mut self) -> BlockID {
+        use std::iter::repeat;
 
-        let mut images: HashMap<String, Image> = HashMap::new();
-        for name in &image_names {
-            let mut b: Vec<u8> = Vec::new();
-            archive.by_name(name).unwrap().read_to_end(&mut b)?;
-            let image = if name.ends_with(".svg") {
-                Image::SVG(b)
-            } else if name.ends_with(".png") {
-                Image::PNG(b)
-            } else {
-                return Err(Error::msg("unrecognized file extension"));
-            };
-            images.insert(name.clone(), image);
-        }
-
-        Ok(Self { project, images })
+        let vec: Vec<u8> = self
+            .index
+            .to_string()
+            .bytes()
+            .chain(repeat(b' '))
+            .take(20)
+            .collect();
+        let mut id = BlockID { id: [0; 20] };
+        id.id.copy_from_slice(vec.as_slice());
+        self.index += 1;
+        id
     }
 }
 

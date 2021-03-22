@@ -19,7 +19,7 @@ use std::f64::consts::TAU;
 use std::fs::File;
 use std::io::{Cursor, Read};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SpriteRuntime {
     sprite_name: String,
     is_a_clone: bool,
@@ -33,7 +33,6 @@ pub struct SpriteRuntime {
     hide: HideStatus,
 }
 
-#[allow(dead_code)]
 impl SpriteRuntime {
     pub fn new(target: &Target) -> Self {
         let scale = if target.is_stage {
@@ -50,11 +49,8 @@ impl SpriteRuntime {
             scale: Scale { x: scale, y: scale },
             costumes: Costumes::default(),
             costume_transparency: 1.0,
-            text: Text {
-                id: BlockID::default(),
-                text: None,
-            },
-            pen: Pen::new(),
+            text: Text::default(),
+            pen: Pen::default(),
             is_a_clone: false,
             hide: if target.is_stage || target.visible {
                 HideStatus::Show
@@ -333,11 +329,8 @@ impl SpriteRuntime {
             sprite_name: self.sprite_name.clone() + "-clone",
             is_a_clone: true,
             costumes: self.costumes.clone(),
-            text: Text {
-                id: BlockID::default(),
-                text: None,
-            },
-            pen: Pen::new(),
+            text: Text::default(),
+            pen: Pen::default(),
             ..*self
         }
     }
@@ -565,7 +558,13 @@ pub enum HideStatus {
     Show,
 }
 
-#[derive(Debug, Clone)]
+impl Default for HideStatus {
+    fn default() -> Self {
+        HideStatus::Hide
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 /// Text can only be hidden by the thread that posted it. It can be replaced with new text by any
 /// thread.
 pub struct Text {

@@ -7,6 +7,7 @@ mod operator;
 mod pen;
 mod sensing;
 mod sound;
+pub mod test;
 pub mod value;
 
 use super::*;
@@ -96,7 +97,7 @@ pub trait Block: std::fmt::Debug + Sync + Send {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Next {
     None,
     Continue(BlockID),
