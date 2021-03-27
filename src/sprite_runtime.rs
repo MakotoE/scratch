@@ -1,6 +1,5 @@
 use super::*;
-use crate::coordinate::Scale;
-use crate::coordinate::{CanvasCoordinate, Size, SpriteCoordinate, SpriteRectangle};
+use crate::coordinate::{CanvasCoordinate, Scale, Size, SpriteCoordinate, SpriteRectangle};
 use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
 use flo_curves::{bezier, BezierCurve, Coord2};
@@ -9,8 +8,7 @@ use gfx_graphics::{CreateTexture, Format};
 use gfx_texture::{Texture, TextureSettings};
 use graphics::character::CharacterCache;
 use graphics::types::{FontSize, Rectangle};
-use graphics::{line, CircleArc, Context};
-use graphics::{Graphics, Transformed};
+use graphics::{line, CircleArc, Context, Graphics, Transformed};
 use graphics_buffer::{BufferGlyphs, RenderBuffer};
 use image::codecs::png::PngDecoder;
 use image::{DynamicImage, ImageBuffer, ImageDecoder, RgbaImage};
