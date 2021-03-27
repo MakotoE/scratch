@@ -777,4 +777,35 @@ mod tests {
             assert!(receiver.try_recv().is_err());
         }
     }
+
+    #[tokio::test]
+    async fn forever() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+
+        let substack_id = gen.get_id();
+        let substack = BlockStub::new(substack_id, runtime.clone());
+
+        let forever_id = gen.get_id();
+        let mut forever = Forever::new(forever_id);
+        forever.set_substack("SUBSTACK", substack_id);
+
+        let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+        blocks.insert(substack_id, Box::new(substack));
+        blocks.insert(forever_id, Box::new(forever));
+
+        let mut thread = Thread::new(forever_id, blocks);
+        for _ in 0..2 {
+            thread.step().await.unwrap();
+            thread.step().await.unwrap();
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(substack_id, BlockStubMsg::Executed)
+            );
+        }
+
+        assert!(receiver.try_recv().is_err());
+    }
 }
