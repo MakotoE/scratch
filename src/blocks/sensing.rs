@@ -13,11 +13,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::DerefMut;
 use std::str::FromStr;
 
-pub fn get_block(
-    name: &str,
-    id: BlockID,
-    runtime: Runtime,
-) -> Result<Box<dyn Block + Send + Sync>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "keypressed" => Box::new(KeyPressed::new(id, runtime)),
         "keyoptions" => Box::new(KeyOptions::new(id, runtime)),
@@ -72,7 +68,7 @@ impl Display for KeyOption {
 pub struct KeyPressed {
     id: BlockID,
     runtime: Runtime,
-    key_option: Box<dyn Block + Send + Sync>,
+    key_option: Box<dyn Block>,
 }
 
 impl KeyPressed {
@@ -103,7 +99,7 @@ impl Block for KeyPressed {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "KEY_OPTION" {
             self.key_option = block;
         }
@@ -184,8 +180,8 @@ lazy_static::lazy_static! {
 pub struct ColorIsTouchingColor {
     id: BlockID,
     runtime: Runtime,
-    sprite_color: Box<dyn Block + Send + Sync>,
-    canvas_color: Box<dyn Block + Send + Sync>,
+    sprite_color: Box<dyn Block>,
+    canvas_color: Box<dyn Block>,
 }
 
 impl ColorIsTouchingColor {
@@ -237,7 +233,7 @@ impl Block for ColorIsTouchingColor {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "COLOR" => self.sprite_color = block,
             "COLOR2" => self.canvas_color = block,
@@ -285,7 +281,7 @@ impl Block for ColorIsTouchingColor {
 pub struct TouchingColor {
     id: BlockID,
     runtime: Runtime,
-    color: Box<dyn Block + Send + Sync>,
+    color: Box<dyn Block>,
 }
 
 impl TouchingColor {
@@ -334,7 +330,7 @@ impl Block for TouchingColor {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "COLOR" {
             self.color = block;
         }
@@ -402,7 +398,7 @@ fn colors_approximately_equal(a: &Rgba<u8>, b: &Rgba<u8>) -> bool {
 pub struct TouchingObject {
     id: BlockID,
     runtime: Runtime,
-    menu: Box<dyn Block + Send + Sync>,
+    menu: Box<dyn Block>,
 }
 
 impl TouchingObject {
@@ -447,7 +443,7 @@ impl Block for TouchingObject {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "TOUCHINGOBJECTMENU" {
             self.menu = block;
         }

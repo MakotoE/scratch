@@ -6,11 +6,7 @@ use std::str::FromStr;
 use strum::EnumString;
 use tokio::time::interval;
 
-pub fn get_block(
-    name: &str,
-    id: BlockID,
-    runtime: Runtime,
-) -> Result<Box<dyn Block + Send + Sync>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
@@ -31,7 +27,7 @@ pub fn get_block(
 #[derive(Debug)]
 pub struct If {
     id: BlockID,
-    condition: Box<dyn Block + Send + Sync>,
+    condition: Box<dyn Block>,
     next: Option<BlockID>,
     substack: Option<BlockID>,
     done: bool,
@@ -67,7 +63,7 @@ impl Block for If {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -101,7 +97,7 @@ impl Block for If {
 pub struct Wait {
     id: BlockID,
     next: Option<BlockID>,
-    duration: Box<dyn Block + Send + Sync>,
+    duration: Box<dyn Block>,
     runtime: Runtime,
 }
 
@@ -134,7 +130,7 @@ impl Block for Wait {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "DURATION" {
             self.duration = block;
         }
@@ -200,7 +196,7 @@ impl Block for Forever {
 #[derive(Debug)]
 pub struct Repeat {
     id: BlockID,
-    times: Box<dyn Block + Send + Sync>,
+    times: Box<dyn Block>,
     next: Option<BlockID>,
     substack: Option<BlockID>,
     count: usize,
@@ -236,7 +232,7 @@ impl Block for Repeat {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "TIMES" {
             self.times = block;
         }
@@ -268,7 +264,7 @@ pub struct RepeatUntil {
     id: BlockID,
     next: Option<BlockID>,
     substack: Option<BlockID>,
-    condition: Box<dyn Block + Send + Sync>,
+    condition: Box<dyn Block>,
 }
 
 impl RepeatUntil {
@@ -300,7 +296,7 @@ impl Block for RepeatUntil {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -329,7 +325,7 @@ impl Block for RepeatUntil {
 pub struct IfElse {
     id: BlockID,
     next: Option<BlockID>,
-    condition: Box<dyn Block + Send + Sync>,
+    condition: Box<dyn Block>,
     substack_true: Option<BlockID>,
     substack_false: Option<BlockID>,
     done: bool,
@@ -370,7 +366,7 @@ impl Block for IfElse {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -405,7 +401,7 @@ impl Block for IfElse {
 pub struct WaitUntil {
     id: BlockID,
     next: Option<BlockID>,
-    condition: Box<dyn Block + Send + Sync>,
+    condition: Box<dyn Block>,
 }
 
 impl WaitUntil {
@@ -436,7 +432,7 @@ impl Block for WaitUntil {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "CONDITION" {
             self.condition = block;
         }
@@ -629,7 +625,7 @@ pub struct CreateCloneOf {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    clone_option: Box<dyn Block + Send + Sync>,
+    clone_option: Box<dyn Block>,
 }
 
 impl CreateCloneOf {
@@ -660,7 +656,7 @@ impl Block for CreateCloneOf {
             vec![("next", &self.next)],
         )
     }
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "CLONE_OPTION" {
             self.clone_option = block;
         }
@@ -737,7 +733,7 @@ mod tests {
             if_block.set_substack("next", next_id);
             if_block.set_input("CONDITION", condition);
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
             blocks.insert(branch_id, Box::new(branch.clone()));
             blocks.insert(next_id, Box::new(next.clone()));
             blocks.insert(if_id, Box::new(if_block));
@@ -761,7 +757,7 @@ mod tests {
             if_block.set_substack("next", next_id);
             if_block.set_input("CONDITION", condition);
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
             blocks.insert(branch_id, Box::new(branch));
             blocks.insert(next_id, Box::new(next));
             blocks.insert(if_id, Box::new(if_block));
@@ -792,7 +788,7 @@ mod tests {
         let mut forever = Forever::new(forever_id);
         forever.set_substack("SUBSTACK", substack_id);
 
-        let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+        let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
         blocks.insert(substack_id, Box::new(substack));
         blocks.insert(forever_id, Box::new(forever));
 

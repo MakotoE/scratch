@@ -2,11 +2,7 @@ use crate::broadcaster::BroadcastMsg;
 
 use super::*;
 
-pub fn get_block(
-    name: &str,
-    id: BlockID,
-    runtime: Runtime,
-) -> Result<Box<dyn Block + Send + Sync>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "whenflagclicked" => Box::new(WhenFlagClicked::new(id, runtime)),
         "whenbroadcastreceived" => Box::new(WhenBroadcastReceived::new(id, runtime)),
@@ -146,7 +142,7 @@ pub struct Broadcast {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    message: Box<dyn Block + Send + Sync>,
+    message: Box<dyn Block>,
 }
 
 impl Broadcast {
@@ -178,7 +174,7 @@ impl Block for Broadcast {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "BROADCAST_INPUT" {
             self.message = block;
         }
@@ -205,7 +201,7 @@ pub struct BroadcastAndWait {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    message: Box<dyn Block + Send + Sync>,
+    message: Box<dyn Block>,
 }
 
 impl BroadcastAndWait {
@@ -237,7 +233,7 @@ impl Block for BroadcastAndWait {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "BROADCAST_INPUT" {
             self.message = block;
         }

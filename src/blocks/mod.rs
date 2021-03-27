@@ -20,11 +20,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 use value::Value;
 
-fn get_block(
-    id: BlockID,
-    runtime: Runtime,
-    info: &file::Block,
-) -> Result<Box<dyn Block + Send + Sync>> {
+fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dyn Block>> {
     let (category, name) = info.opcode.split_once('_').ok_or_else(|| {
         Error::msg(format!(
             "block \"{}\": opcode {} does not exist",
@@ -78,7 +74,7 @@ pub trait Block: std::fmt::Debug + Sync + Send {
     fn block_inputs(&self) -> BlockInputsPartial;
 
     #[allow(unused_variables)]
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {}
 
     #[allow(unused_variables)]
     fn set_substack(&mut self, key: &str, block: BlockID) {}
@@ -166,7 +162,7 @@ pub fn block_tree(
     top_block_id: BlockID,
     runtime: Runtime,
     infos: &HashMap<BlockID, file::Block>,
-) -> Result<HashMap<BlockID, Box<dyn Block + Send + Sync>>> {
+) -> Result<HashMap<BlockID, Box<dyn Block>>> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,
         None => {
@@ -177,7 +173,7 @@ pub fn block_tree(
         }
     };
 
-    let mut block_map: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+    let mut block_map: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
     let mut block = get_block(top_block_id, runtime.clone(), &info)?;
 
     if let Some(next_id) = info.next {
@@ -232,7 +228,7 @@ pub fn block_tree(
                             .as_str()
                             .ok_or_else(input_err)?;
                         Box::new(value::Variable::new(id.to_string(), runtime.clone()))
-                            as Box<dyn Block + Send + Sync>
+                            as Box<dyn Block>
                     }
                     _ => return Err(input_err()),
                 };

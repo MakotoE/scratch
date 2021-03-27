@@ -2,11 +2,7 @@ use super::*;
 use palette::{Hsv, IntoColor};
 use palette::{Mix, Srgb};
 
-pub fn get_block(
-    name: &str,
-    id: BlockID,
-    runtime: Runtime,
-) -> Result<Box<dyn Block + Send + Sync>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "penDown" => Box::new(PenDown::new(id, runtime)),
         "penUp" => Box::new(PenUp::new(id, runtime)),
@@ -120,7 +116,7 @@ pub struct SetPenColorToColor {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    color: Box<dyn Block + Send + Sync>,
+    color: Box<dyn Block>,
 }
 
 impl SetPenColorToColor {
@@ -152,7 +148,7 @@ impl Block for SetPenColorToColor {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "COLOR" {
             self.color = block;
         }
@@ -176,7 +172,7 @@ pub struct SetPenSizeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    size: Box<dyn Block + Send + Sync>,
+    size: Box<dyn Block>,
 }
 
 impl SetPenSizeTo {
@@ -208,7 +204,7 @@ impl Block for SetPenSizeTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "SIZE" {
             self.size = block;
         }
@@ -279,7 +275,7 @@ pub struct SetPenShadeToNumber {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    shade: Box<dyn Block + Send + Sync>,
+    shade: Box<dyn Block>,
 }
 
 impl SetPenShadeToNumber {
@@ -333,7 +329,7 @@ impl Block for SetPenShadeToNumber {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "SHADE" {
             self.shade = block;
         }
@@ -379,7 +375,7 @@ pub struct SetPenHueToNumber {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    hue: Box<dyn Block + Send + Sync>, // [0, 100]
+    hue: Box<dyn Block>, // [0, 100]
 }
 
 impl SetPenHueToNumber {
@@ -420,7 +416,7 @@ impl Block for SetPenHueToNumber {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "HUE" {
             self.hue = block;
         }

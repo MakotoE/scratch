@@ -7,11 +7,7 @@ use rand::prelude::*;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-pub fn get_block(
-    name: &str,
-    id: BlockID,
-    runtime: Runtime,
-) -> Result<Box<dyn Block + Send + Sync>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "movesteps" => Box::new(MoveSteps::new(id, runtime)),
         "gotoxy" => Box::new(GoToXY::new(id, runtime)),
@@ -34,7 +30,7 @@ pub struct MoveSteps {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    steps: Box<dyn Block + Send + Sync>,
+    steps: Box<dyn Block>,
 }
 
 impl MoveSteps {
@@ -66,7 +62,7 @@ impl Block for MoveSteps {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "STEPS" {
             self.steps = block;
         }
@@ -92,8 +88,8 @@ pub struct GoToXY {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    x: Box<dyn Block + Send + Sync>,
-    y: Box<dyn Block + Send + Sync>,
+    x: Box<dyn Block>,
+    y: Box<dyn Block>,
 }
 
 impl GoToXY {
@@ -126,7 +122,7 @@ impl Block for GoToXY {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "X" => self.x = block,
             "Y" => self.y = block,
@@ -158,7 +154,7 @@ pub struct ChangeXBy {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    dx: Box<dyn Block + Send + Sync>,
+    dx: Box<dyn Block>,
 }
 
 impl ChangeXBy {
@@ -190,7 +186,7 @@ impl Block for ChangeXBy {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "DX" {
             self.dx = block;
         }
@@ -216,7 +212,7 @@ pub struct ChangeYBy {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    dy: Box<dyn Block + Send + Sync>,
+    dy: Box<dyn Block>,
 }
 
 impl ChangeYBy {
@@ -248,7 +244,7 @@ impl Block for ChangeYBy {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "DY" {
             self.dy = block;
         }
@@ -275,7 +271,7 @@ pub struct SetX {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    x: Box<dyn Block + Send + Sync>,
+    x: Box<dyn Block>,
 }
 
 impl SetX {
@@ -307,7 +303,7 @@ impl Block for SetX {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "X" {
             self.x = block;
         }
@@ -334,7 +330,7 @@ pub struct SetY {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    y: Box<dyn Block + Send + Sync>,
+    y: Box<dyn Block>,
 }
 
 impl SetY {
@@ -366,7 +362,7 @@ impl Block for SetY {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "Y" {
             self.y = block;
         }
@@ -413,7 +409,7 @@ impl Block for XPosition {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<Value> {
         let runtime = self.runtime.sprite.read().await;
@@ -446,7 +442,7 @@ impl Block for YPosition {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<Value> {
         let runtime = self.runtime.sprite.read().await;
@@ -479,7 +475,7 @@ impl Block for Direction {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<Value> {
         unimplemented!()
@@ -511,7 +507,7 @@ impl Block for PointingDirection {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block + Send + Sync>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<Value> {
         unimplemented!()
@@ -523,7 +519,7 @@ pub struct GoTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    option: Box<dyn Block + Send + Sync>,
+    option: Box<dyn Block>,
     rng: RandomCoordinateGenerator,
 }
 
@@ -557,7 +553,7 @@ impl Block for GoTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "TO" {
             self.option = block;
         }

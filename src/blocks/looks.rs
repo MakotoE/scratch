@@ -5,11 +5,7 @@ use crate::sprite_runtime::{HideStatus, Text};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-pub fn get_block(
-    name: &str,
-    id: BlockID,
-    runtime: Runtime,
-) -> Result<Box<dyn Block + Send + Sync>> {
+pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
         "say" => Box::new(Say::new(id, runtime)),
         "sayforsecs" => Box::new(SayForSecs::new(id, runtime)),
@@ -32,7 +28,7 @@ pub fn get_block(
 pub struct Say {
     id: BlockID,
     runtime: Runtime,
-    message: Box<dyn Block + Send + Sync>,
+    message: Box<dyn Block>,
     next: Option<BlockID>,
 }
 
@@ -65,7 +61,7 @@ impl Block for Say {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "MESSAGE" {
             self.message = block;
         }
@@ -91,8 +87,8 @@ impl Block for Say {
 pub struct SayForSecs {
     id: BlockID,
     runtime: Runtime,
-    message: Box<dyn Block + Send + Sync>,
-    secs: Box<dyn Block + Send + Sync>,
+    message: Box<dyn Block>,
+    secs: Box<dyn Block>,
     next: Option<BlockID>,
 }
 
@@ -129,7 +125,7 @@ impl Block for SayForSecs {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         match key {
             "MESSAGE" => self.message = block,
             "SECS" => self.secs = block,
@@ -344,7 +340,7 @@ pub struct SetEffectTo {
     runtime: Runtime,
     next: Option<BlockID>,
     effect: Effect,
-    value: Box<dyn Block + Send + Sync>,
+    value: Box<dyn Block>,
 }
 
 impl SetEffectTo {
@@ -377,7 +373,7 @@ impl Block for SetEffectTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "VALUE" {
             self.value = block;
         }
@@ -504,7 +500,7 @@ pub struct ChangeEffectBy {
     runtime: Runtime,
     next: Option<BlockID>,
     effect: Effect,
-    change: Box<dyn Block + Send + Sync>,
+    change: Box<dyn Block>,
 }
 
 impl ChangeEffectBy {
@@ -537,7 +533,7 @@ impl Block for ChangeEffectBy {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "CHANGE" {
             self.change = block;
         }
@@ -576,7 +572,7 @@ pub struct SetSizeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    size: Box<dyn Block + Send + Sync>,
+    size: Box<dyn Block>,
 }
 
 impl SetSizeTo {
@@ -608,7 +604,7 @@ impl Block for SetSizeTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "SIZE" {
             self.size = block;
         }
@@ -639,7 +635,7 @@ pub struct SwitchCostumeTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    costume: Box<dyn Block + Send + Sync>,
+    costume: Box<dyn Block>,
 }
 
 impl SwitchCostumeTo {
@@ -671,7 +667,7 @@ impl Block for SwitchCostumeTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "COSTUME" {
             self.costume = block;
         }
@@ -753,7 +749,7 @@ pub struct SwitchBackdropTo {
     id: BlockID,
     runtime: Runtime,
     next: Option<BlockID>,
-    backdrop: Box<dyn Block + Send + Sync>,
+    backdrop: Box<dyn Block>,
 }
 
 impl SwitchBackdropTo {
@@ -785,7 +781,7 @@ impl Block for SwitchBackdropTo {
         )
     }
 
-    fn set_input(&mut self, key: &str, block: Box<dyn Block + Send + Sync>) {
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
         if key == "BACKDROP" {
             self.backdrop = block;
         }

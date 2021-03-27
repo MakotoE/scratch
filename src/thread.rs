@@ -5,14 +5,14 @@ use crate::file::BlockID;
 #[derive(Debug)]
 pub struct Thread {
     // TODO use efficient HashMap implementation
-    blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>>,
+    blocks: HashMap<BlockID, Box<dyn Block>>,
     curr_block: BlockID,
     loop_stack: Vec<BlockID>,
     done: bool,
 }
 
 impl Thread {
-    pub fn new(hat: BlockID, blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>>) -> Self {
+    pub fn new(hat: BlockID, blocks: HashMap<BlockID, Box<dyn Block>>) -> Self {
         Thread {
             blocks,
             curr_block: hat,
@@ -72,7 +72,7 @@ pub struct BlockInputs {
 impl BlockInputs {
     fn new(
         mut block_inputs: BlockInputsPartial,
-        blocks: &HashMap<BlockID, Box<dyn Block + Send + Sync>>,
+        blocks: &HashMap<BlockID, Box<dyn Block>>,
     ) -> Self {
         Self {
             info: block_inputs.info,
