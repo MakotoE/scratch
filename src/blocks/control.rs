@@ -11,7 +11,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "if" => Box::new(If::new(id)),
         "forever" => Box::new(Forever::new(id)),
         "repeat" => Box::new(Repeat::new(id)),
-        "wait" => Box::new(Wait::new(id, runtime)),
+        "wait" => Box::new(Wait::new(id)),
         "repeat_until" => Box::new(RepeatUntil::new(id)),
         "if_else" => Box::new(IfElse::new(id)),
         "wait_until" => Box::new(WaitUntil::new(id)),
@@ -98,16 +98,14 @@ pub struct Wait {
     id: BlockID,
     next: Option<BlockID>,
     duration: Box<dyn Block>,
-    runtime: Runtime,
 }
 
 impl Wait {
-    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+    pub fn new(id: BlockID) -> Self {
         Self {
             id,
             next: None,
             duration: Box::new(EmptyInput {}),
-            runtime,
         }
     }
 }
@@ -874,5 +872,34 @@ mod tests {
             );
             assert!(receiver.try_recv().is_err());
         }
+    }
+
+    #[tokio::test]
+    async fn wait() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+
+        let next_id = gen.get_id();
+        let wait_id = gen.get_id();
+
+        let mut wait = Wait::new(wait_id);
+        wait.set_input("DURATION", Box::new(ValueNumber::new(0.0)));
+        wait.set_substack("next", next_id);
+
+        let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
+        blocks.insert(next_id, Box::new(BlockStub::new(next_id, runtime.clone())));
+        blocks.insert(wait_id, Box::new(wait));
+
+        let mut thread = Thread::new(wait_id, blocks);
+        thread.step().await.unwrap();
+        thread.step().await.unwrap();
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+        );
+        assert!(receiver.try_recv().is_err());
     }
 }
