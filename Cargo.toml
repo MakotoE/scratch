@@ -38,6 +38,6 @@ colored = "2.0"
 rstest = "0.7"
 pistoncore-input = "1.0"
 gfx_core = "0.9.2"
-graphics_buffer = "0.7"
+graphics_buffer = { version = "0.7", path = "../graphics_buffer" }
 itertools = "0.10"
 async-lock = "2.3"

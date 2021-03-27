@@ -746,13 +746,10 @@ mod tests {
         thread.step().await.unwrap();
         thread.step().await.unwrap();
 
-        // TODO implement PartialEq for RenderBuffer and BroadcastMsg
-        if let BroadcastMsg::BlockStub(id, msg) = receiver.try_recv().unwrap() {
-            assert_eq!(id, next_id);
-            assert_eq!(msg, BlockStubMsg::Executed);
-        } else {
-            assert!(false);
-        }
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+        );
         assert!(receiver.try_recv().is_err());
     }
 }
