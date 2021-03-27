@@ -152,7 +152,7 @@ pub struct Variables {
 
 impl Variables {
     fn new(scratch_file_variables: &HashMap<String, file::Variable>, monitors: &[Monitor]) -> Self {
-        let mut variables: HashMap<String, Variable> = HashMap::new();
+        let mut variables: HashMap<String, Variable> = HashMap::default();
         for (key, v) in scratch_file_variables {
             let monitor = monitors.iter().find(|m| &m.id == key);
             let variable = match monitor {

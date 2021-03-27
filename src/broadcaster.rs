@@ -6,7 +6,6 @@ use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
 use graphics_buffer::RenderBuffer;
 use input::Key;
-use std::collections::HashSet;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 #[derive(Debug, Clone)]

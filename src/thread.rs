@@ -4,7 +4,6 @@ use crate::file::BlockID;
 
 #[derive(Debug)]
 pub struct Thread {
-    // TODO use efficient HashMap implementation
     blocks: HashMap<BlockID, Box<dyn Block>>,
     curr_block: BlockID,
     loop_stack: Vec<BlockID>,

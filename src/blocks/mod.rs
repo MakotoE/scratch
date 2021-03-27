@@ -173,7 +173,7 @@ pub fn block_tree(
         }
     };
 
-    let mut block_map: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
+    let mut block_map: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
     let mut block = get_block(top_block_id, runtime.clone(), &info)?;
 
     if let Some(next_id) = info.next {

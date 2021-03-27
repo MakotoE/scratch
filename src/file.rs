@@ -33,7 +33,7 @@ impl ScratchFile {
             }
         }
 
-        let mut images: HashMap<String, Image> = HashMap::new();
+        let mut images: HashMap<String, Image> = HashMap::default();
         for name in &image_names {
             let mut b: Vec<u8> = Vec::new();
             archive.by_name(name).unwrap().read_to_end(&mut b)?;
@@ -85,8 +85,8 @@ impl Default for Target {
         Self {
             is_stage: false,
             name: String::new(),
-            variables: HashMap::new(),
-            blocks: HashMap::new(),
+            variables: HashMap::default(),
+            blocks: HashMap::default(),
             costumes: Vec::new(),
             layer_order: 0,
             x: 0.0,

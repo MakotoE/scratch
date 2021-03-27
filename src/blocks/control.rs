@@ -733,7 +733,7 @@ mod tests {
             if_block.set_substack("next", next_id);
             if_block.set_input("CONDITION", condition);
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
+            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
             blocks.insert(branch_id, Box::new(branch.clone()));
             blocks.insert(next_id, Box::new(next.clone()));
             blocks.insert(if_id, Box::new(if_block));
@@ -757,7 +757,7 @@ mod tests {
             if_block.set_substack("next", next_id);
             if_block.set_input("CONDITION", condition);
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
+            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
             blocks.insert(branch_id, Box::new(branch));
             blocks.insert(next_id, Box::new(next));
             blocks.insert(if_id, Box::new(if_block));
@@ -788,7 +788,7 @@ mod tests {
         let mut forever = Forever::new(forever_id);
         forever.set_substack("SUBSTACK", substack_id);
 
-        let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::new();
+        let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
         blocks.insert(substack_id, Box::new(substack));
         blocks.insert(forever_id, Box::new(forever));
 

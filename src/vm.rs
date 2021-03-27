@@ -78,8 +78,10 @@ impl VM {
     ) -> Result<HashMap<SpriteID, Sprite>> {
         let images = Arc::new(scratch_file.images.clone());
 
-        let mut sprites: HashMap<SpriteID, Sprite> =
-            HashMap::with_capacity(scratch_file.project.targets.len());
+        let mut sprites: HashMap<SpriteID, Sprite> = HashMap::with_capacity_and_hasher(
+            scratch_file.project.targets.len(),
+            Default::default(),
+        );
         for target in &scratch_file.project.targets {
             let sprite_runtime = SpriteRuntime::new(&target);
             let id = SpriteID::from_sprite_name(&target.name);

@@ -3,7 +3,6 @@ use crate::broadcaster::{BroadcastMsg, Broadcaster};
 use crate::coordinate::CanvasCoordinate;
 use crate::interface::CANVAS_TOP_LEFT;
 use input::{ButtonState, Input, Key, Motion, MouseButton};
-use std::collections::HashSet;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -41,7 +40,7 @@ impl EventSender {
         mouse_position: Arc<RwLock<CanvasCoordinate>>,
     ) -> Result<()> {
         let mut broadcaster_receiver = broadcaster.subscribe();
-        let mut pressed_keys: HashSet<Key> = HashSet::new();
+        let mut pressed_keys: HashSet<Key> = HashSet::default();
         loop {
             select! {
                 m = broadcaster_receiver.recv() => match m {

@@ -26,11 +26,13 @@ use anyhow::{Error, Result};
 use async_lock::RwLock;
 use error::*;
 use lazy_static::lazy_static;
-use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use tokio::spawn;
 use tokio::task::JoinHandle;
+
+pub type HashMap<K, V> = std::collections::HashMap<K, V, fnv::FnvBuildHasher>;
+pub type HashSet<V> = std::collections::HashSet<V, fnv::FnvBuildHasher>;
 
 #[cfg(test)]
 use rstest::rstest;
