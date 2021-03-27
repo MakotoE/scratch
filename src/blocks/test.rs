@@ -1,7 +1,7 @@
 use super::*;
 use crate::broadcaster::BroadcastMsg;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockStub {
     id: BlockID,
     runtime: Runtime,

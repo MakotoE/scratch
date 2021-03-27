@@ -717,10 +717,10 @@ mod tests {
 
     #[tokio::test]
     async fn if_block() {
-        let mut gen = BlockIDGenerator::new();
-
         let runtime = Runtime::default();
         let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
 
         let branch_id = gen.get_id();
         let branch = BlockStub::new(branch_id, runtime.clone());
@@ -728,28 +728,53 @@ mod tests {
         let next_id = gen.get_id();
         let next = BlockStub::new(next_id, runtime.clone());
 
-        let if_id = gen.get_id();
-        let mut if_block = If::new(if_id);
+        {
+            let condition = Box::new(ValueBool::new(false));
 
-        let condition = Box::new(ValueBool::new(false));
+            let if_id = gen.get_id();
+            let mut if_block = If::new(if_id);
+            if_block.set_substack("SUBSTACK", branch_id);
+            if_block.set_substack("next", next_id);
+            if_block.set_input("CONDITION", condition);
 
-        if_block.set_substack("SUBSTACK", branch_id);
-        if_block.set_substack("next", next_id);
-        if_block.set_input("CONDITION", condition);
+            let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+            blocks.insert(branch_id, Box::new(branch.clone()));
+            blocks.insert(next_id, Box::new(next.clone()));
+            blocks.insert(if_id, Box::new(if_block));
 
-        let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
-        blocks.insert(branch_id, Box::new(branch));
-        blocks.insert(next_id, Box::new(next));
-        blocks.insert(if_id, Box::new(if_block));
+            let mut thread = Thread::new(if_id, blocks);
+            thread.step().await.unwrap();
+            thread.step().await.unwrap();
 
-        let mut thread = Thread::new(if_id, blocks);
-        thread.step().await.unwrap();
-        thread.step().await.unwrap();
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+            );
+            assert!(receiver.try_recv().is_err());
+        }
+        {
+            let condition = Box::new(ValueBool::new(true));
 
-        assert_eq!(
-            receiver.try_recv().unwrap(),
-            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
-        );
-        assert!(receiver.try_recv().is_err());
+            let if_id = gen.get_id();
+            let mut if_block = If::new(if_id);
+            if_block.set_substack("SUBSTACK", branch_id);
+            if_block.set_substack("next", next_id);
+            if_block.set_input("CONDITION", condition);
+
+            let mut blocks: HashMap<BlockID, Box<dyn Block + Send + Sync>> = HashMap::new();
+            blocks.insert(branch_id, Box::new(branch));
+            blocks.insert(next_id, Box::new(next));
+            blocks.insert(if_id, Box::new(if_block));
+
+            let mut thread = Thread::new(if_id, blocks);
+            thread.step().await.unwrap();
+            thread.step().await.unwrap();
+
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(branch_id, BlockStubMsg::Executed)
+            );
+            assert!(receiver.try_recv().is_err());
+        }
     }
 }
