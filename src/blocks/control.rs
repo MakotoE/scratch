@@ -721,20 +721,22 @@ mod tests {
         let next_id = gen.get_id();
 
         {
-            let condition = Box::new(ValueBool::new(false));
-
             let mut if_block = If::new(if_id);
             if_block.set_substack("SUBSTACK", branch_id);
             if_block.set_substack("next", next_id);
-            if_block.set_input("CONDITION", condition);
+            if_block.set_input("CONDITION", Box::new(ValueBool::new(false)));
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
-            blocks.insert(
-                branch_id,
-                Box::new(BlockStub::new(branch_id, runtime.clone())),
-            );
-            blocks.insert(next_id, Box::new(BlockStub::new(next_id, runtime.clone())));
-            blocks.insert(if_id, Box::new(if_block));
+            let blocks = block_map(vec![
+                (
+                    branch_id,
+                    Box::new(BlockStub::new(branch_id, runtime.clone(), None)),
+                ),
+                (
+                    next_id,
+                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+                ),
+                (if_id, Box::new(if_block)),
+            ]);
 
             let mut thread = Thread::new(if_id, blocks);
             thread.step().await.unwrap();
@@ -747,21 +749,23 @@ mod tests {
             assert!(receiver.try_recv().is_err());
         }
         {
-            let condition = Box::new(ValueBool::new(true));
-
             let if_id = gen.get_id();
             let mut if_block = If::new(if_id);
             if_block.set_substack("SUBSTACK", branch_id);
             if_block.set_substack("next", next_id);
-            if_block.set_input("CONDITION", condition);
+            if_block.set_input("CONDITION", Box::new(ValueBool::new(true)));
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
-            blocks.insert(
-                branch_id,
-                Box::new(BlockStub::new(branch_id, runtime.clone())),
-            );
-            blocks.insert(next_id, Box::new(BlockStub::new(next_id, runtime.clone())));
-            blocks.insert(if_id, Box::new(if_block));
+            let blocks = block_map(vec![
+                (
+                    branch_id,
+                    Box::new(BlockStub::new(branch_id, runtime.clone(), None)),
+                ),
+                (
+                    next_id,
+                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+                ),
+                (if_id, Box::new(if_block)),
+            ]);
 
             let mut thread = Thread::new(if_id, blocks);
             thread.step().await.unwrap();
@@ -787,12 +791,13 @@ mod tests {
         let mut forever = Forever::new(forever_id);
         forever.set_substack("SUBSTACK", substack_id);
 
-        let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
-        blocks.insert(
-            substack_id,
-            Box::new(BlockStub::new(substack_id, runtime.clone())),
-        );
-        blocks.insert(forever_id, Box::new(forever));
+        let blocks = block_map(vec![
+            (
+                substack_id,
+                Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+            ),
+            (forever_id, Box::new(forever)),
+        ]);
 
         let mut thread = Thread::new(forever_id, blocks);
         for _ in 0..2 {
@@ -824,13 +829,17 @@ mod tests {
             repeat.set_substack("SUBSTACK", substack_id);
             repeat.set_substack("next", next_id);
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
-            blocks.insert(
-                substack_id,
-                Box::new(BlockStub::new(substack_id, runtime.clone())),
-            );
-            blocks.insert(next_id, Box::new(BlockStub::new(next_id, runtime.clone())));
-            blocks.insert(repeat_id, Box::new(repeat));
+            let blocks = block_map(vec![
+                (
+                    substack_id,
+                    Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+                ),
+                (
+                    next_id,
+                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+                ),
+                (repeat_id, Box::new(repeat)),
+            ]);
 
             let mut thread = Thread::new(repeat_id, blocks);
             thread.step().await.unwrap();
@@ -848,13 +857,17 @@ mod tests {
             repeat.set_substack("SUBSTACK", substack_id);
             repeat.set_substack("next", next_id);
 
-            let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
-            blocks.insert(
-                substack_id,
-                Box::new(BlockStub::new(substack_id, runtime.clone())),
-            );
-            blocks.insert(next_id, Box::new(BlockStub::new(next_id, runtime.clone())));
-            blocks.insert(repeat_id, Box::new(repeat));
+            let blocks = block_map(vec![
+                (
+                    substack_id,
+                    Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+                ),
+                (
+                    next_id,
+                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+                ),
+                (repeat_id, Box::new(repeat)),
+            ]);
 
             let mut thread = Thread::new(repeat_id, blocks);
             thread.step().await.unwrap();
@@ -880,7 +893,6 @@ mod tests {
         let mut receiver = runtime.global.broadcaster.subscribe();
 
         let mut gen = BlockIDGenerator::new();
-
         let next_id = gen.get_id();
         let wait_id = gen.get_id();
 
@@ -888,11 +900,72 @@ mod tests {
         wait.set_input("DURATION", Box::new(ValueNumber::new(0.0)));
         wait.set_substack("next", next_id);
 
-        let mut blocks: HashMap<BlockID, Box<dyn Block>> = HashMap::default();
-        blocks.insert(next_id, Box::new(BlockStub::new(next_id, runtime.clone())));
-        blocks.insert(wait_id, Box::new(wait));
+        let blocks = block_map(vec![
+            (
+                next_id,
+                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+            ),
+            (wait_id, Box::new(wait)),
+        ]);
 
         let mut thread = Thread::new(wait_id, blocks);
+        thread.step().await.unwrap();
+        thread.step().await.unwrap();
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+        );
+        assert!(receiver.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn repeat_until() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+        let substack_id = gen.get_id();
+        let next_id = gen.get_id();
+        let repeat_until_id = gen.get_id();
+
+        let return_value = Arc::new(RwLock::new(Value::Bool(false)));
+
+        let mut repeat_until = RepeatUntil::new(repeat_until_id);
+        repeat_until.set_input(
+            "CONDITION",
+            Box::new(BlockStub::new(
+                gen.get_id(),
+                runtime.clone(),
+                Some(return_value.clone()),
+            )),
+        );
+        repeat_until.set_substack("next", next_id);
+        repeat_until.set_substack("SUBSTACK", substack_id);
+
+        let blocks = block_map(vec![
+            (
+                substack_id,
+                Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+            ),
+            (
+                next_id,
+                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+            ),
+            (repeat_until_id, Box::new(repeat_until)),
+        ]);
+
+        let mut thread = Thread::new(repeat_until_id, blocks);
+        thread.step().await.unwrap();
+        thread.step().await.unwrap();
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(substack_id, BlockStubMsg::Executed)
+        );
+
+        *return_value.write().await = Value::Bool(true);
+
         thread.step().await.unwrap();
         thread.step().await.unwrap();
 

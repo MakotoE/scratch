@@ -315,3 +315,8 @@ pub fn get_field_value(field: &[Option<String>], index: usize) -> Result<&str> {
         Err(Error::msg("invalid field"))
     }
 }
+
+#[cfg(test)]
+pub fn block_map(mut blocks: Vec<(BlockID, Box<dyn Block>)>) -> HashMap<BlockID, Box<dyn Block>> {
+    blocks.drain(..).collect()
+}
