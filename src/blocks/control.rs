@@ -975,4 +975,74 @@ mod tests {
         );
         assert!(receiver.try_recv().is_err());
     }
+
+    #[tokio::test]
+    async fn if_else() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+        let if_else_id = gen.get_id();
+        let next_id = gen.get_id();
+        let substack_true_id = gen.get_id();
+        let substack_false_id = gen.get_id();
+
+        let get_blocks = || {
+            block_map(vec![
+                (
+                    next_id,
+                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+                ),
+                (
+                    substack_true_id,
+                    Box::new(BlockStub::new(substack_true_id, runtime.clone(), None)),
+                ),
+                (
+                    substack_false_id,
+                    Box::new(BlockStub::new(substack_false_id, runtime.clone(), None)),
+                ),
+            ])
+        };
+
+        {
+            let mut if_else = IfElse::new(if_else_id);
+            if_else.set_input("CONDITION", Box::new(ValueBool::new(false)));
+            if_else.set_substack("next", next_id);
+            if_else.set_substack("SUBSTACK", substack_true_id);
+            if_else.set_substack("SUBSTACK2", substack_false_id);
+
+            let mut blocks = get_blocks();
+            blocks.insert(if_else_id, Box::new(if_else));
+
+            let mut thread = Thread::new(if_else_id, blocks);
+            thread.step().await.unwrap();
+            thread.step().await.unwrap();
+
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(substack_false_id, BlockStubMsg::Executed)
+            );
+            assert!(receiver.try_recv().is_err());
+        }
+        {
+            let mut if_else = IfElse::new(if_else_id);
+            if_else.set_input("CONDITION", Box::new(ValueBool::new(true)));
+            if_else.set_substack("next", next_id);
+            if_else.set_substack("SUBSTACK", substack_true_id);
+            if_else.set_substack("SUBSTACK2", substack_false_id);
+
+            let mut blocks = get_blocks();
+            blocks.insert(if_else_id, Box::new(if_else));
+
+            let mut thread = Thread::new(if_else_id, blocks);
+            thread.step().await.unwrap();
+            thread.step().await.unwrap();
+
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(substack_true_id, BlockStubMsg::Executed)
+            );
+            assert!(receiver.try_recv().is_err());
+        }
+    }
 }
