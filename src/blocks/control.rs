@@ -443,12 +443,12 @@ impl Block for WaitUntil {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        let mut interval = interval(Duration::from_millis(100));
+        let mut interval = interval(Duration::from_millis(10));
         loop {
-            interval.tick().await;
             if self.condition.value().await?.try_into()? {
                 return Next::continue_(self.next);
             }
+            interval.tick().await;
         }
     }
 }
@@ -708,6 +708,7 @@ mod tests {
     use crate::blocks::value::{ValueBool, ValueNumber};
     use crate::file::BlockIDGenerator;
     use crate::thread::{StepStatus, Thread};
+    use tokio::time::timeout;
 
     #[tokio::test]
     async fn if_block() {
@@ -1062,5 +1063,54 @@ mod tests {
             );
             assert!(receiver.try_recv().is_err());
         }
+    }
+
+    #[tokio::test]
+    async fn wait_until() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+        let wait_until_id = gen.get_id();
+        let next_id = gen.get_id();
+
+        let condition = Arc::new(RwLock::new(Value::Bool(false)));
+
+        let mut wait_until = WaitUntil::new(wait_until_id);
+        wait_until.set_input(
+            "CONDITION",
+            Box::new(BlockStub::new(
+                gen.get_id(),
+                runtime.clone(),
+                Some(condition.clone()),
+            )),
+        );
+        wait_until.set_substack("next", next_id);
+
+        let blocks = block_map(vec![
+            (wait_until_id, Box::new(wait_until)),
+            (
+                next_id,
+                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+            ),
+        ]);
+
+        let timeout_duration = Duration::from_millis(5);
+        let mut thread = Thread::new(wait_until_id, blocks);
+        assert!(timeout(timeout_duration, thread.step()).await.is_err());
+
+        *condition.write().await = Value::Bool(true);
+
+        timeout(timeout_duration, thread.step())
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+        );
+        assert!(receiver.try_recv().is_err());
     }
 }
