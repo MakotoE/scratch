@@ -20,9 +20,9 @@ impl Thread {
         }
     }
 
-    pub async fn step(&mut self) -> Result<()> {
+    pub async fn step(&mut self) -> Result<StepStatus> {
         if self.done {
-            return Ok(());
+            return Err(Error::msg("this thread already ended"));
         }
 
         let block = self.blocks.get_mut(&self.curr_block).unwrap();
@@ -36,7 +36,7 @@ impl Thread {
             Next::None => match self.loop_stack.pop() {
                 None => {
                     self.done = true;
-                    return Ok(());
+                    return Ok(StepStatus::Done);
                 }
                 Some(b) => self.curr_block = b,
             },
@@ -47,7 +47,7 @@ impl Thread {
             }
         }
 
-        Ok(())
+        Ok(StepStatus::Continue)
     }
 
     pub fn block_inputs(&self) -> BlockInputs {
@@ -95,4 +95,10 @@ impl BlockInputs {
                 .collect(),
         }
     }
+}
+
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub enum StepStatus {
+    Continue,
+    Done,
 }

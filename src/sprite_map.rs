@@ -5,6 +5,7 @@ use crate::coordinate::SpriteRectangle;
 use crate::file::Target;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
+use crate::thread::StepStatus;
 use crate::vm::ThreadID;
 use graphics::Context;
 use graphics_buffer::{BufferGlyphs, RenderBuffer};
@@ -66,7 +67,10 @@ impl SpriteMap {
                 let result = sprite
                     .step(thread_id.thread_id)
                     .await
-                    .map(|_| Some(thread_id));
+                    .map(|status| match status {
+                        StepStatus::Continue => Some(thread_id),
+                        StepStatus::Done => None,
+                    });
                 // Hacky fix for unresponsive menu screen in Pixel Snake
                 // yield_now() did not work
                 sleep(Duration::from_millis(0)).await;

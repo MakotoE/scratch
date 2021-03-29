@@ -707,7 +707,7 @@ mod tests {
     use crate::blocks::test::{BlockStub, BlockStubMsg};
     use crate::blocks::value::{ValueBool, ValueNumber};
     use crate::file::BlockIDGenerator;
-    use crate::thread::Thread;
+    use crate::thread::{StepStatus, Thread};
 
     #[tokio::test]
     async fn if_block() {
@@ -740,7 +740,7 @@ mod tests {
 
             let mut thread = Thread::new(if_id, blocks);
             thread.step().await.unwrap();
-            thread.step().await.unwrap();
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
 
             assert_eq!(
                 receiver.try_recv().unwrap(),
@@ -768,12 +768,18 @@ mod tests {
             ]);
 
             let mut thread = Thread::new(if_id, blocks);
-            thread.step().await.unwrap();
-            thread.step().await.unwrap();
+            thread.step().await.unwrap(); // If
+            thread.step().await.unwrap(); // Substack
+            thread.step().await.unwrap(); // If
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done)); // Next
 
             assert_eq!(
                 receiver.try_recv().unwrap(),
                 BroadcastMsg::BlockStub(branch_id, BlockStubMsg::Executed)
+            );
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
             );
             assert!(receiver.try_recv().is_err());
         }
@@ -801,8 +807,8 @@ mod tests {
 
         let mut thread = Thread::new(forever_id, blocks);
         for _ in 0..2 {
-            thread.step().await.unwrap();
-            thread.step().await.unwrap();
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Continue));
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Continue));
             assert_eq!(
                 receiver.try_recv().unwrap(),
                 BroadcastMsg::BlockStub(substack_id, BlockStubMsg::Executed)
@@ -843,7 +849,7 @@ mod tests {
 
             let mut thread = Thread::new(repeat_id, blocks);
             thread.step().await.unwrap();
-            thread.step().await.unwrap();
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
 
             assert_eq!(
                 receiver.try_recv().unwrap(),
@@ -873,7 +879,7 @@ mod tests {
             thread.step().await.unwrap();
             thread.step().await.unwrap();
             thread.step().await.unwrap();
-            thread.step().await.unwrap();
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
 
             assert_eq!(
                 receiver.try_recv().unwrap(),
@@ -910,7 +916,7 @@ mod tests {
 
         let mut thread = Thread::new(wait_id, blocks);
         thread.step().await.unwrap();
-        thread.step().await.unwrap();
+        assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
 
         assert_eq!(
             receiver.try_recv().unwrap(),
@@ -967,7 +973,7 @@ mod tests {
         *return_value.write().await = Value::Bool(true);
 
         thread.step().await.unwrap();
-        thread.step().await.unwrap();
+        assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
 
         assert_eq!(
             receiver.try_recv().unwrap(),
@@ -1015,12 +1021,18 @@ mod tests {
             blocks.insert(if_else_id, Box::new(if_else));
 
             let mut thread = Thread::new(if_else_id, blocks);
-            thread.step().await.unwrap();
-            thread.step().await.unwrap();
+            thread.step().await.unwrap(); // IfElse
+            thread.step().await.unwrap(); // Substack
+            thread.step().await.unwrap(); // IfElse
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done)); // Next
 
             assert_eq!(
                 receiver.try_recv().unwrap(),
                 BroadcastMsg::BlockStub(substack_false_id, BlockStubMsg::Executed)
+            );
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
             );
             assert!(receiver.try_recv().is_err());
         }
@@ -1035,12 +1047,18 @@ mod tests {
             blocks.insert(if_else_id, Box::new(if_else));
 
             let mut thread = Thread::new(if_else_id, blocks);
-            thread.step().await.unwrap();
-            thread.step().await.unwrap();
+            thread.step().await.unwrap(); // IfElse
+            thread.step().await.unwrap(); // Substack
+            thread.step().await.unwrap(); // IfElse
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done)); // Next
 
             assert_eq!(
                 receiver.try_recv().unwrap(),
                 BroadcastMsg::BlockStub(substack_true_id, BlockStubMsg::Executed)
+            );
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
             );
             assert!(receiver.try_recv().is_err());
         }

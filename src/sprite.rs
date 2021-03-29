@@ -4,7 +4,7 @@ use crate::coordinate::SpriteRectangle;
 use crate::file::BlockID;
 use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::{Costumes, GraphicsCostumeTexture, SpriteRuntime};
-use crate::thread::{BlockInputs, Thread};
+use crate::thread::{BlockInputs, StepStatus, Thread};
 use crate::vm::ThreadID;
 use graphics::character::CharacterCache;
 use graphics::Context;
@@ -74,7 +74,7 @@ impl Sprite {
         }
     }
 
-    pub async fn step(&self, thread_id: usize) -> Result<()> {
+    pub async fn step(&self, thread_id: usize) -> Result<StepStatus> {
         self.threads[thread_id].write().await.step().await
     }
 

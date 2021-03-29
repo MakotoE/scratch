@@ -128,7 +128,6 @@ impl VM {
                         match control {
                             Control::Continue | Control::Step => {
                                 for thread_id in paused_threads.drain(..) {
-                                    // TODO this will keep looping even if a thread is done
                                     futures.push(sprites.step(thread_id));
                                 }
                             }
