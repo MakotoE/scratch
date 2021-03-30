@@ -118,18 +118,17 @@ impl Sprite {
     }
 }
 
-pub fn find_hats(block_infos: &HashMap<BlockID, file::Block>) -> Vec<BlockID> {
-    let mut hats: Vec<BlockID> = Vec::new();
-    for (id, block_info) in block_infos {
-        // Blocks without event watcher (has rounded top in editor) are ignored
-        if (block_info.opcode == "control_start_as_clone" || block_info.opcode.contains("_when"))
-            && block_info.top_level
-        {
-            hats.push(*id);
-        }
-    }
+fn find_hats(block_infos: &HashMap<BlockID, file::Block>) -> Vec<BlockID> {
+    let mut hats: Vec<BlockID> = block_infos
+        .iter()
+        .filter(|(_, block)| -> bool {
+            // Blocks without event watcher (has rounded top in editor) are ignored
+            (block.opcode == "control_start_as_clone" || block.opcode.contains("_when"))
+                && block.top_level
+        })
+        .map(|(id, _)| *id)
+        .collect();
     hats.sort_unstable();
-
     hats
 }
 

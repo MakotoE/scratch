@@ -1172,4 +1172,25 @@ mod tests {
             assert!(receiver.try_recv().is_err());
         }
     }
+
+    #[tokio::test]
+    async fn delete_this_clone() {
+        let runtime = Runtime::default();
+        let sprite_id = runtime.thread_id().sprite_id;
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let delete_this_clone_id = BlockIDGenerator::new().get_id();
+        let delete_this_clone = DeleteThisClone::new(delete_this_clone_id, runtime);
+
+        let blocks = block_map(vec![(delete_this_clone_id, Box::new(delete_this_clone))]);
+
+        let mut thread = Thread::new(delete_this_clone_id, blocks);
+        assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::DeleteClone(sprite_id)
+        );
+        assert!(receiver.try_recv().is_err());
+    }
 }
