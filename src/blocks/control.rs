@@ -707,6 +707,8 @@ mod tests {
     use crate::blocks::test::{BlockStub, BlockStubMsg};
     use crate::blocks::value::{ValueBool, ValueNumber};
     use crate::file::BlockIDGenerator;
+    use crate::runtime::Global;
+    use crate::sprite_runtime::SpriteRuntime;
     use crate::thread::{StepStatus, Thread};
     use tokio::time::timeout;
 
@@ -1112,5 +1114,62 @@ mod tests {
             BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
         );
         assert!(receiver.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn start_as_clone() {
+        let mut gen = BlockIDGenerator::new();
+        let next_id = gen.get_id();
+        let start_as_clone_id = gen.get_id();
+
+        {
+            let runtime = Runtime::default();
+            let mut receiver = runtime.global.broadcaster.subscribe();
+
+            let mut start_as_clone = StartAsClone::new(start_as_clone_id, runtime.clone());
+            start_as_clone.set_substack("next", next_id);
+
+            let blocks = block_map(vec![
+                (
+                    next_id,
+                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+                ),
+                (start_as_clone_id, Box::new(start_as_clone)),
+            ]);
+
+            let mut thread = Thread::new(start_as_clone_id, blocks);
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+
+            assert!(receiver.try_recv().is_err());
+        }
+        {
+            let runtime = Runtime::new(
+                Arc::new(RwLock::new(SpriteRuntime::default().clone_sprite_runtime())),
+                Arc::new(Global::default()),
+                ThreadID::default(),
+            );
+            let mut receiver = runtime.global.broadcaster.subscribe();
+
+            let mut start_as_clone = StartAsClone::new(start_as_clone_id, runtime.clone());
+            start_as_clone.set_substack("next", next_id);
+
+            let blocks = block_map(vec![
+                (
+                    next_id,
+                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+                ),
+                (start_as_clone_id, Box::new(start_as_clone)),
+            ]);
+
+            let mut thread = Thread::new(start_as_clone_id, blocks);
+            thread.step().await.unwrap();
+            assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+
+            assert_eq!(
+                receiver.try_recv().unwrap(),
+                BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+            );
+            assert!(receiver.try_recv().is_err());
+        }
     }
 }

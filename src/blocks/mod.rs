@@ -102,17 +102,17 @@ pub enum Next {
 
 impl Next {
     pub fn continue_(block: Option<BlockID>) -> Result<Next> {
-        match block {
-            Some(b) => Ok(Next::Continue(b)),
-            None => Ok(Next::None),
-        }
+        Ok(match block {
+            Some(b) => Next::Continue(b),
+            None => Next::None,
+        })
     }
 
     pub fn loop_(block: Option<BlockID>) -> Result<Next> {
-        match block {
-            Some(b) => Ok(Next::Loop(b)),
-            None => Ok(Next::None),
-        }
+        Ok(match block {
+            Some(b) => Next::Loop(b),
+            None => Next::None,
+        })
     }
 }
 
