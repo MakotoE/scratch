@@ -708,6 +708,7 @@ mod tests {
     use crate::blocks::value::{ValueBool, ValueNumber};
     use crate::file::BlockIDGenerator;
     use crate::runtime::Global;
+    use crate::sprite::SpriteID;
     use crate::sprite_runtime::SpriteRuntime;
     use crate::thread::{StepStatus, Thread};
     use tokio::time::timeout;
@@ -1190,6 +1191,47 @@ mod tests {
         assert_eq!(
             receiver.try_recv().unwrap(),
             BroadcastMsg::DeleteClone(sprite_id)
+        );
+        assert!(receiver.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn stop() {
+        let thread_id = ThreadID {
+            sprite_id: SpriteID::default(),
+            thread_id: 1,
+        };
+        let runtime = Runtime::new(Arc::default(), Arc::default(), thread_id);
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+        let stop_id = gen.get_id();
+        let next_id = gen.get_id();
+
+        let mut stop = Stop::new(stop_id, runtime.clone());
+        stop.set_substack("next", next_id);
+        stop.set_field("STOP_OPTION", &[Some("this script".to_string())])
+            .unwrap();
+
+        let blocks = block_map(vec![
+            (
+                next_id,
+                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
+            ),
+            (stop_id, Box::new(stop)),
+        ]);
+
+        let mut thread = Thread::new(stop_id, blocks);
+        thread.step().await.unwrap();
+        assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::Stop(broadcaster::Stop::ThisThread(thread_id))
+        );
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
         );
         assert!(receiver.try_recv().is_err());
     }
