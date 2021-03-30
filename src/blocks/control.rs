@@ -733,12 +733,9 @@ mod tests {
             let blocks = block_map(vec![
                 (
                     branch_id,
-                    Box::new(BlockStub::new(branch_id, runtime.clone(), None)),
+                    Box::new(BlockStub::new(branch_id, runtime.clone())),
                 ),
-                (
-                    next_id,
-                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-                ),
+                (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
                 (if_id, Box::new(if_block)),
             ]);
 
@@ -762,12 +759,9 @@ mod tests {
             let blocks = block_map(vec![
                 (
                     branch_id,
-                    Box::new(BlockStub::new(branch_id, runtime.clone(), None)),
+                    Box::new(BlockStub::new(branch_id, runtime.clone())),
                 ),
-                (
-                    next_id,
-                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-                ),
+                (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
                 (if_id, Box::new(if_block)),
             ]);
 
@@ -804,7 +798,7 @@ mod tests {
         let blocks = block_map(vec![
             (
                 substack_id,
-                Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+                Box::new(BlockStub::new(substack_id, runtime.clone())),
             ),
             (forever_id, Box::new(forever)),
         ]);
@@ -842,12 +836,9 @@ mod tests {
             let blocks = block_map(vec![
                 (
                     substack_id,
-                    Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+                    Box::new(BlockStub::new(substack_id, runtime.clone())),
                 ),
-                (
-                    next_id,
-                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-                ),
+                (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
                 (repeat_id, Box::new(repeat)),
             ]);
 
@@ -870,12 +861,9 @@ mod tests {
             let blocks = block_map(vec![
                 (
                     substack_id,
-                    Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+                    Box::new(BlockStub::new(substack_id, runtime.clone())),
                 ),
-                (
-                    next_id,
-                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-                ),
+                (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
                 (repeat_id, Box::new(repeat)),
             ]);
 
@@ -911,10 +899,7 @@ mod tests {
         wait.set_substack("next", next_id);
 
         let blocks = block_map(vec![
-            (
-                next_id,
-                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-            ),
+            (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
             (wait_id, Box::new(wait)),
         ]);
 
@@ -944,10 +929,11 @@ mod tests {
         let mut repeat_until = RepeatUntil::new(repeat_until_id);
         repeat_until.set_input(
             "CONDITION",
-            Box::new(BlockStub::new(
+            Box::new(BlockStub::with_behavior(
                 gen.get_id(),
                 runtime.clone(),
                 Some(return_value.clone()),
+                Arc::new(RwLock::new(Next::None)),
             )),
         );
         repeat_until.set_substack("next", next_id);
@@ -956,12 +942,14 @@ mod tests {
         let blocks = block_map(vec![
             (
                 substack_id,
-                Box::new(BlockStub::new(substack_id, runtime.clone(), None)),
+                Box::new(BlockStub::with_behavior(
+                    gen.get_id(),
+                    runtime.clone(),
+                    Some(return_value.clone()),
+                    Arc::new(RwLock::new(Next::None)),
+                )),
             ),
-            (
-                next_id,
-                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-            ),
+            (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
             (repeat_until_id, Box::new(repeat_until)),
         ]);
 
@@ -999,17 +987,14 @@ mod tests {
 
         let get_blocks = || {
             block_map(vec![
-                (
-                    next_id,
-                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-                ),
+                (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
                 (
                     substack_true_id,
-                    Box::new(BlockStub::new(substack_true_id, runtime.clone(), None)),
+                    Box::new(BlockStub::new(substack_true_id, runtime.clone())),
                 ),
                 (
                     substack_false_id,
-                    Box::new(BlockStub::new(substack_false_id, runtime.clone(), None)),
+                    Box::new(BlockStub::new(substack_false_id, runtime.clone())),
                 ),
             ])
         };
@@ -1082,20 +1067,18 @@ mod tests {
         let mut wait_until = WaitUntil::new(wait_until_id);
         wait_until.set_input(
             "CONDITION",
-            Box::new(BlockStub::new(
+            Box::new(BlockStub::with_behavior(
                 gen.get_id(),
                 runtime.clone(),
                 Some(condition.clone()),
+                Arc::new(RwLock::new(Next::None)),
             )),
         );
         wait_until.set_substack("next", next_id);
 
         let blocks = block_map(vec![
             (wait_until_id, Box::new(wait_until)),
-            (
-                next_id,
-                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-            ),
+            (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
         ]);
 
         let timeout_duration = Duration::from_millis(5);
@@ -1131,10 +1114,7 @@ mod tests {
             start_as_clone.set_substack("next", next_id);
 
             let blocks = block_map(vec![
-                (
-                    next_id,
-                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-                ),
+                (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
                 (start_as_clone_id, Box::new(start_as_clone)),
             ]);
 
@@ -1155,10 +1135,7 @@ mod tests {
             start_as_clone.set_substack("next", next_id);
 
             let blocks = block_map(vec![
-                (
-                    next_id,
-                    Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-                ),
+                (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
                 (start_as_clone_id, Box::new(start_as_clone)),
             ]);
 
@@ -1214,10 +1191,7 @@ mod tests {
             .unwrap();
 
         let blocks = block_map(vec![
-            (
-                next_id,
-                Box::new(BlockStub::new(next_id, runtime.clone(), None)),
-            ),
+            (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
             (stop_id, Box::new(stop)),
         ]);
 

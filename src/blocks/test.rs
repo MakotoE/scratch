@@ -7,15 +7,32 @@ pub struct BlockStub {
     id: BlockID,
     runtime: Runtime,
     return_value: Option<Arc<RwLock<Value>>>,
+    next: Arc<RwLock<Next>>,
 }
 
 impl BlockStub {
     #[cfg(test)]
-    pub fn new(id: BlockID, runtime: Runtime, return_value: Option<Arc<RwLock<Value>>>) -> Self {
+    pub fn new(id: BlockID, runtime: Runtime) -> Self {
+        Self {
+            id,
+            runtime,
+            return_value: None,
+            next: Arc::new(RwLock::new(Next::None)),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn with_behavior(
+        id: BlockID,
+        runtime: Runtime,
+        return_value: Option<Arc<RwLock<Value>>>,
+        next: Arc<RwLock<Next>>,
+    ) -> Self {
         Self {
             id,
             runtime,
             return_value,
+            next,
         }
     }
 }
@@ -45,7 +62,7 @@ impl Block for BlockStub {
             .global
             .broadcaster
             .send(BroadcastMsg::BlockStub(self.id, BlockStubMsg::Executed))?;
-        Ok(Next::None)
+        Ok(*self.next.read().await)
     }
 }
 

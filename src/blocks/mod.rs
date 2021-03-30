@@ -97,6 +97,8 @@ pub trait Block: std::fmt::Debug + Sync + Send {
 pub enum Next {
     None,
     Continue(BlockID),
+
+    /// Continues to BlockID and adds current block to loop stack.
     Loop(BlockID),
 }
 

@@ -25,7 +25,12 @@ impl Thread {
             return Err(Error::msg("this thread already ended"));
         }
 
-        let block = self.blocks.get_mut(&self.curr_block).unwrap();
+        let curr_block = self.curr_block;
+        let block = self
+            .blocks
+            .get_mut(&curr_block)
+            .ok_or_else(|| Error::msg(format!("{} does not exist", &curr_block)))?;
+
         let execute_result = block.execute().await.map_err(|error| ScratchError::Block {
             id: block.block_info().id,
             name: block.block_info().name,
@@ -101,4 +106,152 @@ impl BlockInputs {
 pub enum StepStatus {
     Continue,
     Done,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    mod thread {
+        use super::*;
+        use crate::blocks::block_map;
+        use crate::blocks::test::{BlockStub, BlockStubMsg};
+        use crate::broadcaster::BroadcastMsg;
+        use crate::file::BlockIDGenerator;
+        use crate::runtime::Runtime;
+
+        #[tokio::test]
+        async fn step() {
+            let runtime = Runtime::default();
+            let mut receiver = runtime.global.broadcaster.subscribe();
+            let mut gen = BlockIDGenerator::new();
+            let block0_id = gen.get_id();
+            let block1_id = gen.get_id();
+
+            // Empty block map
+            {
+                let mut thread = Thread::new(BlockID::default(), HashMap::default());
+                assert!(thread.step().await.is_err());
+            }
+
+            // Next::None result
+            {
+                let blocks = block_map(vec![(
+                    block0_id,
+                    Box::new(BlockStub::with_behavior(
+                        block0_id,
+                        runtime.clone(),
+                        None,
+                        Arc::new(RwLock::new(Next::None)),
+                    )),
+                )]);
+
+                let mut thread = Thread::new(block0_id, blocks);
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+                assert!(thread.step().await.is_err());
+
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block0_id, BlockStubMsg::Executed)
+                );
+                assert!(receiver.try_recv().is_err());
+            }
+
+            // Continue
+            {
+                let blocks = block_map(vec![
+                    (
+                        block0_id,
+                        Box::new(BlockStub::with_behavior(
+                            block0_id,
+                            runtime.clone(),
+                            None,
+                            Arc::new(RwLock::new(Next::Continue(block1_id))),
+                        )),
+                    ),
+                    (
+                        block1_id,
+                        Box::new(BlockStub::with_behavior(
+                            block1_id,
+                            runtime.clone(),
+                            None,
+                            Arc::new(RwLock::new(Next::None)),
+                        )),
+                    ),
+                ]);
+
+                let mut thread = Thread::new(block0_id, blocks);
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Continue));
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+                assert!(thread.step().await.is_err());
+
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block0_id, BlockStubMsg::Executed)
+                );
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block1_id, BlockStubMsg::Executed)
+                );
+                assert!(receiver.try_recv().is_err());
+            }
+
+            // Loop
+            {
+                let next = Arc::new(RwLock::new(Next::Loop(block1_id)));
+
+                let blocks = block_map(vec![
+                    (
+                        block0_id,
+                        Box::new(BlockStub::with_behavior(
+                            block0_id,
+                            runtime.clone(),
+                            None,
+                            next.clone(),
+                        )),
+                    ),
+                    (
+                        block1_id,
+                        Box::new(BlockStub::with_behavior(
+                            block1_id,
+                            runtime.clone(),
+                            None,
+                            Arc::new(RwLock::new(Next::None)),
+                        )),
+                    ),
+                ]);
+
+                let mut thread = Thread::new(block0_id, blocks);
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Continue));
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Continue));
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Continue));
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Continue));
+
+                *next.write().await = Next::None;
+                assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block0_id, BlockStubMsg::Executed)
+                );
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block1_id, BlockStubMsg::Executed)
+                );
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block0_id, BlockStubMsg::Executed)
+                );
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block1_id, BlockStubMsg::Executed)
+                );
+                assert_eq!(
+                    receiver.try_recv().unwrap(),
+                    BroadcastMsg::BlockStub(block0_id, BlockStubMsg::Executed)
+                );
+                assert!(receiver.try_recv().is_err());
+            }
+        }
+    }
 }
