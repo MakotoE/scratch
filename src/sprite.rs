@@ -65,7 +65,7 @@ impl Sprite {
 
     pub async fn block_info(&self, thread_id: usize) -> Result<BlockInfo> {
         if let Some(thread) = self.threads.get(thread_id) {
-            Ok(thread.read().await.block_info())
+            Ok(thread.read().await.block_info()?)
         } else {
             Err(Error::msg(format!(
                 "thread_id does not exist: {}",
@@ -94,12 +94,12 @@ impl Sprite {
             .draw(context, graphics, character_cache)
     }
 
-    pub async fn block_inputs(&self) -> Vec<BlockInputs> {
+    pub async fn block_inputs(&self) -> Result<Vec<BlockInputs>> {
         let mut result: Vec<BlockInputs> = Vec::with_capacity(self.threads.len());
         for thread in &self.threads {
-            result.push(thread.read().await.block_inputs());
+            result.push(thread.read().await.block_inputs()?);
         }
-        result
+        Ok(result)
     }
 
     pub async fn clone_sprite(&self, new_sprite_id: SpriteID) -> Result<Sprite> {

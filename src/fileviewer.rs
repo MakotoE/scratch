@@ -46,7 +46,7 @@ async fn block_inputs(targets: &[file::Target]) -> Result<Vec<SpriteBlocks>> {
         block_inputs.push(SpriteBlocks {
             name: target.name.clone(),
             id: sprite_id,
-            block_inputs: sprite.block_inputs().await,
+            block_inputs: sprite.block_inputs().await?,
         });
     }
     Ok(block_inputs)

@@ -699,6 +699,16 @@ impl Block for CreateCloneOfMenu {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
+
+    fn set_field(&mut self, key: &str, field: &[Option<String>]) -> Result<()> {
+        assert_eq!(key, "CLONE_OPTION");
+        assert_eq!(field[0], Some("_myself_".to_string()));
+        Ok(())
+    }
+
+    async fn value(&self) -> Result<Value> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
@@ -1203,6 +1213,36 @@ mod tests {
             receiver.try_recv().unwrap(),
             BroadcastMsg::Stop(broadcaster::Stop::ThisThread(thread_id))
         );
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+        );
+        assert!(receiver.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn create_clone_of() {
+        let runtime = Runtime::default();
+        let sprite_id = runtime.thread_id().sprite_id;
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+        let create_clone_of_id = gen.get_id();
+        let next_id = gen.get_id();
+
+        let mut create_clone_of = CreateCloneOf::new(create_clone_of_id, runtime.clone());
+        create_clone_of.set_substack("next", next_id);
+
+        let blocks = block_map(vec![
+            (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
+            (create_clone_of_id, Box::new(create_clone_of)),
+        ]);
+
+        let mut thread = Thread::new(create_clone_of_id, blocks);
+        thread.step().await.unwrap();
+        assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
+
+        assert_eq!(receiver.try_recv().unwrap(), BroadcastMsg::Clone(sprite_id));
         assert_eq!(
             receiver.try_recv().unwrap(),
             BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)

@@ -55,13 +55,19 @@ impl Thread {
         Ok(StepStatus::Continue)
     }
 
-    pub fn block_inputs(&self) -> BlockInputs {
-        let block_inputs = self.blocks.get(&self.curr_block).unwrap().block_inputs();
-        BlockInputs::new(block_inputs, &self.blocks)
+    pub fn block_inputs(&self) -> Result<BlockInputs> {
+        let block = self
+            .blocks
+            .get(&self.curr_block)
+            .ok_or_else(|| Error::msg(format!("{} does not exist", &self.curr_block)))?;
+        Ok(BlockInputs::new(block.block_inputs(), &self.blocks))
     }
 
-    pub fn block_info(&self) -> BlockInfo {
-        self.blocks.get(&self.curr_block).unwrap().block_info()
+    pub fn block_info(&self) -> Result<BlockInfo> {
+        self.blocks
+            .get(&self.curr_block)
+            .map(|b| b.block_info())
+            .ok_or_else(|| Error::msg(format!("{} does not exist", &self.curr_block)))
     }
 }
 
