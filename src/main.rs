@@ -72,7 +72,7 @@ fn main() {
             let exit_code = match result {
                 Ok(_) => 0,
                 Err(e) => {
-                    log::error!("error: {:?}", e);
+                    log::error!("{:?}", e);
                     1
                 }
             };

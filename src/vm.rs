@@ -56,7 +56,7 @@ impl VM {
                     if let Err(e) =
                         VM::run(sprite_map.clone(), &mut control_receiver, &broadcaster).await
                     {
-                        log::error!("{}", e);
+                        log::error!("{:?}", e);
                         std::process::exit(1);
                     }
                 }
