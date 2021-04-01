@@ -159,8 +159,10 @@ impl SpriteMap {
     }
 
     pub async fn clone_sprite(&self, sprite_id: SpriteID) -> Result<SpriteID> {
-        let new_sprite_id = SpriteID::from_sprite_name(&(format!("{}", sprite_id) + "clone"));
-        let cloned_sprite = SpriteMap::get_cloned_sprite(&self.sprite_groups, sprite_id).await?;
+        // Race condition - id creation and sprite insertion is not atomic
+        let new_sprite_id = SpriteMap::new_sprite_id(&self.sprite_groups, sprite_id).await;
+        let cloned_sprite =
+            SpriteMap::get_cloned_sprite(&self.sprite_groups, &sprite_id, new_sprite_id).await?;
         SpriteMap::insert_sprite(&self.sprite_groups, new_sprite_id, cloned_sprite).await?;
 
         let mut draw_order = self.draw_order.write().await;
@@ -169,20 +171,45 @@ impl SpriteMap {
         Ok(new_sprite_id)
     }
 
-    pub async fn get_cloned_sprite(
+    async fn new_sprite_id(sprite_groups: &SpriteGroups, sprite_id: SpriteID) -> SpriteID {
+        let contains_id = async move |id: SpriteID| {
+            for group in sprite_groups {
+                if group.read().await.contains_key(&id) {
+                    return true;
+                }
+            }
+
+            false
+        };
+
+        let mut clone_number = 0;
+        loop {
+            let new_sprite_id = SpriteID::from_sprite_name(
+                &(format!("{}", sprite_id) + "clone" + &clone_number.to_string()),
+            );
+
+            if contains_id(new_sprite_id).await {
+                clone_number += 1;
+            } else {
+                return new_sprite_id;
+            }
+        }
+    }
+
+    async fn get_cloned_sprite(
         sprite_groups: &SpriteGroups,
-        sprite_id: SpriteID,
+        sprite_id: &SpriteID,
+        new_sprite_id: SpriteID,
     ) -> Result<Sprite> {
-        let new_sprite_id = SpriteID::from_sprite_name(&(format!("{}", sprite_id) + "clone"));
         for group in sprite_groups {
-            if let Some(sprite) = group.read().await.get(&sprite_id) {
+            if let Some(sprite) = group.read().await.get(sprite_id) {
                 return Ok(sprite.clone_sprite(new_sprite_id).await?);
             }
         }
-        Err(Error::msg("sprite_id is invalid"))
+        Err(Error::msg("sprite_id does not exist"))
     }
 
-    pub async fn insert_sprite(
+    async fn insert_sprite(
         sprite_groups: &SpriteGroups,
         new_sprite_id: SpriteID,
         sprite: Sprite,
