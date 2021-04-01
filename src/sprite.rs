@@ -21,7 +21,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub async fn new(
+    pub fn new(
         sprite_id: SpriteID,
         sprite_runtime: SpriteRuntime,
         global: Arc<Global>,
@@ -110,7 +110,6 @@ impl Sprite {
             self.global_runtime.clone(),
             self.block_infos.clone(),
         )
-        .await
     }
 
     pub async fn rectangle(&self) -> SpriteRectangle {

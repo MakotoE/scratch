@@ -86,7 +86,7 @@ impl VM {
             let sprite_runtime = SpriteRuntime::new(&target);
             let id = SpriteID::from_sprite_name(&target.name);
             let mut sprite =
-                Sprite::new(id, sprite_runtime, global.clone(), target.blocks.clone()).await?;
+                Sprite::new(id, sprite_runtime, global.clone(), target.blocks.clone())?;
             let costumes = Costumes::new(texture_context, &target.costumes, &images).await?;
             sprite.set_costumes(costumes).await;
             sprites.insert(id, sprite);
@@ -105,13 +105,6 @@ impl VM {
         let mut paused_threads: Vec<ThreadID> = Vec::new();
         for thread_id in sprites.all_thread_ids().await {
             paused_threads.push(thread_id);
-            log::trace!(
-                "{}",
-                DebugInfo {
-                    thread_id,
-                    block_info: sprites.block_info(thread_id).await?,
-                }
-            );
         }
 
         let mut buffer_glyphs = buffer_glyphs_from_path("assets/Roboto-Regular.ttf")?;

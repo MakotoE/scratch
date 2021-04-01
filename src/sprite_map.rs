@@ -189,9 +189,9 @@ impl SpriteMap {
     ) -> Result<()> {
         for group_cell in sprite_groups {
             if let Some(mut group) = group_cell.try_write() {
-                group
-                    .insert(new_sprite_id, sprite)
-                    .expect_none("id of cloned sprite exists");
+                if matches!(group.insert(new_sprite_id, sprite), Some(_)) {
+                    panic!("new_sprite_id exists: {}", new_sprite_id);
+                }
                 return Ok(());
             }
         }
