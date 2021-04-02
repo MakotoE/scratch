@@ -51,7 +51,7 @@ pub mod canvas_const {
     pub const Y_MAX: f64 = 360.0;
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct Size {
     pub width: f64,
     pub height: f64,
@@ -78,7 +78,7 @@ impl Default for Scale {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct SpriteRectangle {
     pub center: SpriteCoordinate,
     pub size: Size,

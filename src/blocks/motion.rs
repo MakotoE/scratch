@@ -18,7 +18,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "xposition" => Box::new(XPosition::new(id, runtime)),
         "yposition" => Box::new(YPosition::new(id, runtime)),
         "direction" => Box::new(Direction::new(id, runtime)),
-        "pointindirection" => Box::new(PointingDirection::new(id, runtime)),
+        "pointindirection" => Box::new(PointingInDirection::new(id, runtime)),
         "goto" => Box::new(GoTo::new(id, runtime)),
         "goto_menu" => Box::new(GoToMenu::new(id, runtime)),
         _ => return Err(Error::msg(format!("{} does not exist", name))),
@@ -478,24 +478,24 @@ impl Block for Direction {
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
     async fn value(&self) -> Result<Value> {
-        unimplemented!()
+        todo!()
     }
 }
 
 #[derive(Debug)]
-pub struct PointingDirection {
+pub struct PointingInDirection {
     id: BlockID,
     runtime: Runtime,
 }
 
-impl PointingDirection {
+impl PointingInDirection {
     pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
 
 #[async_trait]
-impl Block for PointingDirection {
+impl Block for PointingInDirection {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PointingDirection",
@@ -509,8 +509,8 @@ impl Block for PointingDirection {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<Value> {
-        unimplemented!()
+    async fn execute(&mut self) -> Result<Next> {
+        todo!()
     }
 }
 
@@ -711,3 +711,205 @@ impl Display for GoToOption {
 }
 
 impl_try_from_value!(GoToOption);
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::blocks::value::ValueNumber;
+    use crate::coordinate::{CanvasCoordinate, Size, SpriteRectangle};
+    use crate::file::BlockIDGenerator;
+
+    #[tokio::test]
+    async fn move_steps() {
+        let runtime = Runtime::default();
+        runtime
+            .sprite
+            .write()
+            .await
+            .set_center(SpriteCoordinate { x: 1.0, y: 1.0 });
+
+        let mut gen = BlockIDGenerator::new();
+        let mut move_steps = MoveSteps::new(gen.get_id(), runtime.clone());
+        move_steps.set_input("STEPS", Box::new(ValueNumber::new(1.0)));
+        move_steps.execute().await.unwrap();
+
+        assert_eq!(
+            runtime.sprite.read().await.center(),
+            SpriteCoordinate { x: 2.0, y: 1.0 }
+        );
+    }
+
+    #[tokio::test]
+    async fn go_to_xy() {
+        let mut gen = BlockIDGenerator::new();
+        let runtime = Runtime::default();
+        let mut go_to_xy = GoToXY::new(gen.get_id(), runtime.clone());
+        go_to_xy.set_input("X", Box::new(ValueNumber::new(1.0)));
+        go_to_xy.set_input("Y", Box::new(ValueNumber::new(2.0)));
+
+        go_to_xy.execute().await.unwrap();
+        assert_eq!(
+            runtime.sprite.read().await.center(),
+            SpriteCoordinate { x: 1.0, y: 2.0 }
+        );
+    }
+
+    #[tokio::test]
+    async fn change_x_by_and_change_y_by() {
+        let runtime = Runtime::default();
+        runtime
+            .sprite
+            .write()
+            .await
+            .set_center(SpriteCoordinate { x: 1.0, y: 2.0 });
+
+        let mut gen = BlockIDGenerator::new();
+        let mut change_x_by = ChangeXBy::new(gen.get_id(), runtime.clone());
+        change_x_by.set_input("DX", Box::new(ValueNumber::new(3.0)));
+        change_x_by.execute().await.unwrap();
+
+        let mut change_y_by = ChangeYBy::new(gen.get_id(), runtime.clone());
+        change_y_by.set_input("DY", Box::new(ValueNumber::new(4.0)));
+        change_y_by.execute().await.unwrap();
+
+        assert_eq!(
+            runtime.sprite.read().await.center(),
+            SpriteCoordinate { x: 4.0, y: 6.0 }
+        );
+    }
+
+    #[tokio::test]
+    async fn set_x_and_set_y() {
+        let mut gen = BlockIDGenerator::new();
+        let runtime = Runtime::default();
+
+        let mut set_x = SetX::new(gen.get_id(), runtime.clone());
+        set_x.set_input("X", Box::new(ValueNumber::new(1.0)));
+        set_x.execute().await.unwrap();
+
+        let mut set_y = SetY::new(gen.get_id(), runtime.clone());
+        set_y.set_input("Y", Box::new(ValueNumber::new(2.0)));
+        set_y.execute().await.unwrap();
+
+        assert_eq!(
+            runtime.sprite.read().await.center(),
+            SpriteCoordinate { x: 1.0, y: 2.0 }
+        );
+    }
+
+    #[tokio::test]
+    async fn x_position_and_y_position() {
+        let runtime = Runtime::default();
+        runtime
+            .sprite
+            .write()
+            .await
+            .set_center(SpriteCoordinate { x: 1.0, y: 2.0 });
+
+        let mut gen = BlockIDGenerator::new();
+        let x_position = XPosition::new(gen.get_id(), runtime.clone());
+        assert_eq!(x_position.value().await.unwrap(), Value::Number(1.0));
+
+        let y_position = YPosition::new(gen.get_id(), runtime.clone());
+        assert_eq!(y_position.value().await.unwrap(), Value::Number(2.0));
+    }
+
+    #[tokio::test]
+    async fn go_to() {
+        let runtime = Runtime::default();
+        let mut gen = BlockIDGenerator::new();
+
+        // Random position option
+        {
+            let mut menu = GoToMenu::new(gen.get_id(), runtime.clone());
+            menu.set_field("TO", &[Some("_random_".to_string())])
+                .unwrap();
+            let mut go_to = GoTo::new(gen.get_id(), runtime.clone());
+            go_to.set_input("TO", Box::new(menu));
+            go_to.execute().await.unwrap();
+        }
+
+        // Mouse position option
+        {
+            let mut menu = GoToMenu::new(gen.get_id(), runtime.clone());
+            menu.set_field("TO", &[Some("_mouse_".to_string())])
+                .unwrap();
+            let mut go_to = GoTo::new(gen.get_id(), runtime.clone());
+            go_to.set_input("TO", Box::new(menu));
+
+            let mut receiver = runtime.global.broadcaster.subscribe();
+            let task = spawn(async move { go_to.execute().await.unwrap() });
+
+            // Block requests mouse position
+            assert_eq!(
+                receiver.recv().await.unwrap(),
+                BroadcastMsg::RequestMousePosition
+            );
+
+            // Send mouse position
+            runtime
+                .global
+                .broadcaster
+                .send(BroadcastMsg::MousePosition(CanvasCoordinate {
+                    x: 1.0,
+                    y: 1.0,
+                }))
+                .unwrap();
+
+            task.await.unwrap();
+
+            assert_eq!(
+                runtime.sprite.read().await.center(),
+                SpriteCoordinate {
+                    x: -239.0,
+                    y: 179.0
+                }
+            );
+        }
+
+        // Sprite position option
+        {
+            const SPRITE_NAME: &str = "sprite_id";
+            let mut menu = GoToMenu::new(gen.get_id(), runtime.clone());
+            menu.set_field("TO", &[Some(SPRITE_NAME.to_string())])
+                .unwrap();
+            let mut go_to = GoTo::new(gen.get_id(), runtime.clone());
+            go_to.set_input("TO", Box::new(menu));
+
+            let mut receiver = runtime.global.broadcaster.subscribe();
+            let task = spawn(async move { go_to.execute().await.unwrap() });
+
+            assert_eq!(
+                receiver.recv().await.unwrap(),
+                BroadcastMsg::RequestSpriteRectangle(SpriteID::from_sprite_name(SPRITE_NAME))
+            );
+
+            // Sprite rectangle of different sprite
+            runtime
+                .global
+                .broadcaster
+                .send(BroadcastMsg::SpriteRectangle {
+                    sprite: SpriteID::from_sprite_name("wrong_id"),
+                    rectangle: SpriteRectangle::default(),
+                })
+                .unwrap();
+
+            let rectangle = SpriteRectangle {
+                center: SpriteCoordinate { x: 1.0, y: 2.0 },
+                size: Size::default(),
+            };
+            runtime
+                .global
+                .broadcaster
+                .send(BroadcastMsg::SpriteRectangle {
+                    sprite: SpriteID::from_sprite_name(SPRITE_NAME),
+                    rectangle,
+                })
+                .unwrap();
+
+            task.await.unwrap();
+
+            assert_eq!(runtime.sprite.read().await.center(), rectangle.center);
+        }
+    }
+}
