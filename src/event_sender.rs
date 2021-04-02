@@ -2,7 +2,7 @@ use super::*;
 use crate::broadcaster::{BroadcastMsg, Broadcaster};
 use crate::coordinate::CanvasCoordinate;
 use crate::interface::CANVAS_TOP_LEFT;
-use input::{ButtonState, Input, Key, Motion, MouseButton};
+use input::{Button, ButtonState, Input, Key, Motion, MouseButton};
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
@@ -11,6 +11,7 @@ pub struct EventSender {
     handler_loop: JoinHandle<()>,
     sender: Sender<Input>,
     mouse_position: Arc<RwLock<CanvasCoordinate>>,
+    pressed_keys: HashSet<Button>,
 }
 
 impl EventSender {
@@ -31,6 +32,7 @@ impl EventSender {
             handler_loop,
             sender,
             mouse_position,
+            pressed_keys: HashSet::default(),
         }
     }
 
@@ -89,7 +91,17 @@ impl EventSender {
 
     pub async fn input(&mut self, input: Input) -> Result<()> {
         match &input {
-            Input::Button(_) => self.sender.send(input).await?,
+            Input::Button(button) => match button.state {
+                ButtonState::Press => {
+                    if self.pressed_keys.replace(button.button).is_none() {
+                        self.sender.send(input).await?
+                    }
+                }
+                ButtonState::Release => {
+                    self.pressed_keys.remove(&button.button);
+                    self.sender.send(input).await?
+                }
+            },
             Input::Move(motion) => {
                 if let Motion::MouseCursor(position) = motion {
                     *self.mouse_position.write().await = CanvasCoordinate {
