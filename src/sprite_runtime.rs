@@ -7,7 +7,7 @@ use gfx_device_gl::Resources;
 use gfx_graphics::{CreateTexture, Format};
 use gfx_texture::{Texture, TextureSettings};
 use graphics::character::CharacterCache;
-use graphics::types::{FontSize, Rectangle};
+use graphics::types::FontSize;
 use graphics::{line, CircleArc, Context, Graphics, Transformed};
 use graphics_buffer::{BufferGlyphs, RenderBuffer};
 use image::codecs::png::PngDecoder;
@@ -23,6 +23,7 @@ pub struct SpriteRuntime {
     is_a_clone: bool,
     position: SpriteCoordinate,
     scale: Scale,
+    rotation: f64,
     costumes: Costumes,
     /// 0.0 = transparent, 1.0 = opaque
     costume_transparency: f64,
@@ -45,6 +46,7 @@ impl SpriteRuntime {
                 y: target.y,
             },
             scale: Scale { x: scale, y: scale },
+            rotation: 90.0,
             costumes: Costumes::default(),
             costume_transparency: 1.0,
             text: Text::default(),
@@ -86,6 +88,7 @@ impl SpriteRuntime {
                 &self.position.into(),
                 &self.scale,
                 self.costume_transparency,
+                self.rotation,
             );
         }
 
@@ -118,25 +121,32 @@ impl SpriteRuntime {
         position: &CanvasCoordinate,
         scale: &Scale,
         alpha: f64,
+        rotation: f64,
     ) where
         G: GraphicsCostumeTexture<C>,
         C: CharacterCache,
     {
-        let rectangle: Rectangle = [
-            position.x - costume.center.x * costume.scale * scale.x,
-            position.y - costume.center.y * costume.scale * scale.y,
-            costume.image_size.width * scale.x,
-            costume.image_size.height * scale.y,
-        ];
         graphics::Image {
             color: Some([1.0, 1.0, 1.0, alpha as f32]),
             source_rectangle: None,
-            rectangle: Some(rectangle),
+            rectangle: Some([
+                0.0,
+                0.0,
+                costume.image_size.width * scale.x,
+                costume.image_size.height * scale.y,
+            ]),
         }
         .draw(
             G::get_costume_texture(costume),
             &context.draw_state,
-            context.transform,
+            context
+                .transform
+                .trans(position.x, position.y)
+                .rot_deg(rotation - 90.0)
+                .trans(
+                    -costume.center.x * costume.scale * scale.x,
+                    -costume.center.y * costume.scale * scale.y,
+                ),
             graphics,
         );
     }
@@ -359,6 +369,7 @@ pub struct Costume {
     image_size: Size,
     scale: f64,
     name: String,
+    /// Center point of image
     center: SpriteCoordinate,
     gfx_texture: Texture<Resources>,
     render_buffer_texture: RenderBuffer,

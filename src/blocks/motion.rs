@@ -18,7 +18,7 @@ pub fn get_block(name: &str, id: BlockID, runtime: Runtime) -> Result<Box<dyn Bl
         "xposition" => Box::new(XPosition::new(id, runtime)),
         "yposition" => Box::new(YPosition::new(id, runtime)),
         "direction" => Box::new(Direction::new(id, runtime)),
-        "pointindirection" => Box::new(PointingInDirection::new(id, runtime)),
+        "pointindirection" => Box::new(PointInDirection::new(id, runtime)),
         "goto" => Box::new(GoTo::new(id, runtime)),
         "goto_menu" => Box::new(GoToMenu::new(id, runtime)),
         _ => return Err(Error::msg(format!("{} does not exist", name))),
@@ -483,19 +483,19 @@ impl Block for Direction {
 }
 
 #[derive(Debug)]
-pub struct PointingInDirection {
+pub struct PointInDirection {
     id: BlockID,
     runtime: Runtime,
 }
 
-impl PointingInDirection {
+impl PointInDirection {
     pub fn new(id: BlockID, runtime: Runtime) -> Self {
         Self { id, runtime }
     }
 }
 
 #[async_trait]
-impl Block for PointingInDirection {
+impl Block for PointInDirection {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
             name: "PointingDirection",
