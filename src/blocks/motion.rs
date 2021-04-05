@@ -838,6 +838,21 @@ mod test {
     }
 
     #[tokio::test]
+    async fn point_in_direction_and_direction() {
+        let runtime = Runtime::default();
+        let mut gen = BlockIDGenerator::new();
+
+        let rotation = 1.0;
+
+        let mut point_in_direction = PointInDirection::new(gen.get_id(), runtime.clone());
+        point_in_direction.set_input("DIRECTION", Box::new(ValueNumber::new(rotation)));
+        point_in_direction.execute().await.unwrap();
+
+        let direction = Direction::new(gen.get_id(), runtime.clone());
+        assert_eq!(direction.value().await.unwrap(), Value::Number(rotation));
+    }
+
+    #[tokio::test]
     async fn go_to() {
         let runtime = Runtime::default();
         let mut gen = BlockIDGenerator::new();
