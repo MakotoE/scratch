@@ -476,10 +476,8 @@ impl Block for Direction {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
-
     async fn value(&self) -> Result<Value> {
-        todo!()
+        Ok(Value::Number(self.runtime.sprite.read().await.rotation()))
     }
 }
 
