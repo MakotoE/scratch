@@ -342,6 +342,14 @@ impl SpriteRuntime {
             ..*self
         }
     }
+
+    pub fn rotation(&self) -> f64 {
+        self.rotation
+    }
+
+    pub fn set_rotation(&mut self, rotation: f64) {
+        self.rotation = rotation;
+    }
 }
 
 /// This is needed because G2d and RenderBuffer have different texture types.

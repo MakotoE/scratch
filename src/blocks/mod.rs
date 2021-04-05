@@ -259,7 +259,7 @@ pub fn block_tree(
 }
 
 #[derive(Debug)]
-pub struct EmptyInput {}
+pub struct EmptyInput;
 
 #[async_trait]
 impl Block for EmptyInput {

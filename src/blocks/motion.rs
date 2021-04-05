@@ -117,6 +117,7 @@ impl Block for GoToXY {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
+            // TODO uppercase block input keys
             vec![("x", self.x.as_ref()), ("y", self.y.as_ref())],
             vec![("next", &self.next)],
         )
@@ -486,11 +487,18 @@ impl Block for Direction {
 pub struct PointInDirection {
     id: BlockID,
     runtime: Runtime,
+    next: Option<BlockID>,
+    direction: Box<dyn Block>,
 }
 
 impl PointInDirection {
     pub fn new(id: BlockID, runtime: Runtime) -> Self {
-        Self { id, runtime }
+        Self {
+            id,
+            runtime,
+            next: None,
+            direction: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -498,19 +506,36 @@ impl PointInDirection {
 impl Block for PointInDirection {
     fn block_info(&self) -> BlockInfo {
         BlockInfo {
-            name: "PointingDirection",
+            name: "PointInDirection",
             id: self.id,
         }
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("DIRECTION", self.direction.as_ref())],
+            vec![("next", &self.next)],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        if key == "DIRECTION" {
+            self.direction = block;
+        }
+    }
+
+    fn set_substack(&mut self, key: &str, block: BlockID) {
+        if key == "next" {
+            self.next = Some(block);
+        }
+    }
 
     async fn execute(&mut self) -> Result<Next> {
-        todo!()
+        let direction: f64 = self.direction.value().await?.try_into()?;
+        self.runtime.sprite.write().await.set_rotation(direction);
+        Next::continue_(self.next)
     }
 }
 
