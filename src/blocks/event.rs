@@ -169,7 +169,7 @@ impl Block for Broadcast {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("message", self.message.as_ref())],
+            vec![("BROADCAST_INPUT", self.message.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -228,7 +228,7 @@ impl Block for BroadcastAndWait {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("message", self.message.as_ref())],
+            vec![("BROADCAST_INPUT", self.message.as_ref())],
             vec![("next", &self.next)],
         )
     }

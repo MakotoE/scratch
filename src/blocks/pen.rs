@@ -143,7 +143,7 @@ impl Block for SetPenColorToColor {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("color", self.color.as_ref())],
+            vec![("COLOR", self.color.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -199,7 +199,7 @@ impl Block for SetPenSizeTo {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("size", self.size.as_ref())],
+            vec![("SIZE", self.size.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -324,7 +324,7 @@ impl Block for SetPenShadeToNumber {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("shade", self.shade.as_ref())],
+            vec![("SHADE", self.shade.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -411,7 +411,7 @@ impl Block for SetPenHueToNumber {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("hue", self.hue.as_ref())],
+            vec![("HUE", self.hue.as_ref())],
             vec![("next", &self.next)],
         )
     }

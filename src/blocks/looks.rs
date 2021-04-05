@@ -56,7 +56,7 @@ impl Block for Say {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("message", self.message.as_ref())],
+            vec![("MESSAGE", self.message.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -118,8 +118,8 @@ impl Block for SayForSecs {
             self.block_info(),
             vec![],
             vec![
-                ("message", self.message.as_ref()),
-                ("secs", self.secs.as_ref()),
+                ("MESSAGE", self.message.as_ref()),
+                ("SECS", self.secs.as_ref()),
             ],
             vec![("next", &self.next)],
         )
@@ -367,8 +367,8 @@ impl Block for SetEffectTo {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("effect", self.effect.to_string())],
-            vec![("value", self.value.as_ref())],
+            vec![("EFFECT", self.effect.to_string())],
+            vec![("VALUE", self.value.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -527,8 +527,8 @@ impl Block for ChangeEffectBy {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("effect", self.effect.to_string())],
-            vec![("change", self.change.as_ref())],
+            vec![("EFFECT", self.effect.to_string())],
+            vec![("CHANGE", self.change.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -599,7 +599,7 @@ impl Block for SetSizeTo {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![],
+            vec![("SIZE", self.size.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -662,7 +662,7 @@ impl Block for SwitchCostumeTo {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("costume", self.costume.as_ref())],
+            vec![("COSTUME", self.costume.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -720,7 +720,7 @@ impl Block for Costume {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("name", self.name.clone())],
+            vec![("COSTUME", self.name.clone())],
             vec![],
             vec![("next", &self.next)],
         )
@@ -776,7 +776,7 @@ impl Block for SwitchBackdropTo {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("backdrop", self.backdrop.as_ref())],
+            vec![("BACKDROP", self.backdrop.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -832,7 +832,7 @@ impl Block for Backdrops {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("backdrop", self.backdrop.clone())],
+            vec![("BACKDROP", self.backdrop.clone())],
             vec![],
             vec![],
         )

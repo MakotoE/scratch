@@ -58,8 +58,8 @@ impl Block for If {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", self.condition.as_ref())],
-            vec![("next", &self.next), ("substack", &self.substack)],
+            vec![("CONDITION", self.condition.as_ref())],
+            vec![("next", &self.next), ("SUBSTACK", &self.substack)],
         )
     }
 
@@ -123,7 +123,7 @@ impl Block for Wait {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("duration", self.duration.as_ref())],
+            vec![("DURATION", self.duration.as_ref())],
             vec![("next", &self.next)],
         )
     }
@@ -173,7 +173,7 @@ impl Block for Forever {
             self.block_info(),
             vec![],
             vec![],
-            vec![("substack", &self.substack)],
+            vec![("SUBSTACK", &self.substack)],
         )
     }
 
@@ -225,8 +225,8 @@ impl Block for Repeat {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("times", self.times.as_ref())],
-            vec![("next", &self.next), ("substack", &self.substack)],
+            vec![("TIMES", self.times.as_ref())],
+            vec![("next", &self.next), ("SUBSTACK", &self.substack)],
         )
     }
 
@@ -289,8 +289,8 @@ impl Block for RepeatUntil {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", self.condition.as_ref())],
-            vec![("next", &self.next), ("substack", &self.substack)],
+            vec![("CONDITION", self.condition.as_ref())],
+            vec![("next", &self.next), ("SUBSTACK", &self.substack)],
         )
     }
 
@@ -355,11 +355,11 @@ impl Block for IfElse {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", self.condition.as_ref())],
+            vec![("CONDITION", self.condition.as_ref())],
             vec![
                 ("next", &self.next),
-                ("substack_true", &self.substack_true),
-                ("substack_false", &self.substack_false),
+                ("SUBSTACK", &self.substack_true),
+                ("SUBSTACK2", &self.substack_false),
             ],
         )
     }
@@ -425,7 +425,7 @@ impl Block for WaitUntil {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("condition", self.condition.as_ref())],
+            vec![("CONDITION", self.condition.as_ref())],
             vec![("next", &self.next)],
         )
     }

@@ -49,8 +49,8 @@ impl Block for Equals {
             self.block_info(),
             vec![],
             vec![
-                ("operand1", self.operand1.as_ref()),
-                ("operand2", self.operand2.as_ref()),
+                ("OPERAND1", self.operand1.as_ref()),
+                ("OPERAND2", self.operand2.as_ref()),
             ],
             vec![],
         )
@@ -101,7 +101,7 @@ impl Block for Add {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("num1", self.num1.as_ref()), ("num2", self.num2.as_ref())],
+            vec![("NUM1", self.num1.as_ref()), ("NUM2", self.num2.as_ref())],
             vec![],
         )
     }
@@ -151,7 +151,7 @@ impl Block for Subtract {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("num1", self.num1.as_ref()), ("num2", self.num2.as_ref())],
+            vec![("NUM1", self.num1.as_ref()), ("NUM2", self.num2.as_ref())],
             vec![],
         )
     }
@@ -201,7 +201,7 @@ impl Block for Multiply {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("num1", self.num1.as_ref()), ("num2", self.num2.as_ref())],
+            vec![("NUM1", self.num1.as_ref()), ("NUM2", self.num2.as_ref())],
             vec![],
         )
     }
@@ -251,7 +251,7 @@ impl Block for Divide {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("num1", self.num1.as_ref()), ("num2", self.num2.as_ref())],
+            vec![("NUM1", self.num1.as_ref()), ("NUM2", self.num2.as_ref())],
             vec![],
         )
     }
@@ -302,8 +302,8 @@ impl Block for And {
             self.block_info(),
             vec![],
             vec![
-                ("operand1", self.operand1.as_ref()),
-                ("operand2", self.operand2.as_ref()),
+                ("OPERAND1", self.operand1.as_ref()),
+                ("OPERAND2", self.operand2.as_ref()),
             ],
             vec![],
         )
@@ -355,8 +355,8 @@ impl Block for Or {
             self.block_info(),
             vec![],
             vec![
-                ("operand1", self.operand1.as_ref()),
-                ("operand2", self.operand2.as_ref()),
+                ("OPERAND1", self.operand1.as_ref()),
+                ("OPERAND2", self.operand2.as_ref()),
             ],
             vec![],
         )
@@ -405,7 +405,7 @@ impl Block for Not {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("operand", self.operand.as_ref())],
+            vec![("OPERAND", self.operand.as_ref())],
             vec![],
         )
     }
@@ -453,8 +453,8 @@ impl Block for LessThan {
             self.block_info(),
             vec![],
             vec![
-                ("operand1", self.operand1.as_ref()),
-                ("operand2", self.operand2.as_ref()),
+                ("OPERAND1", self.operand1.as_ref()),
+                ("OPERAND2", self.operand2.as_ref()),
             ],
             vec![],
         )
@@ -506,8 +506,8 @@ impl Block for GreaterThan {
             self.block_info(),
             vec![],
             vec![
-                ("operand1", self.operand1.as_ref()),
-                ("operand2", self.operand2.as_ref()),
+                ("OPERAND1", self.operand1.as_ref()),
+                ("OPERAND2", self.operand2.as_ref()),
             ],
             vec![],
         )

@@ -438,7 +438,7 @@ impl Block for TouchingObject {
         BlockInputsPartial::new(
             self.block_info(),
             vec![],
-            vec![("menu", self.menu.as_ref())],
+            vec![("TOUCHINGOBJECTMENU", self.menu.as_ref())],
             vec![],
         )
     }
@@ -520,7 +520,7 @@ impl Block for TouchingObjectMenu {
     fn block_inputs(&self) -> BlockInputsPartial {
         BlockInputsPartial::new(
             self.block_info(),
-            vec![("option", self.option.to_string())],
+            vec![("TOUCHINGOBJECTMENU", self.option.to_string())],
             vec![],
             vec![],
         )
