@@ -953,7 +953,7 @@ mod tests {
             (
                 substack_id,
                 Box::new(BlockStub::with_behavior(
-                    gen.get_id(),
+                    substack_id,
                     runtime.clone(),
                     Some(return_value.clone()),
                     Arc::new(RwLock::new(Next::None)),

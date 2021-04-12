@@ -74,7 +74,7 @@ impl Block for SetVariable {
             .global
             .variables
             .set(&self.variable_id, value)
-            .await?;
+            .await;
         Next::continue_(self.next)
     }
 }
@@ -268,5 +268,93 @@ impl Block for ShowVariable {
             .set_monitored(&self.variable_id, true)
             .await?;
         Next::continue_(self.next)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::blocks::value::ValueNumber;
+    use crate::file::BlockIDGenerator;
+
+    const KEY: &str = "key";
+
+    #[tokio::test]
+    async fn set_variable() {
+        let runtime = Runtime::default();
+
+        let mut gen = BlockIDGenerator::new();
+        let mut set_variable = SetVariable::new(gen.get_id(), runtime.clone());
+        assert!(set_variable.execute().await.is_err());
+
+        set_variable.set_input("VALUE", Box::new(ValueNumber::new(1.0)));
+        set_variable
+            .set_field("VARIABLE", &[None, Some(KEY.to_string())])
+            .unwrap();
+
+        set_variable.execute().await.unwrap();
+
+        assert_eq!(
+            runtime.global.variables.get(KEY).await.unwrap(),
+            Value::Number(1.0)
+        );
+    }
+
+    #[tokio::test]
+    async fn change_variable() {
+        let runtime = Runtime::default();
+        runtime.global.variables.set(KEY, Value::Number(1.0)).await;
+
+        let mut gen = BlockIDGenerator::new();
+        let mut change_variable = ChangeVariable::new(gen.get_id(), runtime.clone());
+        assert!(change_variable.execute().await.is_err());
+
+        change_variable.set_input("VALUE", Box::new(ValueNumber::new(1.0)));
+        change_variable
+            .set_field("VARIABLE", &[None, Some(KEY.to_string())])
+            .unwrap();
+
+        change_variable.execute().await.unwrap();
+        assert_eq!(
+            runtime.global.variables.get(KEY).await.unwrap(),
+            Value::Number(2.0)
+        );
+
+        runtime
+            .global
+            .variables
+            .set(KEY, Value::String(String::new()))
+            .await;
+        change_variable.set_input("VALUE", Box::new(ValueNumber::new(1.0)));
+        change_variable.execute().await.unwrap();
+        assert_eq!(
+            runtime.global.variables.get(KEY).await.unwrap(),
+            Value::Number(1.0)
+        );
+    }
+
+    #[tokio::test]
+    async fn hide_variable_and_show_variable() {
+        let runtime = Runtime::default();
+        runtime.global.variables.set(KEY, Value::Number(1.0)).await;
+
+        let mut gen = BlockIDGenerator::new();
+        let mut hide_variable = HideVariable::new(gen.get_id(), runtime.clone());
+        hide_variable
+            .set_field("VARIABLE", &[None, Some(KEY.to_string())])
+            .unwrap();
+
+        hide_variable.execute().await.unwrap();
+
+        assert!(!runtime.global.variables.monitored(KEY).await);
+
+        let mut show_variable = ShowVariable::new(gen.get_id(), runtime.clone());
+        show_variable
+            .set_field("VARIABLE", &[None, Some(KEY.to_string())])
+            .unwrap();
+
+        show_variable.execute().await.unwrap();
+
+        assert!(runtime.global.variables.monitored(KEY).await);
     }
 }

@@ -151,7 +151,10 @@ pub struct Variables {
 }
 
 impl Variables {
-    fn new(scratch_file_variables: &HashMap<String, file::Variable>, monitors: &[Monitor]) -> Self {
+    pub fn new(
+        scratch_file_variables: &HashMap<String, file::Variable>,
+        monitors: &[Monitor],
+    ) -> Self {
         let mut variables: HashMap<String, Variable> = HashMap::default();
         for (key, v) in scratch_file_variables {
             let monitor = monitors.iter().find(|m| &m.id == key);
@@ -187,17 +190,27 @@ impl Variables {
         }
     }
 
-    pub async fn set(&self, key: &str, value: Value) -> Result<()> {
+    pub async fn set(&self, key: &str, value: Value) {
         let mut variables = self.variables.write().await;
-        let variable = match variables.get_mut(key) {
-            Some(v) => v,
-            None => return Err(Error::msg(format!("key does not exist: {}", key))),
-        };
-
-        variable.value = value;
-        Ok(())
+        match variables.get_mut(key) {
+            Some(v) => v.value = value,
+            None => {
+                // This path should not happen normally; used for tests
+                variables.insert(
+                    key.to_string(),
+                    Variable {
+                        name: key.to_string(),
+                        value,
+                        monitored: false,
+                        position: CanvasCoordinate::default(),
+                    },
+                );
+            }
+        }
     }
 
+    /// function takes the current value associated with key and returns the new value to replace
+    /// the last one with.
     pub async fn set_with<F>(&self, key: &str, function: F) -> Result<()>
     where
         F: FnOnce(&Value) -> Value,
@@ -222,6 +235,11 @@ impl Variables {
             None => Err(Error::msg(format!("key does not exist: {}", key))),
         }
     }
+
+    #[cfg(test)]
+    pub async fn monitored(&self, key: &str) -> bool {
+        self.variables.read().await.get(key).unwrap().monitored
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -230,4 +248,65 @@ pub struct Variable {
     value: Value,
     monitored: bool,
     position: CanvasCoordinate,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod variables {
+        use super::*;
+
+        #[tokio::test]
+        async fn set() {
+            let variables = Variables::default();
+            assert!(variables.get("key").await.is_err());
+            variables.set("key", Value::Number(0.0)).await;
+            assert_eq!(variables.get("key").await.unwrap(), Value::Number(0.0));
+            variables.set("key", Value::Number(1.0)).await;
+            assert_eq!(variables.get("key").await.unwrap(), Value::Number(1.0));
+        }
+
+        #[tokio::test]
+        async fn set_with() {
+            let variables = Variables::default();
+            assert!(variables.set_with("key", |_| unreachable!()).await.is_err());
+            variables.set("key", Value::Number(0.0)).await;
+
+            let cb = |v: &Value| {
+                assert_eq!(*v, Value::Number(0.0));
+                Value::Number(1.0)
+            };
+            variables.set_with("key", cb).await.unwrap();
+            assert_eq!(variables.get("key").await.unwrap(), Value::Number(1.0));
+        }
+
+        #[tokio::test]
+        async fn set_monitored() {
+            let variables = Variables::default();
+            assert!(variables.set_monitored("key", true).await.is_err());
+            variables.set("key", Value::Number(0.0)).await;
+            assert_eq!(
+                variables
+                    .variables
+                    .read()
+                    .await
+                    .get("key")
+                    .unwrap()
+                    .monitored,
+                false
+            );
+            variables.set_monitored("key", true).await.unwrap();
+            assert_eq!(
+                variables
+                    .variables
+                    .read()
+                    .await
+                    .get("key")
+                    .unwrap()
+                    .monitored,
+                true
+            );
+        }
+    }
 }
