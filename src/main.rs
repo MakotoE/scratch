@@ -2,6 +2,7 @@
 #![feature(str_split_once)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(option_expect_none)]
+#![feature(duration_zero)]
 
 #[macro_use]
 extern crate conrod_core;

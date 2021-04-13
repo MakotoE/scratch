@@ -721,7 +721,7 @@ mod tests {
     use crate::sprite::SpriteID;
     use crate::sprite_runtime::SpriteRuntime;
     use crate::thread::{StepStatus, Thread};
-    use tokio::time::timeout;
+    use futures::FutureExt;
 
     #[tokio::test]
     async fn if_block() {
@@ -1091,16 +1091,13 @@ mod tests {
             (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
         ]);
 
-        let timeout_duration = Duration::from_millis(5);
         let mut thread = Thread::new(wait_until_id, blocks);
-        assert!(timeout(timeout_duration, thread.step()).await.is_err());
+        let mut step_future = thread.step().boxed_local();
+        assert!((&mut step_future).now_or_never().is_none());
 
         *condition.write().await = Value::Bool(true);
 
-        timeout(timeout_duration, thread.step())
-            .await
-            .unwrap()
-            .unwrap();
+        step_future.await.unwrap();
         assert!(matches!(thread.step().await.unwrap(), StepStatus::Done));
 
         assert_eq!(

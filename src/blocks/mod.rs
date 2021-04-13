@@ -93,7 +93,7 @@ pub trait Block: std::fmt::Debug + Sync + Send {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Next {
     None,
     Continue(BlockID),

@@ -315,3 +315,92 @@ impl Block for WhenThisSpriteClicked {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::blocks::test::{BlockStub, BlockStubMsg};
+    use crate::file::BlockIDGenerator;
+    use crate::thread::{StepStatus, Thread};
+    use futures::future::FutureExt;
+
+    #[tokio::test]
+    async fn when_flag_clicked() {
+        let mut gen = BlockIDGenerator::new();
+        {
+            let runtime = Runtime::default();
+            let mut when_flag_clicked = WhenFlagClicked::new(gen.get_id(), runtime.clone());
+            when_flag_clicked.set_substack("next", BlockID::default());
+            assert_eq!(
+                when_flag_clicked.execute().await.unwrap(),
+                Next::Continue(BlockID::default())
+            );
+        }
+
+        {
+            let mut runtime = Runtime::default();
+            let new_runtime = runtime.sprite.read().await.clone_sprite_runtime();
+            runtime.sprite = Arc::new(RwLock::new(new_runtime));
+            let mut when_flag_clicked = WhenFlagClicked::new(gen.get_id(), runtime.clone());
+            assert_eq!(when_flag_clicked.execute().await.unwrap(), Next::None);
+        }
+    }
+
+    #[tokio::test]
+    async fn when_broadcast_received() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+        let when_broadcast_received_id = gen.get_id();
+        let next_id = gen.get_id();
+
+        let mut when_broadcast_received =
+            WhenBroadcastReceived::new(when_broadcast_received_id, runtime.clone());
+        const BROADCAST_ID: &str = "broadcast_id";
+        when_broadcast_received
+            .set_field("BROADCAST_OPTION", &[Some(BROADCAST_ID.to_string())])
+            .unwrap();
+        when_broadcast_received.set_substack("next", next_id);
+
+        let blocks = block_map(vec![
+            (
+                when_broadcast_received_id,
+                Box::new(when_broadcast_received),
+            ),
+            (next_id, Box::new(BlockStub::new(next_id, runtime.clone()))),
+        ]);
+
+        let mut thread = Thread::new(when_broadcast_received_id, blocks);
+
+        // WhenBroadcastReceived
+        let mut step_future = thread.step().boxed_local();
+        assert!((&mut step_future).now_or_never().is_none());
+
+        runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::Start(BROADCAST_ID.to_string()))
+            .unwrap();
+        step_future.await.unwrap();
+
+        // BlockStub
+        thread.step().await.unwrap();
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::Start(BROADCAST_ID.to_string())
+        );
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::BlockStub(next_id, BlockStubMsg::Executed)
+        );
+
+        // WhenBroadcastReceived
+        assert_eq!(thread.step().await.unwrap(), StepStatus::Done);
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::Finished(BROADCAST_ID.to_string())
+        );
+    }
+}
