@@ -115,7 +115,7 @@ impl Block for KeyPressed {
         loop {
             if let BroadcastMsg::PressedKeys(keys) = receiver.recv().await? {
                 return Ok(match key_option {
-                    KeyOption::Any => true,
+                    KeyOption::Any => !keys.is_empty(),
                     KeyOption::Key(key) => keys.contains(&key),
                 }
                 .into());

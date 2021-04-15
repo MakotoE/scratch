@@ -27,7 +27,7 @@ impl Broadcaster {
 impl Default for Broadcaster {
     fn default() -> Self {
         Self {
-            sender: channel(32).0,
+            sender: channel(64).0,
         }
     }
 }
