@@ -16,7 +16,7 @@ pub struct EventSender {
 
 impl EventSender {
     pub fn new(broadcaster: Broadcaster) -> Self {
-        let (sender, receiver) = channel(8);
+        let (sender, receiver) = channel(64);
         let mouse_position = Arc::new(RwLock::default());
         let handler_loop = spawn({
             let mouse_position = mouse_position.clone();
@@ -24,7 +24,7 @@ impl EventSender {
                 if let Err(e) =
                     EventSender::handler_loop(receiver, broadcaster, mouse_position).await
                 {
-                    log::error!("{}", e);
+                    log::error!("{:?}", e);
                 }
             }
         });
@@ -45,19 +45,7 @@ impl EventSender {
         let mut pressed_keys: HashSet<Key> = HashSet::default();
         loop {
             select! {
-                m = broadcaster_receiver.recv() => match m {
-                    Ok(msg) => match msg {
-                        BroadcastMsg::RequestMousePosition => {
-                            broadcaster
-                                .send(BroadcastMsg::MousePosition(*mouse_position.read().await))?;
-                        }
-                        BroadcastMsg::RequestPressedKeys => {
-                            broadcaster.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
-                        }
-                        _ => {}
-                    }
-                    Err(e) => return Err(e.into()),
-                },
+                biased;
                 i = input_receiver.recv() => match i {
                     Some(input) => {
                         if let Input::Button(button) = input {
@@ -84,7 +72,20 @@ impl EventSender {
                         }
                     }
                     None => return Ok(()),
-                }
+                },
+                m = broadcaster_receiver.recv() => match m {
+                    Ok(msg) => match msg {
+                        BroadcastMsg::RequestMousePosition => {
+                            broadcaster
+                                .send(BroadcastMsg::MousePosition(*mouse_position.read().await))?;
+                        }
+                        BroadcastMsg::RequestPressedKeys => {
+                            broadcaster.send(BroadcastMsg::PressedKeys(pressed_keys.clone()))?;
+                        }
+                        _ => {}
+                    }
+                    Err(e) => return Err(e.into()),
+                },
             }
         }
     }
