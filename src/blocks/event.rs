@@ -307,8 +307,14 @@ impl Block for WhenThisSpriteClicked {
         let mut channel = self.runtime.global.broadcaster.subscribe();
         loop {
             if let BroadcastMsg::MouseClick(c) = channel.recv().await? {
-                let curr_rectangle = self.runtime.sprite.read().await.rectangle();
-                if curr_rectangle.contains(&c.into()) {
+                if self
+                    .runtime
+                    .sprite
+                    .read()
+                    .await
+                    .rectangle()
+                    .contains(&c.into())
+                {
                     return Next::continue_(self.next);
                 }
             }
@@ -320,6 +326,8 @@ impl Block for WhenThisSpriteClicked {
 mod test {
     use super::*;
     use crate::blocks::test::{BlockStub, BlockStubMsg};
+    use crate::blocks::value::ValueString;
+    use crate::coordinate::SpriteCoordinate;
     use crate::file::BlockIDGenerator;
     use crate::thread::{StepStatus, Thread};
     use futures::future::FutureExt;
@@ -402,5 +410,77 @@ mod test {
             receiver.try_recv().unwrap(),
             BroadcastMsg::Finished(BROADCAST_ID.to_string())
         );
+    }
+
+    #[tokio::test]
+    async fn broadcast() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+
+        let mut broadcast = Broadcast::new(gen.get_id(), runtime.clone());
+        const MESSAGE: &str = "message";
+        broadcast.set_input(
+            "BROADCAST_INPUT",
+            Box::new(ValueString::new(MESSAGE.to_string())),
+        );
+        broadcast.execute().await.unwrap();
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::Start(MESSAGE.to_string())
+        );
+    }
+
+    #[tokio::test]
+    async fn broadcast_and_wait() {
+        let runtime = Runtime::default();
+        let mut receiver = runtime.global.broadcaster.subscribe();
+
+        let mut gen = BlockIDGenerator::new();
+
+        let mut broadcast_and_wait = BroadcastAndWait::new(gen.get_id(), runtime.clone());
+        const MESSAGE: &str = "message";
+        broadcast_and_wait.set_input(
+            "BROADCAST_INPUT",
+            Box::new(ValueString::new(MESSAGE.to_string())),
+        );
+        let mut execute_future = broadcast_and_wait.execute().boxed_local();
+        assert!((&mut execute_future).now_or_never().is_none());
+
+        assert_eq!(
+            receiver.try_recv().unwrap(),
+            BroadcastMsg::Start(MESSAGE.to_string())
+        );
+
+        runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::Finished(MESSAGE.to_string()))
+            .unwrap();
+
+        execute_future.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn when_this_sprite_clicked() {
+        let runtime = Runtime::default();
+
+        let mut gen = BlockIDGenerator::new();
+        let mut when_this_sprite_clicked =
+            WhenThisSpriteClicked::new(gen.get_id(), runtime.clone());
+        let mut execute_future = when_this_sprite_clicked.execute().boxed_local();
+        assert!((&mut execute_future).now_or_never().is_none());
+
+        runtime
+            .global
+            .broadcaster
+            .send(BroadcastMsg::MouseClick(
+                SpriteCoordinate { x: 0.0, y: 0.0 }.into(),
+            ))
+            .unwrap();
+
+        execute_future.await.unwrap();
     }
 }
