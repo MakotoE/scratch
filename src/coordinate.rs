@@ -3,7 +3,7 @@ use graphics::types::Rectangle;
 /// Center = 0, 0
 /// Left = -240, right = +240
 /// Top = +180, bottom = -180
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct SpriteCoordinate {
     pub x: f64,
     pub y: f64,
@@ -15,6 +15,19 @@ impl SpriteCoordinate {
             x: self.x + other.x,
             y: self.y + other.y,
         }
+    }
+
+    pub fn apply_vector(&self, direction: f64, magnitude: f64) -> Self {
+        Self {
+            x: self.x + direction.to_radians().sin() * magnitude,
+            y: self.y + direction.to_radians().cos() * magnitude,
+        }
+    }
+}
+
+impl PartialEq for SpriteCoordinate {
+    fn eq(&self, other: &Self) -> bool {
+        (self.x - other.x).abs() < f64::EPSILON && (self.y - other.y).abs() < f64::EPSILON
     }
 }
 
@@ -130,7 +143,52 @@ impl Into<Rectangle> for SpriteRectangle {
 mod tests {
     use super::*;
 
-    mod coordinate {
+    mod sprite_coordinate {
+        use super::*;
+        use std::f64::NAN;
+
+        #[test]
+        fn partial_eq() {
+            assert_eq!(SpriteCoordinate::default(), SpriteCoordinate::default());
+            assert_ne!(
+                SpriteCoordinate { x: NAN, y: NAN },
+                SpriteCoordinate { x: NAN, y: NAN }
+            );
+        }
+
+        #[test]
+        fn apply_vector() {
+            assert_eq!(
+                SpriteCoordinate::default().apply_vector(0.0, 0.0),
+                SpriteCoordinate { x: 0.0, y: 0.0 }
+            );
+            assert_eq!(
+                SpriteCoordinate::default().apply_vector(0.0, 1.0),
+                SpriteCoordinate { x: 0.0, y: 1.0 }
+            );
+            assert_eq!(
+                SpriteCoordinate::default().apply_vector(45.0, 1.0),
+                SpriteCoordinate {
+                    x: f64::sqrt(2.0) / 2.0,
+                    y: f64::sqrt(2.0) / 2.0
+                }
+            );
+            assert_eq!(
+                SpriteCoordinate::default().apply_vector(90.0, 1.0),
+                SpriteCoordinate { x: 1.0, y: 0.0 }
+            );
+            assert_eq!(
+                SpriteCoordinate::default().apply_vector(180.0, 1.0),
+                SpriteCoordinate { x: 0.0, y: -1.0 }
+            );
+            assert_eq!(
+                SpriteCoordinate::default().apply_vector(270.0, 1.0),
+                SpriteCoordinate { x: -1.0, y: 0.0 }
+            );
+        }
+    }
+
+    mod canvas_coordinate {
         use super::*;
 
         #[test]

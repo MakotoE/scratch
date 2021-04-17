@@ -23,7 +23,7 @@ pub struct SpriteRuntime {
     is_a_clone: bool,
     position: SpriteCoordinate,
     scale: Scale,
-    rotation: f64,
+    direction: f64,
     costumes: Costumes,
     /// 0.0 = transparent, 1.0 = opaque
     costume_transparency: f64,
@@ -46,7 +46,7 @@ impl SpriteRuntime {
                 y: target.y,
             },
             scale: Scale { x: scale, y: scale },
-            rotation: 90.0,
+            direction: 90.0,
             costumes: Costumes::default(),
             costume_transparency: 1.0,
             text: Text::default(),
@@ -88,7 +88,7 @@ impl SpriteRuntime {
                 &self.position.into(),
                 &self.scale,
                 self.costume_transparency,
-                self.rotation,
+                self.direction,
             );
         }
 
@@ -343,12 +343,13 @@ impl SpriteRuntime {
         }
     }
 
-    pub fn rotation(&self) -> f64 {
-        self.rotation
+    /// 0 = Up
+    pub fn direction(&self) -> f64 {
+        self.direction
     }
 
-    pub fn set_rotation(&mut self, rotation: f64) {
-        self.rotation = rotation;
+    pub fn set_direction(&mut self, direction: f64) {
+        self.direction = direction;
     }
 }
 

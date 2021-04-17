@@ -77,7 +77,7 @@ impl Block for MoveSteps {
     async fn execute(&mut self) -> Result<Next> {
         let steps: f64 = self.steps.value().await?.try_into()?;
         let mut runtime = self.runtime.sprite.write().await;
-        let position = runtime.center().add(&SpriteCoordinate { x: steps, y: 0.0 });
+        let position = runtime.center().apply_vector(runtime.direction(), steps);
         runtime.set_center(position);
         Next::continue_(self.next)
     }
@@ -476,7 +476,7 @@ impl Block for Direction {
     }
 
     async fn value(&self) -> Result<Value> {
-        Ok(Value::Number(self.runtime.sprite.read().await.rotation()))
+        Ok(Value::Number(self.runtime.sprite.read().await.direction()))
     }
 }
 
@@ -531,7 +531,7 @@ impl Block for PointInDirection {
 
     async fn execute(&mut self) -> Result<Next> {
         let direction: f64 = self.direction.value().await?.try_into()?;
-        self.runtime.sprite.write().await.set_rotation(direction);
+        self.runtime.sprite.write().await.set_direction(direction);
         Next::continue_(self.next)
     }
 }
@@ -757,7 +757,7 @@ mod test {
 
         assert_eq!(
             runtime.sprite.read().await.center(),
-            SpriteCoordinate { x: 2.0, y: 1.0 }
+            SpriteCoordinate { x: 1.0, y: 2.0 }
         );
     }
 
