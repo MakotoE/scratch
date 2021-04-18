@@ -98,7 +98,7 @@ pub async fn app(file_path: &Path) -> Result<()> {
                     return Ok(());
                 }
 
-                interface.input(input).await?
+                interface.input(input).await?;
             }
             event => {
                 if let Some(args) = event.render_args() {

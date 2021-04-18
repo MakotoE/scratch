@@ -12,7 +12,6 @@ mod blocks;
 mod broadcaster;
 mod coordinate;
 mod error;
-mod event_sender;
 mod file;
 mod fileviewer;
 mod interface;

@@ -1,16 +1,19 @@
 use super::*;
 use crate::blocks::BlockInfo;
 use crate::broadcaster::{BroadcastMsg, Broadcaster, Stop};
-use crate::coordinate::canvas_const;
+use crate::coordinate::{canvas_const, CanvasCoordinate};
 use crate::file::ScratchFile;
+use crate::interface::CANVAS_TOP_LEFT;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
 use crate::sprite_map::SpriteMap;
 use crate::sprite_runtime::{Costumes, SpriteRuntime};
+use conrod_core::input::Button;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use graphics::Context;
 use graphics_buffer::{buffer_glyphs_from_path, RenderBuffer};
+use input::{ButtonState, Input, Motion, MouseButton};
 use piston_window::{G2d, G2dTextureContext, Glyphs};
 use std::fmt::Debug;
 use tokio::select;
@@ -18,24 +21,23 @@ use tokio::sync::mpsc;
 
 #[derive(Debug)]
 pub struct VM {
-    control_sender: mpsc::Sender<Control>,
+    control_sender: mpsc::Sender<Control>, // TODO integrate control into Inputs
     broadcaster: Broadcaster,
     vm_task: JoinHandle<()>,
     sprites: Arc<SpriteMap>,
+    global: Arc<Global>,
 }
 
 impl VM {
     pub async fn new(
         texture_context: &mut G2dTextureContext,
         scratch_file: ScratchFile,
-        broadcaster: Broadcaster,
     ) -> Result<Self> {
         let (control_sender, control_receiver) = mpsc::channel(1);
 
         let global = Arc::new(Global::new(
             &scratch_file.project.targets[0].variables,
             &scratch_file.project.monitors,
-            broadcaster.clone(),
         ));
 
         let sprites = VM::sprites(texture_context, &scratch_file, global.clone()).await?;
@@ -48,7 +50,7 @@ impl VM {
 
         let vm_task = spawn({
             let mut control_receiver = control_receiver;
-            let broadcaster = broadcaster.clone();
+            let broadcaster = global.broadcaster.clone();
             let sprite_map = sprite_map.clone();
 
             async move {
@@ -65,9 +67,10 @@ impl VM {
 
         Ok(Self {
             control_sender,
-            broadcaster,
+            broadcaster: global.broadcaster.clone(),
             vm_task,
             sprites: sprite_map,
+            global,
         })
     }
 
@@ -246,6 +249,37 @@ impl VM {
         character_cache: &mut Glyphs,
     ) -> Result<()> {
         self.sprites.draw(context, graphics, character_cache).await
+    }
+
+    pub async fn input(&self, input: Input) -> Result<()> {
+        match input {
+            Input::Button(button) => match button.button {
+                Button::Keyboard(key) => self.global.inputs.set_key(key, button.state).await,
+                Button::Mouse(mouse) => {
+                    if matches!(mouse, MouseButton::Left)
+                        && matches!(button.state, ButtonState::Press)
+                    {
+                        self.global.broadcaster.send(BroadcastMsg::MouseClick(
+                            self.global.inputs.mouse_position().await,
+                        ))?;
+                    }
+                }
+                _ => {}
+            },
+            Input::Move(motion) => {
+                if let Motion::MouseCursor(position) = motion {
+                    self.global
+                        .inputs
+                        .set_mouse_position(CanvasCoordinate {
+                            x: position[0] - CANVAS_TOP_LEFT.x,
+                            y: position[1] - CANVAS_TOP_LEFT.y,
+                        })
+                        .await;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
     }
 }
 

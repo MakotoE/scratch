@@ -5,10 +5,12 @@ use crate::coordinate::CanvasCoordinate;
 use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
 use crate::vm::ThreadID;
+use async_lock::RwLockReadGuard;
 use graphics::character::CharacterCache;
 use graphics::types::FontSize;
 use graphics::{rectangle, text};
 use graphics::{Context, Transformed};
+use input::{ButtonState, Key};
 use piston_window::{G2d, Glyphs};
 
 #[derive(Debug, Clone, Default)]
@@ -40,17 +42,18 @@ impl Runtime {
 pub struct Global {
     pub variables: Variables,
     pub broadcaster: Broadcaster,
+    pub inputs: Inputs,
 }
 
 impl Global {
     pub fn new(
         scratch_file_variables: &HashMap<String, file::Variable>,
         monitors: &[Monitor],
-        broadcaster: Broadcaster,
     ) -> Self {
         Self {
             variables: Variables::new(scratch_file_variables, monitors),
-            broadcaster,
+            broadcaster: Broadcaster::default(),
+            inputs: Inputs::default(),
         }
     }
 
@@ -239,6 +242,33 @@ impl Variables {
     #[cfg(test)]
     pub async fn monitored(&self, key: &str) -> bool {
         self.variables.read().await.get(key).unwrap().monitored
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Inputs {
+    keys: RwLock<HashSet<Key>>,
+    mouse_position: RwLock<CanvasCoordinate>,
+}
+
+impl Inputs {
+    pub async fn keys(&self) -> RwLockReadGuard<'_, HashSet<Key>> {
+        self.keys.read().await
+    }
+
+    pub async fn mouse_position(&self) -> CanvasCoordinate {
+        *self.mouse_position.read().await
+    }
+
+    pub async fn set_key(&self, key: Key, button_state: ButtonState) {
+        match button_state {
+            ButtonState::Press => self.keys.write().await.insert(key),
+            ButtonState::Release => self.keys.write().await.remove(&key),
+        };
+    }
+
+    pub async fn set_mouse_position(&self, mouse_position: CanvasCoordinate) {
+        *self.mouse_position.write().await = mouse_position;
     }
 }
 

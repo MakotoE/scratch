@@ -591,18 +591,7 @@ impl Block for GoTo {
         let option: GoToOption = self.option.value().await?.try_into()?;
         let new_coordinate = match option {
             GoToOption::RandomPosition => self.rng.next().unwrap(),
-            GoToOption::MousePointer => {
-                self.runtime
-                    .global
-                    .broadcaster
-                    .send(BroadcastMsg::RequestMousePosition)?;
-                let mut channel = self.runtime.global.broadcaster.subscribe();
-                loop {
-                    if let BroadcastMsg::MousePosition(position) = channel.recv().await? {
-                        break position.into();
-                    }
-                }
-            }
+            GoToOption::MousePointer => self.runtime.global.inputs.mouse_position().await.into(),
             GoToOption::Sprite(id) => {
                 self.runtime
                     .global
@@ -874,26 +863,13 @@ mod test {
             let mut go_to = GoTo::new(gen.get_id(), runtime.clone());
             go_to.set_input("TO", Box::new(menu));
 
-            let mut receiver = runtime.global.broadcaster.subscribe();
-            let task = spawn(async move { go_to.execute().await.unwrap() });
-
-            // Block requests mouse position
-            assert_eq!(
-                receiver.recv().await.unwrap(),
-                BroadcastMsg::RequestMousePosition
-            );
-
-            // Send mouse position
             runtime
                 .global
-                .broadcaster
-                .send(BroadcastMsg::MousePosition(CanvasCoordinate {
-                    x: 1.0,
-                    y: 1.0,
-                }))
-                .unwrap();
+                .inputs
+                .set_mouse_position(CanvasCoordinate { x: 1.0, y: 1.0 })
+                .await;
 
-            task.await.unwrap();
+            go_to.execute().await.unwrap();
 
             assert_eq!(
                 runtime.sprite.read().await.center(),

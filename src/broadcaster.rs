@@ -5,7 +5,6 @@ use crate::file::BlockID;
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
 use graphics_buffer::RenderBuffer;
-use input::Key;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 #[derive(Debug, Clone)]
@@ -44,10 +43,6 @@ pub enum BroadcastMsg {
         action: LayerChange,
     },
     MouseClick(CanvasCoordinate),
-    RequestMousePosition,
-    MousePosition(CanvasCoordinate),
-    RequestPressedKeys,
-    PressedKeys(HashSet<Key>),
     RequestSpriteRectangle(SpriteID),
     SpriteRectangle {
         sprite: SpriteID,

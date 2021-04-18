@@ -1,8 +1,6 @@
 use super::*;
 use crate::app::WINDOW_SIZE;
-use crate::broadcaster::Broadcaster;
 use crate::coordinate::{canvas_const, CanvasCoordinate};
-use crate::event_sender::EventSender;
 use crate::file::ScratchFile;
 use crate::vm::VM;
 use conrod_core::image::Id;
@@ -21,7 +19,6 @@ pub struct Interface {
     stop_image: Id,
     vm: VM,
     pause_state: PauseState,
-    event_sender: EventSender,
 }
 
 widget_ids! {
@@ -47,15 +44,13 @@ impl Interface {
         green_flag_image: Id,
         stop_image: Id,
     ) -> Result<Self> {
-        let broadcaster = Broadcaster::default();
-        let vm = VM::new(texture_context, scratch_file, broadcaster.clone()).await?;
+        let vm = VM::new(texture_context, scratch_file).await?;
         Ok(Self {
             ids,
             green_flag_image,
             stop_image,
             vm,
             pause_state: PauseState::Paused,
-            event_sender: EventSender::new(broadcaster),
         })
     }
 
@@ -148,7 +143,7 @@ impl Interface {
     }
 
     pub async fn input(&mut self, input: Input) -> Result<()> {
-        self.event_sender.input(input).await
+        self.vm.input(input).await
     }
 }
 

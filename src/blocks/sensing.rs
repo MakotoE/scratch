@@ -107,20 +107,13 @@ impl Block for KeyPressed {
 
     async fn value(&self) -> Result<Value> {
         let key_option: KeyOption = self.key_option.value().await?.try_into()?;
-        self.runtime
-            .global
-            .broadcaster
-            .send(BroadcastMsg::RequestPressedKeys)?;
-        let mut receiver = self.runtime.global.broadcaster.subscribe();
-        loop {
-            if let BroadcastMsg::PressedKeys(keys) = receiver.recv().await? {
-                return Ok(match key_option {
-                    KeyOption::Any => !keys.is_empty(),
-                    KeyOption::Key(key) => keys.contains(&key),
-                }
-                .into());
-            }
+        let keys = self.runtime.global.inputs.keys().await;
+
+        Ok(match key_option {
+            KeyOption::Any => !keys.is_empty(),
+            KeyOption::Key(key) => keys.contains(&key),
         }
+        .into())
     }
 }
 
@@ -457,18 +450,9 @@ impl Block for TouchingObject {
         let result = match option {
             TouchingObjectOption::MousePointer => {
                 sleep(Duration::from_secs(0)).await; // Prevents unresponsiveness
-                self.runtime
-                    .global
-                    .broadcaster
-                    .send(BroadcastMsg::RequestMousePosition)?;
-
                 let canvas_rectangle: Rectangle = sprite_rectangle.into();
-                let mut channel = self.runtime.global.broadcaster.subscribe();
-                loop {
-                    if let BroadcastMsg::MousePosition(position) = channel.recv().await? {
-                        break TouchingObject::rectangle_contains(&canvas_rectangle, &position);
-                    }
-                }
+                let position = self.runtime.global.inputs.mouse_position().await;
+                TouchingObject::rectangle_contains(&canvas_rectangle, &position)
             }
             TouchingObjectOption::Edge => TouchingObject::sprite_on_edge(&sprite_rectangle.into()),
             TouchingObjectOption::Sprite(id) => {
