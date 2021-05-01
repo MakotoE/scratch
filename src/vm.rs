@@ -266,16 +266,14 @@ impl VM {
                 }
                 _ => {}
             },
-            Input::Move(motion) => {
-                if let Motion::MouseCursor(position) = motion {
-                    self.global
-                        .inputs
-                        .set_mouse_position(CanvasCoordinate {
-                            x: position[0] - CANVAS_TOP_LEFT.x,
-                            y: position[1] - CANVAS_TOP_LEFT.y,
-                        })
-                        .await;
-                }
+            Input::Move(Motion::MouseCursor(position)) => {
+                self.global
+                    .inputs
+                    .set_mouse_position(CanvasCoordinate {
+                        x: position[0] - CANVAS_TOP_LEFT.x,
+                        y: position[1] - CANVAS_TOP_LEFT.y,
+                    })
+                    .await;
             }
             _ => {}
         }

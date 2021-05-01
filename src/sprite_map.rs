@@ -203,7 +203,7 @@ impl SpriteMap {
     ) -> Result<Sprite> {
         for group in sprite_groups {
             if let Some(sprite) = group.read().await.get(sprite_id) {
-                return Ok(sprite.clone_sprite(new_sprite_id).await?);
+                return sprite.clone_sprite(new_sprite_id).await;
             }
         }
         Err(Error::msg("sprite_id does not exist"))

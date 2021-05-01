@@ -316,26 +316,24 @@ mod tests {
             let variables = Variables::default();
             assert!(variables.set_monitored("key", true).await.is_err());
             variables.set("key", Value::Number(0.0)).await;
-            assert_eq!(
-                variables
+            assert!(
+                !variables
                     .variables
                     .read()
                     .await
                     .get("key")
                     .unwrap()
-                    .monitored,
-                false
+                    .monitored
             );
             variables.set_monitored("key", true).await.unwrap();
-            assert_eq!(
+            assert!(
                 variables
                     .variables
                     .read()
                     .await
                     .get("key")
                     .unwrap()
-                    .monitored,
-                true
+                    .monitored
             );
         }
     }

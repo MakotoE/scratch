@@ -149,11 +149,7 @@ impl BlockInputsPartial {
             stacks: stacks
                 .drain(..)
                 .filter_map(|(id, &b)| {
-                    if let Some(block_id) = b {
-                        Some((id, block_id))
-                    } else {
-                        None
-                    }
+                    b.map(|block_id| (id, block_id))
                 })
                 .collect(),
         }

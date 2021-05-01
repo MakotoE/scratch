@@ -132,6 +132,7 @@ impl SpriteRectangle {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Rectangle> for SpriteRectangle {
     fn into(self) -> Rectangle {
         let top_left: CanvasCoordinate = self.top_left().into();
@@ -145,14 +146,21 @@ mod tests {
 
     mod sprite_coordinate {
         use super::*;
-        use std::f64::NAN;
+        
 
         #[test]
+        #[allow(clippy::eq_op)]
         fn partial_eq() {
             assert_eq!(SpriteCoordinate::default(), SpriteCoordinate::default());
             assert_ne!(
-                SpriteCoordinate { x: NAN, y: NAN },
-                SpriteCoordinate { x: NAN, y: NAN }
+                SpriteCoordinate {
+                    x: f64::NAN,
+                    y: f64::NAN
+                },
+                SpriteCoordinate {
+                    x: f64::NAN,
+                    y: f64::NAN
+                }
             );
         }
 
