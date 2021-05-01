@@ -132,7 +132,6 @@ impl SpriteRectangle {
     }
 }
 
-#[allow(clippy::from_over_into)]
 impl Into<Rectangle> for SpriteRectangle {
     fn into(self) -> Rectangle {
         let top_left: CanvasCoordinate = self.top_left().into();
@@ -146,7 +145,6 @@ mod tests {
 
     mod sprite_coordinate {
         use super::*;
-        
 
         #[test]
         #[allow(clippy::eq_op)]

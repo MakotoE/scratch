@@ -1,5 +1,6 @@
 #![feature(async_closure)]
 #![feature(maybe_uninit_uninit_array)]
+#![feature(str_split_once)]
 
 #[macro_use]
 extern crate conrod_core;

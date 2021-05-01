@@ -18,25 +18,25 @@ futures = "0.3"
 hex = "0.4"
 rand = { version = "0.8", features = ["small_rng"] }
 strum = { version = "0.20", features = ["derive"] }
-conrod_core = "0.71"
-piston2d-graphics = "0.37"
-conrod_piston = "0.71"
-piston_window = "0.113"
+conrod_core = "0.72"
+piston2d-graphics = "0.37" # conrod_piston requires 0.37
+conrod_piston = "0.72"
+piston_window = "0.114" # piston_window 0.114 depends on piston2d-graphics 0.37
+piston-gfx_texture = "0.41"
+piston2d-gfx_graphics = "0.70" # piston_window 0.114 requires piston2d-gfx_graphics 0.70
+pistoncore-input = "1.0"
 flo_curves = "0.4"
 usvg = "0.14"
 tiny-skia = "0.5"
 resvg = "0.14"
 image = { version = "0.23", default-features = false, features = ["png"] }
-gfx_device_gl = "0.16.2"
-piston-gfx_texture = "0.41.0"
+gfx_device_gl = "0.16"
 anyhow = "1.0"
 thiserror = "1.0"
 env_logger = { version = "0.8", default-features = false, features = ["termcolor", "atty", "humantime"] }
 clap = "3.0.0-beta.2"
-piston2d-gfx_graphics = "0.70"
 colored = "2.0"
 rstest = "0.7"
-pistoncore-input = "1.0"
 gfx_core = "0.9.2"
 graphics_buffer = { version = "0.7", git = "https://github.com/MakotoE/graphics_buffer" }
 itertools = "0.10"
