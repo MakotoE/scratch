@@ -18,7 +18,7 @@ futures = "0.3"
 rand = { version = "0.8", features = ["small_rng"] }
 strum = { version = "0.20", features = ["derive"] }
 conrod_core = "0.72"
-piston2d-graphics = "0.37" # conrod_piston requires 0.37
+piston2d-graphics = "0.37" # conrod_piston 0.72 requires piston2d-graphics 0.37
 conrod_piston = "0.72"
 piston_window = "0.114" # piston_window 0.114 depends on piston2d-graphics 0.37
 piston-gfx_texture = "0.41"
