@@ -1,4 +1,5 @@
-use super::*;
+use anyhow::{Error, Result};
+use lazy_static::lazy_static;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
@@ -6,6 +7,9 @@ use std::collections::hash_map::DefaultHasher;
 use std::convert::{TryFrom, TryInto};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
+
+pub type HashMap<K, V> = std::collections::HashMap<K, V, fnv::FnvBuildHasher>;
+pub type HashSet<V> = std::collections::HashSet<V, fnv::FnvBuildHasher>;
 
 /// https://en.scratch-wiki.info/wiki/Scratch_File_Format
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -310,6 +314,10 @@ lazy_static! {
 }
 
 impl BlockID {
+    pub fn new(id: [u8; 20]) -> Self {
+        Self { id }
+    }
+
     /// Indicates that the block that did not come from the .sb3 file, such as ValueNumber.
     pub fn pseudo_id() -> BlockID {
         *PSEUDO_ID
@@ -380,34 +388,6 @@ impl<'de> Deserialize<'de> for BlockID {
         }
 
         deserializer.deserialize_str(BytesVisitor)
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct BlockIDGenerator {
-    index: usize,
-}
-
-#[cfg(test)]
-impl BlockIDGenerator {
-    pub fn new() -> Self {
-        Self { index: 0 }
-    }
-
-    pub fn get_id(&mut self) -> BlockID {
-        use std::iter::repeat;
-
-        let vec: Vec<u8> = self
-            .index
-            .to_string()
-            .bytes()
-            .chain(repeat(b' '))
-            .take(20)
-            .collect();
-        let mut id = BlockID { id: [0; 20] };
-        id.id.copy_from_slice(vec.as_slice());
-        self.index += 1;
-        id
     }
 }
 

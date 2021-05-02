@@ -2,7 +2,6 @@ use super::*;
 use crate::blocks::BlockInfo;
 use crate::broadcaster::LayerChange;
 use crate::coordinate::SpriteRectangle;
-use crate::file::Target;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
 use crate::thread::StepStatus;

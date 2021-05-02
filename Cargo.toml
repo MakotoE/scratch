@@ -5,10 +5,14 @@ authors = ["Makoto"]
 edition = "2018"
 license  = "GPL-3.0-or-later"
 
+[workspace]
+members = [
+    "file"
+]
+
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-zip = { version = "0.5", default-features = false, features = ["deflate"] }
 log = { version = "0.4", default-features = false, features = ["release_max_level_info"]}
 async-trait = "0.1"
 palette = "0.5"
@@ -41,3 +45,4 @@ graphics_buffer = { version = "0.7", git = "https://github.com/MakotoE/graphics_
 itertools = "0.10"
 async-lock = "2.3"
 fnv = "1.0"
+file = { path = "file" }

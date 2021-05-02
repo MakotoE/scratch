@@ -1,6 +1,5 @@
 use super::*;
 use crate::blocks::{Block, BlockInfo, BlockInputsPartial, Next};
-use crate::file::BlockID;
 
 #[derive(Debug)]
 pub struct Thread {
@@ -120,10 +119,9 @@ mod test {
 
     mod thread {
         use super::*;
-        use crate::blocks::block_map;
         use crate::blocks::test::{BlockStub, BlockStubMsg};
+        use crate::blocks::{block_map, BlockIDGenerator};
         use crate::broadcaster::BroadcastMsg;
-        use crate::file::BlockIDGenerator;
         use crate::runtime::Runtime;
 
         #[tokio::test]

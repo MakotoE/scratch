@@ -275,7 +275,6 @@ impl Block for ShowVariable {
 mod tests {
     use super::*;
     use crate::blocks::value::ValueNumber;
-    use crate::file::BlockIDGenerator;
 
     const KEY: &str = "key";
 

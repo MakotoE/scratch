@@ -2,7 +2,6 @@ use super::*;
 use crate::blocks::value::Value;
 use crate::broadcaster::Broadcaster;
 use crate::coordinate::CanvasCoordinate;
-use crate::file::Monitor;
 use crate::sprite_runtime::SpriteRuntime;
 use crate::vm::ThreadID;
 use async_lock::RwLockReadGuard;

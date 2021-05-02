@@ -1,7 +1,6 @@
 use super::*;
 use crate::blocks::*;
 use crate::coordinate::SpriteRectangle;
-use crate::file::BlockID;
 use crate::runtime::{Global, Runtime};
 use crate::sprite_runtime::{Costumes, GraphicsCostumeTexture, SpriteRuntime};
 use crate::thread::{BlockInputs, StepStatus, Thread};

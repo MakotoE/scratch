@@ -1,5 +1,4 @@
 use super::*;
-use crate::file::ScratchFile;
 use crate::interface::Interface;
 use conrod_core::text::GlyphCache;
 use conrod_core::Theme;

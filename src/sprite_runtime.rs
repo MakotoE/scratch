@@ -1,6 +1,5 @@
 use super::*;
 use crate::coordinate::{CanvasCoordinate, Scale, Size, SpriteCoordinate, SpriteRectangle};
-use crate::file::{BlockID, Image, Target};
 use crate::pen::Pen;
 use flo_curves::{bezier, BezierCurve, Coord2};
 use gfx_device_gl::Resources;

@@ -1,7 +1,6 @@
 use super::*;
 use crate::blocks::test::BlockStubMsg;
 use crate::coordinate::{CanvasCoordinate, SpriteRectangle};
-use crate::file::BlockID;
 use crate::sprite::SpriteID;
 use crate::vm::ThreadID;
 use graphics_buffer::RenderBuffer;

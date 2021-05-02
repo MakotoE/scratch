@@ -517,6 +517,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7531096570974c3a9dcf9e4b8e1cede1ec26cf5046219fb3b9d897503b9be59"
 
 [[package]]
+name = "file"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fnv",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "zip",
+]
+
+[[package]]
 name = "fixedbitset"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2005,6 +2018,7 @@ dependencies = [
  "conrod_core",
  "conrod_piston",
  "env_logger",
+ "file",
  "flo_curves",
  "fnv",
  "futures",
@@ -2031,7 +2045,6 @@ dependencies = [
  "tiny-skia",
  "tokio",
  "usvg",
- "zip",
 ]
 
 [[package]]

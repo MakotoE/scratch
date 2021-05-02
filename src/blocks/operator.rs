@@ -552,7 +552,9 @@ impl Block for Random {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {
+        // TODO
+    }
 }
 
 #[derive(Debug)]

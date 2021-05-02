@@ -716,7 +716,6 @@ mod tests {
     use super::*;
     use crate::blocks::test::{BlockStub, BlockStubMsg};
     use crate::blocks::value::{ValueBool, ValueNumber};
-    use crate::file::BlockIDGenerator;
     use crate::runtime::Global;
     use crate::sprite::SpriteID;
     use crate::sprite_runtime::SpriteRuntime;

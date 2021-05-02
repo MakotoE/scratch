@@ -728,7 +728,6 @@ mod test {
     use super::*;
     use crate::blocks::value::ValueNumber;
     use crate::coordinate::{CanvasCoordinate, Size, SpriteRectangle};
-    use crate::file::BlockIDGenerator;
 
     #[tokio::test]
     async fn move_steps() {

@@ -10,7 +10,6 @@ mod blocks;
 mod broadcaster;
 mod coordinate;
 mod error;
-mod file;
 mod fileviewer;
 mod interface;
 mod pen;
@@ -24,17 +23,17 @@ mod vm;
 use anyhow::{Error, Result};
 use async_lock::RwLock;
 use error::*;
-use lazy_static::lazy_static;
+use file::{BlockID, Image, Monitor, ScratchFile, Target};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use tokio::spawn;
 use tokio::task::JoinHandle;
 
-pub type HashMap<K, V> = std::collections::HashMap<K, V, fnv::FnvBuildHasher>;
-pub type HashSet<V> = std::collections::HashSet<V, fnv::FnvBuildHasher>;
-
 #[cfg(test)]
 use rstest::rstest;
+
+pub type HashMap<K, V> = std::collections::HashMap<K, V, fnv::FnvBuildHasher>;
+pub type HashSet<V> = std::collections::HashSet<V, fnv::FnvBuildHasher>;
 
 #[derive(clap::Clap)]
 #[clap(name = "scratch")]

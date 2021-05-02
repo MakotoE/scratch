@@ -1,5 +1,4 @@
 use super::*;
-use crate::file::BlockID;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ScratchError {

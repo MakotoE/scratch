@@ -1,7 +1,6 @@
 use super::*;
 use crate::app::WINDOW_SIZE;
 use crate::coordinate::{canvas_const, CanvasCoordinate};
-use crate::file::ScratchFile;
 use crate::vm::VM;
 use conrod_core::image::Id;
 use conrod_core::position::Relative;

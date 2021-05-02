@@ -12,7 +12,6 @@ pub mod value;
 
 use super::*;
 use crate::blocks::value::value_block_from_input_arr;
-use crate::file::BlockID;
 use crate::runtime::Runtime;
 use async_trait::async_trait;
 use std::convert::TryInto;
@@ -148,9 +147,7 @@ impl BlockInputsPartial {
                 .collect(),
             stacks: stacks
                 .drain(..)
-                .filter_map(|(id, &b)| {
-                    b.map(|block_id| (id, block_id))
-                })
+                .filter_map(|(id, &b)| b.map(|block_id| (id, block_id)))
                 .collect(),
         }
     }
@@ -317,4 +314,32 @@ pub fn get_field_value(field: &[Option<String>], index: usize) -> Result<&str> {
 #[cfg(test)]
 pub fn block_map(mut blocks: Vec<(BlockID, Box<dyn Block>)>) -> HashMap<BlockID, Box<dyn Block>> {
     blocks.drain(..).collect()
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct BlockIDGenerator {
+    index: usize,
+}
+
+#[cfg(test)]
+impl BlockIDGenerator {
+    pub fn new() -> Self {
+        Self { index: 0 }
+    }
+
+    pub fn get_id(&mut self) -> BlockID {
+        use std::iter::repeat;
+
+        let vec: Vec<u8> = self
+            .index
+            .to_string()
+            .bytes()
+            .chain(repeat(b' '))
+            .take(20)
+            .collect();
+        let mut id = [0; 20];
+        id.copy_from_slice(vec.as_slice());
+        self.index += 1;
+        BlockID::new(id)
+    }
 }

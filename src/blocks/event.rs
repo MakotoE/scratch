@@ -328,7 +328,6 @@ mod test {
     use crate::blocks::test::{BlockStub, BlockStubMsg};
     use crate::blocks::value::ValueString;
     use crate::coordinate::SpriteCoordinate;
-    use crate::file::BlockIDGenerator;
     use crate::thread::{StepStatus, Thread};
     use futures::future::FutureExt;
 

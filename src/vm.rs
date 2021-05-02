@@ -2,7 +2,6 @@ use super::*;
 use crate::blocks::BlockInfo;
 use crate::broadcaster::{BroadcastMsg, Broadcaster, Stop};
 use crate::coordinate::{canvas_const, CanvasCoordinate};
-use crate::file::ScratchFile;
 use crate::interface::CANVAS_TOP_LEFT;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};

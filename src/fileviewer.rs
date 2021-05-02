@@ -1,5 +1,4 @@
 use super::*;
-use crate::file::ScratchFile;
 use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
 use crate::sprite_runtime::SpriteRuntime;
@@ -104,7 +103,6 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::file::ScratchFile;
     use std::io::Cursor;
 
     #[tokio::test]
