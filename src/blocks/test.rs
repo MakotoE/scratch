@@ -50,7 +50,7 @@ impl Block for BlockStub {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         match &self.return_value {
             Some(return_value) => Ok(return_value.read().await.clone()),
             None => Err(Error::msg("unexpected value() call")),

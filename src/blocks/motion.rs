@@ -411,7 +411,7 @@ impl Block for XPosition {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let runtime = self.runtime.sprite.read().await;
         Ok(runtime.rectangle().center.x.into())
     }
@@ -444,7 +444,7 @@ impl Block for YPosition {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let runtime = self.runtime.sprite.read().await;
         Ok(runtime.rectangle().center.y.into())
     }
@@ -475,7 +475,7 @@ impl Block for Direction {
         BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::Number(self.runtime.sprite.read().await.direction()))
     }
 }
@@ -687,7 +687,7 @@ impl Block for GoToMenu {
         Ok(())
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::GoToOption(self.option))
     }
 }

@@ -739,7 +739,7 @@ impl Block for Costume {
         Ok(())
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(self.name.clone().into())
     }
 }
@@ -845,7 +845,7 @@ impl Block for Backdrops {
         Ok(())
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(self.backdrop.clone().into())
     }
 }

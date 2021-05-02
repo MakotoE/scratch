@@ -45,7 +45,7 @@ impl Block for Variable {
 
     fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         self.runtime.global.variables.get(&self.id).await
     }
 }
@@ -106,7 +106,7 @@ impl Block for ValueNumber {
         )
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::Number(self.number))
     }
 }
@@ -140,7 +140,7 @@ impl Block for ValueString {
         )
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::String(self.string.clone()))
     }
 }
@@ -176,7 +176,7 @@ impl Block for ValueColor {
         )
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::Color(self.color))
     }
 }
@@ -211,7 +211,7 @@ impl Block for ValueBool {
         )
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::Bool(self.value))
     }
 }

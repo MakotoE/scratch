@@ -64,7 +64,7 @@ impl Block for Equals {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let a = self.operand1.value().await?;
         let b = self.operand2.value().await?;
         Ok((a == b).into())
@@ -114,7 +114,7 @@ impl Block for Add {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let a: f64 = self.num1.value().await?.try_into()?;
         let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a + b).into())
@@ -164,7 +164,7 @@ impl Block for Subtract {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let a: f64 = self.num1.value().await?.try_into()?;
         let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a - b).into())
@@ -214,7 +214,7 @@ impl Block for Multiply {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let a: f64 = self.num1.value().await?.try_into()?;
         let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a * b).into())
@@ -264,7 +264,7 @@ impl Block for Divide {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let a: f64 = self.num1.value().await?.try_into()?;
         let b: f64 = self.num2.value().await?.try_into()?;
         Ok((a / b).into())
@@ -317,7 +317,7 @@ impl Block for And {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let left: bool = self.operand1.value().await?.try_into()?;
         let right: bool = self.operand2.value().await?.try_into()?;
         Ok((left && right).into())
@@ -370,7 +370,7 @@ impl Block for Or {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let left: bool = self.operand1.value().await?.try_into()?;
         let right: bool = self.operand2.value().await?.try_into()?;
         Ok((left || right).into())
@@ -416,7 +416,7 @@ impl Block for Not {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let operand: bool = self.operand.value().await?.try_into()?;
         Ok((!operand).into())
     }
@@ -468,7 +468,7 @@ impl Block for LessThan {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let left: f64 = self.operand1.value().await?.try_into()?;
         let right: f64 = self.operand2.value().await?.try_into()?;
         Ok((left < right).into())
@@ -521,7 +521,7 @@ impl Block for GreaterThan {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let left: f64 = self.operand1.value().await?.try_into()?;
         let right: f64 = self.operand2.value().await?.try_into()?;
         Ok((left > right).into())
@@ -603,7 +603,7 @@ impl Block for Join {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let value1 = self.string1.value().await?;
         let value2 = self.string2.value().await?;
         Ok(format!("{} {}", value1, value2).into())

@@ -83,7 +83,7 @@ pub trait Block: std::fmt::Debug + Sync + Send {
         Ok(())
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Err(Error::msg("this block does not return a value"))
     }
 
@@ -272,7 +272,7 @@ impl Block for EmptyInput {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Err(Error::msg("input is unconnected"))
     }
 }
@@ -298,7 +298,7 @@ impl Block for EmptyFalse {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(true.into())
     }
 }

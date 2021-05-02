@@ -105,7 +105,7 @@ impl Block for KeyPressed {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let key_option: KeyOption = self.key_option.value().await?.try_into()?;
         let keys = self.runtime.global.inputs.keys().await;
 
@@ -157,7 +157,7 @@ impl Block for KeyOptions {
         Ok(())
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::KeyOption(self.key))
     }
 }
@@ -234,7 +234,7 @@ impl Block for ColorIsTouchingColor {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let sprite_color = srgb_to_rgba(self.sprite_color.value().await?.try_into()?);
         let canvas_color = srgb_to_rgba(self.canvas_color.value().await?.try_into()?);
 
@@ -329,7 +329,7 @@ impl Block for TouchingColor {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let sprite_image = {
             let mut render_buffer =
                 RenderBuffer::new(canvas_const::X_MAX as u32, canvas_const::Y_MAX as u32);
@@ -442,7 +442,7 @@ impl Block for TouchingObject {
         }
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         let option: TouchingObjectOption = self.menu.value().await?.try_into()?;
 
         let sprite_rectangle = self.runtime.sprite.read().await.rectangle();
@@ -517,7 +517,7 @@ impl Block for TouchingObjectMenu {
         Ok(())
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         Ok(Value::TouchingObjectOption(self.option))
     }
 }

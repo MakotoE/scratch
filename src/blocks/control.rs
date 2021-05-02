@@ -706,7 +706,7 @@ impl Block for CreateCloneOfMenu {
         Ok(())
     }
 
-    async fn value(&self) -> Result<Value> {
+    async fn value(&mut self) -> Result<Value> {
         unimplemented!()
     }
 }
