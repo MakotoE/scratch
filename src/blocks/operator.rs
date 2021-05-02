@@ -558,11 +558,17 @@ impl Block for Random {
 #[derive(Debug)]
 pub struct Join {
     id: BlockID,
+    string1: Box<dyn Block>,
+    string2: Box<dyn Block>,
 }
 
 impl Join {
     pub fn new(id: BlockID) -> Self {
-        Self { id }
+        Self {
+            id,
+            string1: Box::new(EmptyInput {}),
+            string2: Box::new(EmptyInput {}),
+        }
     }
 }
 
@@ -576,16 +582,36 @@ impl Block for Join {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![
+                ("STRING1", self.string1.as_ref()),
+                ("STRING2", self.string2.as_ref()),
+            ],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {}
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "STRING1" => self.string1 = block,
+            "STRING2" => self.string2 = block,
+            _ => {}
+        }
+    }
+
+    async fn value(&self) -> Result<Value> {
+        let value1 = self.string1.value().await?;
+        let value2 = self.string2.value().await?;
+        Ok(format!("{} {}", value1, value2).into())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::blocks::value::{ValueBool, ValueNumber};
+    use crate::blocks::value::{ValueBool, ValueNumber, ValueString};
 
     #[rstest]
     #[case(0.0, 0.0, true)]
@@ -703,5 +729,21 @@ mod tests {
         greater_than.set_input("OPERAND1", operand1);
         greater_than.set_input("OPERAND2", operand2);
         assert_eq!(greater_than.value().await.unwrap(), Value::Bool(expected));
+    }
+
+    #[rstest]
+    #[case("", "", " ")]
+    #[case("a", "b", "a b")]
+    #[tokio::test]
+    async fn join(#[case] str1: &str, #[case] str2: &str, #[case] expected: &str) {
+        let string1 = Box::new(ValueString::new(str1.to_string()));
+        let string2 = Box::new(ValueString::new(str2.to_string()));
+        let mut join = Join::new(BlockID::default());
+        join.set_input("STRING1", string1);
+        join.set_input("STRING2", string2);
+        assert_eq!(
+            join.value().await.unwrap(),
+            Value::String(expected.to_string())
+        );
     }
 }
