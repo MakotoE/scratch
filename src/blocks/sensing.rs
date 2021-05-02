@@ -196,8 +196,8 @@ impl ColorIsTouchingColor {
         any(
             zip_eq(canvas_image.pixels(), sprite_image.pixels()),
             |(canvas_pixel, sprite_pixel)| {
-                let mut canvas_pixel_blended = *canvas_pixel;
-                canvas_pixel_blended.blend(&Rgba::from_channels(255, 255, 255, 255));
+                let mut canvas_pixel_blended = Rgba::from_channels(255, 255, 255, 255);
+                canvas_pixel_blended.blend(&canvas_pixel);
                 colors_approximately_equal(sprite_pixel, sprite_color)
                     && colors_approximately_equal(&canvas_pixel_blended, canvas_color)
             },
