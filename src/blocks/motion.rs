@@ -817,10 +817,10 @@ mod test {
             .set_center(SpriteCoordinate { x: 1.0, y: 2.0 });
 
         let mut gen = BlockIDGenerator::new();
-        let x_position = XPosition::new(gen.get_id(), runtime.clone());
+        let mut x_position = XPosition::new(gen.get_id(), runtime.clone());
         assert_eq!(x_position.value().await.unwrap(), Value::Number(1.0));
 
-        let y_position = YPosition::new(gen.get_id(), runtime.clone());
+        let mut y_position = YPosition::new(gen.get_id(), runtime.clone());
         assert_eq!(y_position.value().await.unwrap(), Value::Number(2.0));
     }
 
@@ -835,7 +835,7 @@ mod test {
         point_in_direction.set_input("DIRECTION", Box::new(ValueNumber::new(rotation)));
         point_in_direction.execute().await.unwrap();
 
-        let direction = Direction::new(gen.get_id(), runtime.clone());
+        let mut direction = Direction::new(gen.get_id(), runtime.clone());
         assert_eq!(direction.value().await.unwrap(), Value::Number(rotation));
     }
 

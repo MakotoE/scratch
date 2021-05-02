@@ -20,7 +20,7 @@ use tokio::sync::mpsc;
 
 #[derive(Debug)]
 pub struct VM {
-    control_sender: mpsc::Sender<Control>, // TODO integrate control into Inputs
+    control_sender: mpsc::Sender<Control>,
     broadcaster: Broadcaster,
     vm_task: JoinHandle<()>,
     sprites: Arc<SpriteMap>,

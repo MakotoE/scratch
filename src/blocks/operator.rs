@@ -1,4 +1,7 @@
 use super::*;
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
+use std::mem::swap;
 
 pub fn get_block(name: &str, id: BlockID, _runtime: Runtime) -> Result<Box<dyn Block>> {
     Ok(match name {
@@ -531,11 +534,19 @@ impl Block for GreaterThan {
 #[derive(Debug)]
 pub struct Random {
     id: BlockID,
+    from: Box<dyn Block>,
+    to: Box<dyn Block>,
+    rng: SmallRng,
 }
 
 impl Random {
     pub fn new(id: BlockID) -> Self {
-        Self { id }
+        Self {
+            id,
+            from: Box::new(EmptyInput),
+            to: Box::new(EmptyInput),
+            rng: SmallRng::from_entropy(),
+        }
     }
 }
 
@@ -549,11 +560,41 @@ impl Block for Random {
     }
 
     fn block_inputs(&self) -> BlockInputsPartial {
-        BlockInputsPartial::new(self.block_info(), vec![], vec![], vec![])
+        BlockInputsPartial::new(
+            self.block_info(),
+            vec![],
+            vec![("FROM", self.from.as_ref()), ("TO", self.to.as_ref())],
+            vec![],
+        )
     }
 
-    fn set_input(&mut self, _: &str, _: Box<dyn Block>) {
-        // TODO
+    fn set_input(&mut self, key: &str, block: Box<dyn Block>) {
+        match key {
+            "FROM" => self.from = block,
+            "TO" => self.to = block,
+            _ => {}
+        }
+    }
+
+    async fn value(&mut self) -> Result<Value> {
+        let mut from = {
+            let from_f: f64 = self.from.value().await?.try_into()?;
+            from_f as i64
+        };
+        let mut to = {
+            let to_f: f64 = self.to.value().await?.try_into()?;
+            to_f as i64
+        };
+
+        // gen_range() fails if from == to
+        if from == to {
+            return Ok(Value::Number(0.0));
+        }
+
+        if from > to {
+            swap(&mut from, &mut to);
+        }
+        Ok(Value::Number(self.rng.gen_range(from..to) as f64))
     }
 }
 
@@ -731,6 +772,20 @@ mod tests {
         greater_than.set_input("OPERAND1", operand1);
         greater_than.set_input("OPERAND2", operand2);
         assert_eq!(greater_than.value().await.unwrap(), Value::Bool(expected));
+    }
+
+    #[tokio::test]
+    async fn random() {
+        let mut random = Random::new(BlockID::default());
+        random.set_input("FROM", Box::new(ValueNumber::new(0.0)));
+        random.set_input("TO", Box::new(ValueNumber::new(0.0)));
+        assert_eq!(random.value().await.unwrap(), Value::Number(0.0));
+
+        random.set_input("FROM", Box::new(ValueNumber::new(0.0)));
+        random.set_input("TO", Box::new(ValueNumber::new(1.0)));
+        let result: f64 = random.value().await.unwrap().try_into().unwrap();
+        // Return value should be an integer
+        assert!((result % 1.0) < f64::EPSILON);
     }
 
     #[rstest]
