@@ -577,14 +577,8 @@ impl Block for Random {
     }
 
     async fn value(&mut self) -> Result<Value> {
-        let mut from = {
-            let from_f: f64 = self.from.value().await?.try_into()?;
-            from_f as i64
-        };
-        let mut to = {
-            let to_f: f64 = self.to.value().await?.try_into()?;
-            to_f as i64
-        };
+        let mut from = TryInto::<f64>::try_into(self.from.value().await?)? as i64;
+        let mut to = TryInto::<f64>::try_into(self.to.value().await?)? as i64;
 
         // gen_range() fails if from == to
         if from == to {

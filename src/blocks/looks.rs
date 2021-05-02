@@ -680,13 +680,18 @@ impl Block for SwitchCostumeTo {
     }
 
     async fn execute(&mut self) -> Result<Next> {
-        let costume_name = self.costume.value().await?.to_string();
-        self.runtime
-            .sprite
-            .write()
-            .await
-            .costumes()
-            .set_current_costume(costume_name)?;
+        let value = self.costume.value().await?;
+        let mut runtime = self.runtime.sprite.write().await;
+        if let Ok(costume_index) = TryInto::<f64>::try_into(value.clone()) {
+            runtime
+                .costumes()
+                .set_current_costume(costume_index as usize);
+        } else {
+            runtime
+                .costumes()
+                .set_current_costume_by_name(value.to_string())?;
+        }
+
         Next::continue_(self.next)
     }
 }
@@ -800,7 +805,7 @@ impl Block for SwitchBackdropTo {
             .write()
             .await
             .costumes()
-            .set_current_costume(backdrop)?;
+            .set_current_costume_by_name(backdrop)?;
         Next::continue_(self.next)
     }
 }

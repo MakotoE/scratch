@@ -547,11 +547,15 @@ impl Costumes {
         self.costumes.get(self.current_costume)
     }
 
-    pub fn set_current_costume(&mut self, current_costume: String) -> Result<()> {
+    pub fn set_current_costume(&mut self, current_costume: usize) {
+        self.current_costume = current_costume;
+    }
+
+    pub fn set_current_costume_by_name(&mut self, costume_name: String) -> Result<()> {
         match self
             .costumes
             .iter()
-            .position(|costume| costume.name == current_costume)
+            .position(|costume| costume.name == costume_name)
         {
             Some(n) => {
                 self.current_costume = n;
@@ -559,7 +563,7 @@ impl Costumes {
             }
             None => Err(Error::msg(format!(
                 "costume {} does not exist",
-                current_costume
+                costume_name
             ))),
         }
     }
