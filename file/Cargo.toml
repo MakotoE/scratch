@@ -1,9 +1,12 @@
 [package]
-name = "file"
+name = "scratch_file"
 version = "0.1.0"
 authors = ["Makoto"]
 edition = "2018"
-license  = "GPL-3.0-or-later"
+license  = "MIT"
+description = "Scratch 3.0 file structure and parser"
+keywords = ["scratch"]
+documentation = "https://docs.rs/scratch_file/"
 
 [dependencies]
 anyhow = "1.0"

@@ -251,7 +251,7 @@ impl SpriteMap {
 
 #[derive(Debug)]
 struct DrawOrder {
-    /// Lowest index = back, highest index = Front
+    /// Lowest index = back, highest index = front
     ids: Vec<SpriteID>,
 }
 

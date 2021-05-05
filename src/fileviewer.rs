@@ -111,14 +111,7 @@ mod test {
             assert!(block_inputs(&Vec::new()).await.unwrap().is_empty());
         }
         {
-            let dir = std::path::Path::new(file!())
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join("test_saves")
-                .join("say.sb3");
-            let file = std::fs::File::open(dir).unwrap();
+            let file = std::fs::File::open("file/src/test_saves/say.sb3").unwrap();
             let scratch_file = ScratchFile::parse(&file).unwrap();
             assert!(!block_inputs(&scratch_file.project.targets)
                 .await
@@ -135,14 +128,7 @@ mod test {
             assert!(result.get_ref().is_empty());
         }
         {
-            let dir = std::path::Path::new(file!())
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join("test_saves")
-                .join("say.sb3");
-            let file = std::fs::File::open(dir).unwrap();
+            let file = std::fs::File::open("file/test_saves/say.sb3").unwrap();
             let scratch_file = ScratchFile::parse(&file).unwrap();
             let block_inputs = block_inputs(&scratch_file.project.targets).await.unwrap();
 

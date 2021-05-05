@@ -11,16 +11,19 @@ use std::hash::{Hash, Hasher};
 pub type HashMap<K, V> = std::collections::HashMap<K, V, fnv::FnvBuildHasher>;
 pub type HashSet<V> = std::collections::HashSet<V, fnv::FnvBuildHasher>;
 
-/// https://en.scratch-wiki.info/wiki/Scratch_File_Format
+/// Represents the data inside a Scratch 3.0 (`.sb3`) file.
+///
+/// [.sb3 format documentation](https://en.scratch-wiki.info/wiki/Scratch_File_Format)
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct ScratchFile {
     pub project: Project,
 
-    /// Filename to file contents
+    /// Maps filename to image
     pub images: HashMap<String, Image>,
 }
 
 impl ScratchFile {
+    /// Parses a Scratch file to create a ScratchFile.
     pub fn parse<R>(file: R) -> Result<ScratchFile>
     where
         R: std::io::Read + std::io::Seek,
@@ -64,18 +67,24 @@ pub struct Project {
     pub meta: Meta,
 }
 
+/// Represents a Sprite.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Target {
+    /// true if background sprite
     pub is_stage: bool,
     pub name: String,
     pub variables: HashMap<String, Variable>,
     pub blocks: HashMap<BlockID, Block>,
     pub costumes: Vec<Costume>,
+    /// Lowest number = back, highest number = front
     #[serde(default)]
     pub layer_order: usize,
+    /// This uses sprite coordinates.
+    /// Left = -240, right = +240
     #[serde(default)]
     pub x: f64,
+    /// Top = +180, bottom = -180
     #[serde(default)]
     pub y: f64,
     #[serde(default)]
@@ -155,13 +164,18 @@ where
     hasher_a.finish() == hasher_b.finish()
 }
 
+/// Blocks are the rectangle and oval code blocks.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Block {
     pub opcode: String,
+    /// Block attached below this block
     pub next: Option<BlockID>,
+    /// Inputs are the oval holes in blocks where you can drop oval blocks into
     pub inputs: HashMap<String, Value>,
+    /// Fields are the drop downs in blocks and therefore can only take constant strings
     pub fields: HashMap<String, Vec<Option<String>>>,
+    /// Top most block in a stack of connected blocks
     pub top_level: bool,
 }
 
@@ -203,12 +217,14 @@ where
     value.to_string().hash(state)
 }
 
+/// Sprite costume
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Costume {
     pub name: String,
     pub md5ext: Option<String>,
     pub asset_id: String,
+    /// Center of this costume with coordinates local to the image.
     pub rotation_center_x: f64,
     pub rotation_center_y: f64,
     #[serde(default)]
@@ -243,6 +259,7 @@ impl PartialEq for Costume {
     }
 }
 
+/// A monitor is the grey and orange rectangle that outputs the variable value.
 #[derive(PartialEq, Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Monitor {
@@ -275,6 +292,7 @@ pub struct Meta {
     pub agent: String,
 }
 
+/// Contains the raw bytes of the image format.
 #[derive(PartialEq, Eq, Clone)]
 pub enum Image {
     SVG(Vec<u8>),
@@ -304,6 +322,7 @@ impl Debug for Image {
     }
 }
 
+/// Unique ID for each block.
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Default, Hash)]
 pub struct BlockID {
     id: [u8; 20],
@@ -397,14 +416,7 @@ mod tests {
 
     #[test]
     fn test_savefile() {
-        let dir = std::path::Path::new(file!())
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("test_saves")
-            .join("say.sb3");
-        let file = std::fs::File::open(dir).unwrap();
+        let file = std::fs::File::open("test_saves/say.sb3").unwrap();
         let savefile = ScratchFile::parse(&file).unwrap();
         let target = &savefile.project.targets[1];
         assert_eq!(target.name, "Sprite1");
