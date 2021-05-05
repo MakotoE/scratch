@@ -46,3 +46,4 @@ itertools = "0.10"
 async-lock = "2.3"
 fnv = "1.0"
 file = { path = "file" }
+arrayvec = "0.5"

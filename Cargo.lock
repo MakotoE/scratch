@@ -2011,6 +2011,7 @@ name = "scratch"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "arrayvec",
  "async-lock",
  "async-trait",
  "clap",

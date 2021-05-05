@@ -6,10 +6,11 @@ use crate::runtime::Global;
 use crate::sprite::{Sprite, SpriteID};
 use crate::thread::StepStatus;
 use crate::vm::ThreadID;
+use arrayvec::ArrayVec;
 use graphics::Context;
 use graphics_buffer::{BufferGlyphs, RenderBuffer};
 use piston_window::{G2d, Glyphs};
-use std::mem::MaybeUninit;
+use std::iter::{once, repeat_with};
 use tokio::time::{sleep, Duration};
 
 /// I needed a map that can to add cloned sprites while other sprites are still running.
@@ -30,19 +31,14 @@ impl SpriteMap {
         targets: &[Target],
         global: Arc<Global>,
     ) -> Self {
-        let mut sprite_groups: [MaybeUninit<RwLock<HashMap<SpriteID, Sprite>>>; 64] =
-            MaybeUninit::uninit_array();
-
-        // There could be a performance benefit by spreading out the sprites evenly across all groups
-        sprite_groups[0] = MaybeUninit::new(RwLock::new(sprites));
-
-        for group in &mut sprite_groups[1..] {
-            *group = MaybeUninit::new(RwLock::default());
-        }
+        let sprite_groups_array: ArrayVec<[RwLock<HashMap<SpriteID, Sprite>>; 64]> =
+            once(RwLock::new(sprites))
+                .chain(repeat_with(RwLock::default))
+                .take(64)
+                .collect();
 
         Self {
-            // The unsafe enables the use of MaybeUninit to initialize a big array
-            sprite_groups: unsafe { std::mem::transmute(sprite_groups) },
+            sprite_groups: sprite_groups_array.into_inner().unwrap(),
             draw_order: RwLock::new(DrawOrder::new(targets)),
             removed_sprites: RwLock::default(),
             stopped_threads: RwLock::default(),
