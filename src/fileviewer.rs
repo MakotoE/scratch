@@ -111,7 +111,7 @@ mod test {
             assert!(block_inputs(&Vec::new()).await.unwrap().is_empty());
         }
         {
-            let file = std::fs::File::open("file/src/test_saves/say.sb3").unwrap();
+            let file = std::fs::File::open("file/test_saves/say.sb3").unwrap();
             let scratch_file = ScratchFile::parse(&file).unwrap();
             assert!(!block_inputs(&scratch_file.project.targets)
                 .await

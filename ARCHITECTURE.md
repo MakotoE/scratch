@@ -4,7 +4,7 @@ The VM manages the backend of the VM. It initializes all `Sprite`s and runs them
 
 ## `Global`
 
-Contains the global state, such as variables, broadcast channel, and keyboard inputs.
+Contains the global state, which are: variables, broadcast channel, and mouse + keyboard inputs.
 
 ### `Broadcaster`
 
@@ -29,6 +29,6 @@ Contains all blocks of the thread and manages the control flow.
 
 A `Block` is a trait implemented by all blocks. A block can have fields, inputs and substacks.
 
-- Field: A constant string shown as a menu in the block editor 
-- Input: An oval block that emits values. Cannot be used as a substack. Input blocks are owned by `Block`s.
+- Field: A constant string shown as a dropdown menu in the block editor 
+- Input: An oval block that emits values. Cannot be used as a substack. Input blocks are owned by substack blocks.
 - Substack: Blocks connected below another block and can be executed. Cannot be used as an input. After `execute()`, it returns the `BlockID` of the next block to execute.

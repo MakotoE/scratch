@@ -278,7 +278,7 @@ impl Block for EmptyInput {
 }
 
 #[derive(Debug)]
-pub struct EmptyFalse {}
+pub struct EmptyFalse;
 
 #[async_trait]
 impl Block for EmptyFalse {
