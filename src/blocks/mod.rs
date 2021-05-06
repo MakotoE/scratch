@@ -19,7 +19,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 use value::Value;
 
-fn get_block(id: BlockID, runtime: Runtime, info: &file::Block) -> Result<Box<dyn Block>> {
+fn get_block(id: BlockID, runtime: Runtime, info: &scratch_file::Block) -> Result<Box<dyn Block>> {
     let (category, name) = info.opcode.split_once('_').ok_or_else(|| {
         Error::msg(format!(
             "block \"{}\": opcode {} does not exist",
@@ -156,7 +156,7 @@ impl BlockInputsPartial {
 pub fn block_tree(
     top_block_id: BlockID,
     runtime: Runtime,
-    infos: &HashMap<BlockID, file::Block>,
+    infos: &HashMap<BlockID, scratch_file::Block>,
 ) -> Result<HashMap<BlockID, Box<dyn Block>>> {
     let info = match infos.get(&top_block_id) {
         Some(b) => b,

@@ -27,7 +27,7 @@ struct SpriteBlocks {
     block_inputs: Vec<BlockInputs>,
 }
 
-async fn block_inputs(targets: &[file::Target]) -> Result<Vec<SpriteBlocks>> {
+async fn block_inputs(targets: &[scratch_file::Target]) -> Result<Vec<SpriteBlocks>> {
     let global = Arc::new(Global::default());
 
     let mut block_inputs: Vec<SpriteBlocks> = Vec::with_capacity(targets.len());

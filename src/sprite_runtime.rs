@@ -386,7 +386,7 @@ pub struct Costume {
 impl Costume {
     pub async fn new(
         texture_context: &mut G2dTextureContext,
-        costume: &file::Costume,
+        costume: &scratch_file::Costume,
         image_file: &Image,
     ) -> Result<Self> {
         let (gfx_texture, render_buffer_texture, width, height) = match image_file {
@@ -486,7 +486,7 @@ impl Costume {
 
     pub fn new_blank(
         texture_context: &mut G2dTextureContext,
-        costume: &file::Costume,
+        costume: &scratch_file::Costume,
     ) -> Result<Self> {
         let mut file = File::open("assets/blank_backdrop.png")?;
         let mut buffer: Vec<u8> = Vec::new();
@@ -519,7 +519,7 @@ pub struct Costumes {
 impl Costumes {
     pub async fn new(
         texture_context: &mut G2dTextureContext,
-        costume_data: &[file::Costume],
+        costume_data: &[scratch_file::Costume],
         images: &HashMap<String, Image>,
     ) -> Result<Self> {
         let mut costumes: Vec<Costume> = Vec::with_capacity(costume_data.len());

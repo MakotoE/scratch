@@ -23,7 +23,7 @@ mod vm;
 use anyhow::{Error, Result};
 use async_lock::RwLock;
 use error::*;
-use file::{BlockID, Image, Monitor, ScratchFile, Target};
+use scratch_file::{BlockID, Image, Monitor, ScratchFile, Target};
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use tokio::spawn;

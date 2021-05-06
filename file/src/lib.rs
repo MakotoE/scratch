@@ -415,29 +415,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_savefile() {
+    fn scratch_file_parse() {
         let file = std::fs::File::open("test_saves/say.sb3").unwrap();
         let savefile = ScratchFile::parse(&file).unwrap();
         let target = &savefile.project.targets[1];
         assert_eq!(target.name, "Sprite1");
     }
 
-    mod block_id {
-        use super::*;
-
-        #[test]
-        fn test_from_str() {
-            {
-                assert!(BlockID::try_from("").is_err());
-            }
-            {
-                assert!(BlockID::try_from("a").is_err());
-            }
-            {
-                let s = "G@pZX]3ynBGB)L`_LJk8";
-                let id = BlockID::try_from(s).unwrap();
-                assert_eq!(&id.to_string(), "G@pZX]3ynB");
-            }
+    #[test]
+    fn block_id_from_str() {
+        {
+            assert!(BlockID::try_from("").is_err());
+        }
+        {
+            assert!(BlockID::try_from("a").is_err());
+        }
+        {
+            let s = "G@pZX]3ynBGB)L`_LJk8";
+            let id = BlockID::try_from(s).unwrap();
+            assert_eq!(&id.to_string(), "G@pZX]3ynB");
         }
     }
 }

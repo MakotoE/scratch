@@ -46,7 +46,7 @@ pub struct Global {
 
 impl Global {
     pub fn new(
-        scratch_file_variables: &HashMap<String, file::Variable>,
+        scratch_file_variables: &HashMap<String, scratch_file::Variable>,
         monitors: &[Monitor],
     ) -> Self {
         Self {
@@ -154,7 +154,7 @@ pub struct Variables {
 
 impl Variables {
     pub fn new(
-        scratch_file_variables: &HashMap<String, file::Variable>,
+        scratch_file_variables: &HashMap<String, scratch_file::Variable>,
         monitors: &[Monitor],
     ) -> Self {
         let mut variables: HashMap<String, Variable> = HashMap::default();

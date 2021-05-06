@@ -16,7 +16,7 @@ pub struct Sprite {
     threads: Vec<RwLock<Thread>>,
     global_runtime: Arc<Global>,
     sprite_runtime: Arc<RwLock<SpriteRuntime>>,
-    block_infos: HashMap<BlockID, file::Block>,
+    block_infos: HashMap<BlockID, scratch_file::Block>,
 }
 
 impl Sprite {
@@ -24,7 +24,7 @@ impl Sprite {
         sprite_id: SpriteID,
         sprite_runtime: SpriteRuntime,
         global: Arc<Global>,
-        block_infos: HashMap<BlockID, file::Block>,
+        block_infos: HashMap<BlockID, scratch_file::Block>,
     ) -> Result<Self> {
         let sprite_runtime_ref = Arc::new(RwLock::new(sprite_runtime));
 
@@ -116,7 +116,7 @@ impl Sprite {
     }
 }
 
-fn find_hats(block_infos: &HashMap<BlockID, file::Block>) -> Vec<BlockID> {
+fn find_hats(block_infos: &HashMap<BlockID, scratch_file::Block>) -> Vec<BlockID> {
     let mut hats: Vec<BlockID> = block_infos
         .iter()
         .filter(|(_, block)| -> bool {
