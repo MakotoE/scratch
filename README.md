@@ -2,7 +2,7 @@
 
 This is supposed to be a clone of the Scratch VM. (Not the block editor.)
 
-Requires the `nightly-2020-08-27` toolchain. Only tested in Debian.
+Requires the `nightly-2020-08-27` toolchain (`rust-toolchain` should make cargo use it automatically). Only tested in Debian.
 
 ```
 cargo run vm <path to .sb3 scratch file> # Runs the VM
